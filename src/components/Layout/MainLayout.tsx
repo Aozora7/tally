@@ -47,7 +47,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           ))}
         </AppShell.Section>
       </AppShell.Navbar>
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 }
