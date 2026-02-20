@@ -22,6 +22,7 @@ interface FinanceContextValue {
   updateAccount: (account: Account) => void;
   deleteAccount: (id: string) => void;
   addTriageTransaction: (transaction: TriageTransaction) => void;
+  addTriageTransactions: (transactions: TriageTransaction[]) => void;
   updateTriageTransaction: (transaction: TriageTransaction) => void;
   deleteTriageTransaction: (id: string) => void;
   addTransaction: (transaction: Transaction) => void;
@@ -122,6 +123,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     void db.triageTransactions.add(transaction);
   }, []);
 
+  const addTriageTransactions = useCallback((newTransactions: TriageTransaction[]) => {
+    setTriageTransactions((prev) => [...prev, ...newTransactions]);
+    void db.triageTransactions.bulkAdd(newTransactions);
+  }, []);
+
   const updateTriageTransaction = useCallback((transaction: TriageTransaction) => {
     setTriageTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
     void db.triageTransactions.put(transaction);
@@ -187,6 +193,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         updateAccount,
         deleteAccount,
         addTriageTransaction,
+        addTriageTransactions,
         updateTriageTransaction,
         deleteTriageTransaction,
         addTransaction,

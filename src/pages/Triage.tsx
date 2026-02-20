@@ -1,9 +1,10 @@
-import { Center, Text } from '@mantine/core';
+import { Stack } from '@mantine/core';
+import { ImportWizard } from '@/components/ImportWizard/ImportWizard';
 
 export function Triage() {
   return (
-    <Center h="100%">
-      <Text size="xl">Triage</Text>
-    </Center>
+    <Stack gap="md">
+      <ImportWizard />
+    </Stack>
   );
 }
