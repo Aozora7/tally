@@ -3,8 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { MantineProvider, createTheme, type MantineColorsTuple } from '@mantine/core';
 import App from './App';
 import '@mantine/core/styles.css';
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
 import './styles/global.css';
 
 const colors: Record<string, MantineColorsTuple> = {

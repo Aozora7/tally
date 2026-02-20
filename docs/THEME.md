@@ -151,3 +151,54 @@ All Mantine components use the following defaults:
 - `size: "sm"` for inputs and buttons
 - `radius: "md"` for rounded corners
 - `highlightOnHover: true` for tables
+
+## AG Grid Theme
+
+AG Grid uses the Quartz theme customized to match the application's dark theme. The theme is defined in `src/utils/agGridTheme.ts` and should be imported by all AG Grid components.
+
+### Usage Pattern
+
+```tsx
+import { AgGridReact } from 'ag-grid-react';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import { agGridDarkTheme } from '@/utils/agGridTheme';
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+// In component:
+<AgGridReact<YourDataType>
+  rowData={data}
+  columnDefs={columnDefs}
+  theme={agGridDarkTheme}
+/>
+```
+
+### Theme Colors
+
+The AG Grid theme uses the same color palette as the Mantine theme:
+
+| AG Grid Param          | Value                         | Source           |
+|------------------------|-------------------------------|------------------|
+| backgroundColor        | `#1A1B1E`                     | Mantine dark.7   |
+| foregroundColor        | `#C1C2C5`                     | Mantine dark.0   |
+| chromeBackgroundColor  | `#25262B`                     | Mantine dark.6   |
+| headerBackgroundColor  | `#25262B`                     | Mantine dark.6   |
+| rowHoverColor          | `#2C2E33`                     | Mantine dark.5   |
+| borderColor            | `#373A40`                     | Mantine dark.4   |
+| accentColor            | `#43A047`                     | brand.6          |
+| inputBackgroundColor   | `#25262B`                     | Mantine dark.6   |
+
+### Cell Styling for Financial Data
+
+For income/expense coloring in AG Grid cells, use the Mantine CSS variables:
+
+```tsx
+cellStyle: (params) => {
+  if (params.value === null || params.value === undefined) return {};
+  return {
+    color: params.value >= 0
+      ? 'var(--mantine-color-income-6)'
+      : 'var(--mantine-color-expense-6)',
+  };
+},
+```

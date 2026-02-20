@@ -11,6 +11,7 @@ import { useForm } from '@mantine/form';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
 import { centsToDisplay, displayToCents } from '@/utils/currency';
+import { agGridDarkTheme } from '@/utils/agGridTheme';
 import type { Transaction } from '@/types';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -91,6 +92,24 @@ export function TransactionsGrid() {
       amount: (value) => (value.trim().length > 0 ? null : 'Amount is required'),
       description: (value) => (value.trim().length > 0 ? null : 'Description is required'),
       accountId: (value) => (value.length > 0 ? null : 'Account is required'),
+      categoryId: (value, values) => {
+        if (value && values.transferAccountId) {
+          return 'Cannot have both category and transfer';
+        }
+        if (!value && !values.transferAccountId) {
+          return 'Must have either a category or transfer';
+        }
+        return null;
+      },
+      transferAccountId: (value, values) => {
+        if (value && values.categoryId) {
+          return 'Cannot have both category and transfer';
+        }
+        if (!value && !values.categoryId) {
+          return 'Must have either a category or transfer';
+        }
+        return null;
+      },
     },
   });
 
@@ -200,7 +219,14 @@ export function TransactionsGrid() {
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<Transaction>) => {
       if (event.data) {
-        updateTransaction(event.data);
+        const updatedData = { ...event.data };
+        if (event.colDef.field === 'categoryId' && event.newValue) {
+          delete updatedData.transferAccountId;
+        }
+        if (event.colDef.field === 'transferAccountId' && event.newValue) {
+          delete updatedData.categoryId;
+        }
+        updateTransaction(updatedData);
       }
     },
     [updateTransaction]
@@ -228,13 +254,14 @@ export function TransactionsGrid() {
         <Button onClick={() => setModalOpened(true)}>Add Transaction</Button>
       </Group>
 
-      <div style={{ height: 500, width: '100%' }} className="ag-theme-alpine ag-theme-dark">
+      <div style={{ height: 500, width: '100%' }}>
         <AgGridReact<Transaction>
           rowData={transactions}
           columnDefs={columnDefs}
           onCellValueChanged={onCellValueChanged}
           animateRows={false}
           domLayout="normal"
+          theme={agGridDarkTheme}
         />
       </div>
 

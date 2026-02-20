@@ -1,8 +1,6 @@
 import Papa from 'papaparse';
 
-export interface CsvRow {
-  [key: string]: string;
-}
+export type CsvRow = Record<string, string>;
 
 export function parseCsv(file: File): Promise<CsvRow[]> {
   return new Promise((resolve, reject) => {
@@ -26,13 +24,15 @@ export function parseCsv(file: File): Promise<CsvRow[]> {
 export function detectDelimiter(content: string): string {
   const firstLine = content.split('\n')[0];
   if (!firstLine) return ',';
-  
+
   const delimiters = [',', '\t', ';', '|'];
   let maxCount = 0;
   let detectedDelimiter = ',';
 
   for (const delimiter of delimiters) {
-    const count = (firstLine.match(new RegExp(delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+    const count = (
+      firstLine.match(new RegExp(delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []
+    ).length;
     if (count > maxCount) {
       maxCount = count;
       detectedDelimiter = delimiter;
