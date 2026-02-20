@@ -1,0 +1,27 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #141517;
+  color: #c1c2c5;
+}
+
+[data-mantine-color-scheme='dark'] body {
+  background-color: #141517;
+}
+
+/* AG Grid dark theme overrides */
+.ag-theme-alpine.ag-theme-dark {
+  --ag-background-color: #1a1b1e;
+  --ag-foreground-color: #c1c2c5;
+  --ag-border-color: #373a40;
+  --ag-row-hover-color: #25262b;
+  --ag-header-background-color: #25262b;
+  --ag-odd-row-background-color: #1a1b1e;
+  --ag-modal-background-color: #1a1b1e;
+  --ag-menu-background-color: #25262b;
+  --ag-control-panel-background-color: #25262b;
+  --ag-input-focus-border-color: #43a047;
+  --ag-range-selection-background-color: rgba(67, 160, 71, 0.2);
+}

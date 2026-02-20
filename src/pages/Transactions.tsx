@@ -1,9 +1,5 @@
-import { Center, Text } from '@mantine/core';
+import { TransactionsGrid } from '@/components/TransactionsGrid/TransactionsGrid';
 
 export function Transactions() {
-  return (
-    <Center h="100%">
-      <Text size="xl">Transactions</Text>
-    </Center>
-  );
+  return <TransactionsGrid />;
 }
