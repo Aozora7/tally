@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), visualizer()],
   base: './',
   resolve: {
     alias: {
@@ -13,5 +14,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    chunkSizeWarningLimit: 1050,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('ag-grid-community')) {
+            return 'ag-grid';
+          }
+        },
+      },
+    },
   },
 });
