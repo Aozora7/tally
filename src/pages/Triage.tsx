@@ -5,10 +5,12 @@ import { useFinance } from '@/context/FinanceContext';
 import { ImportWizard } from '@/components/ImportWizard/ImportWizard';
 import { TriageGrid } from '@/components/TriageGrid/TriageGrid';
 import { TriageDetailPanel } from '@/components/TriageDetailPanel/TriageDetailPanel';
+import { RulePreviewModal } from '@/components/RulePreviewModal/RulePreviewModal';
 
 export function Triage() {
-  const { triageTransactions } = useFinance();
+  const { triageTransactions, rules } = useFinance();
   const [importOpened, importHandlers] = useDisclosure(false);
+  const [rulesModalOpened, rulesModalHandlers] = useDisclosure(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selectedIndex = useMemo(
@@ -86,9 +88,16 @@ export function Triage() {
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Group justify="space-between">
         <Title order={3}>Triage</Title>
-        <Button variant="subtle" onClick={() => importHandlers.toggle()}>
-          {importOpened ? 'Hide Import' : 'Import CSV'}
-        </Button>
+        <Group gap="xs">
+          {rules.length > 0 && (
+            <Button variant="light" onClick={() => rulesModalHandlers.open()}>
+              Apply Rules
+            </Button>
+          )}
+          <Button variant="subtle" onClick={() => importHandlers.toggle()}>
+            {importOpened ? 'Hide Import' : 'Import CSV'}
+          </Button>
+        </Group>
       </Group>
 
       <Collapse in={importOpened}>
@@ -109,6 +118,12 @@ export function Triage() {
       <Box flex={1} style={{ minHeight: 200 }}>
         <TriageGrid selectedId={selectedId} onSelect={handleSelect} />
       </Box>
+
+      <RulePreviewModal
+        opened={rulesModalOpened}
+        onClose={() => rulesModalHandlers.close()}
+        source="triage"
+      />
     </Stack>
   );
 }
