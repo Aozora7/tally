@@ -19,6 +19,7 @@ import { generateId } from '@/utils/uuid';
 import {
   previewSelectedRules,
   applyPreviewToTransaction,
+  isDuplicateTransaction,
   type RulePreview,
 } from '@/utils/rulesEngine';
 import type { Transaction } from '@/types';
@@ -128,7 +129,9 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
             }
           }
 
-          newTransactions.push(newTx);
+          if (!isDuplicateTransaction(newTx, [...transactions, ...newTransactions])) {
+            newTransactions.push(newTx);
+          }
           triageIdsToDelete.push(preview.transactionId);
         }
       } else if (preview.source === 'transaction') {

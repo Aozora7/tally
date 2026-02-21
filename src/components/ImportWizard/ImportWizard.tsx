@@ -16,6 +16,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { parseCsvFile, applyMapping, type ParseResult } from '@/utils/csvParser';
 import { centsToDisplay } from '@/utils/currency';
 import { generateId } from '@/utils/uuid';
+import { filterDuplicateTransactions } from '@/utils/rulesEngine';
 import type { ColumnMapping, ImportableField, ParsedImportRow } from '@/types/import';
 import type { TriageTransaction } from '@/types';
 
@@ -29,11 +30,12 @@ const FIELD_OPTIONS: { value: ImportableField | 'none'; label: string }[] = [
 ];
 
 export function ImportWizard() {
-  const { addTriageTransactions } = useFinance();
+  const { addTriageTransactions, triageTransactions, transactions } = useFinance();
   const [activeStep, setActiveStep] = useState<Step>('upload');
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateCount, setDuplicateCount] = useState<number>(0);
 
   const handleFileUpload = async (file: File | null) => {
     if (!file) return;
@@ -75,14 +77,21 @@ export function ImportWizard() {
   }, [mapping, validRows]);
 
   const handleImport = () => {
-    const triageTransactions: TriageTransaction[] = validRows.map((row) => ({
+    const pendingTransactions: TriageTransaction[] = validRows.map((row) => ({
       id: generateId(),
       date: row.date!,
       amount: row.amount!,
       description: row.description,
     }));
 
-    addTriageTransactions(triageTransactions);
+    const { unique, duplicates } = filterDuplicateTransactions(pendingTransactions, [
+      ...triageTransactions,
+      ...transactions,
+    ]);
+
+    setDuplicateCount(duplicates.length);
+    setImportedCount(unique.length);
+    addTriageTransactions(unique);
     setActiveStep('complete');
   };
 
@@ -91,7 +100,10 @@ export function ImportWizard() {
     setParseResult(null);
     setMapping([]);
     setError(null);
+    setDuplicateCount(0);
   };
+
+  const [importedCount, setImportedCount] = useState<number>(0);
 
   return (
     <Stack gap="md">
@@ -234,8 +246,13 @@ export function ImportWizard() {
       {activeStep === 'complete' && (
         <Stack gap="md">
           <Alert color="brand" title="Import Complete">
-            Successfully imported {validRows.length} transactions to Triage.
+            Successfully imported {importedCount} transactions to Triage.
           </Alert>
+          {duplicateCount > 0 && (
+            <Alert color="warning">
+              {duplicateCount} duplicate transaction{duplicateCount !== 1 ? 's' : ''} were skipped.
+            </Alert>
+          )}
           <Group>
             <Button onClick={handleReset}>Import Another File</Button>
           </Group>

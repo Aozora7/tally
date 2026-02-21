@@ -299,3 +299,43 @@ export function validateRule(rule: Partial<CategorizationRule>): string | null {
 
   return null;
 }
+
+export interface TransactionKey {
+  date: string;
+  amount: number;
+  description: string;
+}
+
+export function getTransactionKey(tx: TransactionKey): string {
+  return `${tx.date}|${tx.amount}|${tx.description.trim().toLowerCase()}`;
+}
+
+export function isDuplicateTransaction(
+  tx: TransactionKey,
+  existingTransactions: TransactionKey[]
+): boolean {
+  const key = getTransactionKey(tx);
+  return existingTransactions.some((existing) => getTransactionKey(existing) === key);
+}
+
+export function filterDuplicateTransactions<T extends TransactionKey>(
+  newTransactions: T[],
+  existingTransactions: TransactionKey[]
+): { unique: T[]; duplicates: T[] } {
+  const existingKeys = new Set(existingTransactions.map(getTransactionKey));
+
+  const unique: T[] = [];
+  const duplicates: T[] = [];
+
+  for (const tx of newTransactions) {
+    const key = getTransactionKey(tx);
+    if (existingKeys.has(key)) {
+      duplicates.push(tx);
+    } else {
+      unique.push(tx);
+      existingKeys.add(key);
+    }
+  }
+
+  return { unique, duplicates };
+}

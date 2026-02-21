@@ -3,6 +3,7 @@ import { Button, Group, Stack, Text, TextInput, Divider, ActionIcon, Paper } fro
 import { useFinance } from '@/context/FinanceContext';
 import { centsToDisplay, displayToCents } from '@/utils/currency';
 import { generateId } from '@/utils/uuid';
+import { isDuplicateTransaction } from '@/utils/rulesEngine';
 import type { TriageTransaction, Transaction } from '@/types';
 
 interface SplitPart {
@@ -69,7 +70,8 @@ export function TriageDetailPanel({
   onSaved,
   onDeleted,
 }: TriageDetailPanelProps) {
-  const { accounts, categories, addTransactions, deleteTriageTransaction } = useFinance();
+  const { accounts, categories, transactions, addTransactions, deleteTriageTransaction } =
+    useFinance();
 
   const [accountId, setAccountId] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
@@ -211,7 +213,12 @@ export function TriageDetailPanel({
         ...(split.transferAccountId && { transferAccountId: split.transferAccountId }),
       }));
 
-      addTransactions(newTransactions);
+      const nonDuplicates = newTransactions.filter(
+        (tx) => !isDuplicateTransaction(tx, transactions)
+      );
+      if (nonDuplicates.length > 0) {
+        addTransactions(nonDuplicates);
+      }
     } else {
       const transaction: Transaction = {
         id: generateId(),
@@ -223,7 +230,9 @@ export function TriageDetailPanel({
         ...(transferAccountId && { transferAccountId }),
       };
 
-      addTransactions([transaction]);
+      if (!isDuplicateTransaction(transaction, transactions)) {
+        addTransactions([transaction]);
+      }
     }
 
     deleteTriageTransaction(selectedTransaction.id);
@@ -236,6 +245,7 @@ export function TriageDetailPanel({
     accountId,
     categoryId,
     transferAccountId,
+    transactions,
     addTransactions,
     deleteTriageTransaction,
     onSaved,
