@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Button,
   Group,
@@ -21,6 +21,23 @@ import { generateId } from '@/utils/uuid';
 import { centsToDisplay, displayToCents } from '@/utils/currency';
 import { validateRule } from '@/utils/rulesEngine';
 import type { CategorizationRule } from '@/types';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 function centsToDecimalString(cents: number): string {
   const absCents = Math.abs(cents);
@@ -42,6 +59,106 @@ interface RuleFormData {
   actionDelete: boolean;
 }
 
+interface SortableRuleRowProps {
+  rule: CategorizationRule;
+  index: number;
+  onEdit: (rule: CategorizationRule, index: number) => void;
+  onDelete: (id: string) => void;
+  categories: { id: string; name: string }[];
+  accounts: { id: string; name: string }[];
+}
+
+function SortableRuleRow({
+  rule,
+  index,
+  onEdit,
+  onDelete,
+  categories,
+  accounts,
+}: SortableRuleRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: rule.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab',
+  };
+
+  const getRuleSummary = (r: CategorizationRule): string => {
+    const conditions: string[] = [];
+    if (r.matchPattern) conditions.push(`Pattern: ${r.matchPattern}`);
+    if (r.matchMinAmount !== undefined || r.matchMaxAmount !== undefined) {
+      const min = r.matchMinAmount !== undefined ? centsToDisplay(r.matchMinAmount) : '-∞';
+      const max = r.matchMaxAmount !== undefined ? centsToDisplay(r.matchMaxAmount) : '∞';
+      conditions.push(`Amount: ${min} to ${max}`);
+    }
+    if (r.matchMinDate || r.matchMaxDate) {
+      const min = r.matchMinDate ?? '-∞';
+      const max = r.matchMaxDate ?? '∞';
+      conditions.push(`Date: ${min} to ${max}`);
+    }
+    return conditions.join(' | ') || 'No conditions';
+  };
+
+  const getActionSummary = (r: CategorizationRule): { label: string; color: string } => {
+    if (r.actionDelete) return { label: 'Delete', color: 'danger' };
+    if (r.actionCategoryId) {
+      const cat = categories.find((c) => c.id === r.actionCategoryId);
+      return { label: `Category: ${cat?.name ?? 'Unknown'}`, color: 'brand' };
+    }
+    if (r.actionTransferAccountId) {
+      const acc = accounts.find((a) => a.id === r.actionTransferAccountId);
+      return { label: `Transfer: ${acc?.name ?? 'Unknown'}`, color: 'accent' };
+    }
+    return { label: 'No action', color: 'gray' };
+  };
+
+  const action = getActionSummary(rule);
+
+  return (
+    <Table.Tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Table.Td>
+        <Text fw={500}>{rule.name}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" c="dimmed">
+          {getRuleSummary(rule)}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge color={action.color}>{action.label}</Badge>
+      </Table.Td>
+      <Table.Td>
+        <Group gap={4}>
+          <ActionIcon
+            variant="subtle"
+            color="accent"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(rule, index);
+            }}
+          >
+            ✎
+          </ActionIcon>
+          <ActionIcon
+            variant="subtle"
+            color="danger"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(rule.id);
+            }}
+          >
+            ✕
+          </ActionIcon>
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  );
+}
+
 export function Rules() {
   const { rules, categories, accounts, addRule, updateRule, deleteRule, reorderRules } =
     useFinance();
@@ -50,6 +167,13 @@ export function Rules() {
     rule: CategorizationRule;
     index: number;
   } | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const categoryOptions = useMemo(
     () => categories.map((c) => ({ value: c.id, label: c.name })),
@@ -119,6 +243,7 @@ export function Rules() {
     const ruleData: CategorizationRule = {
       id: editingRule?.rule.id ?? generateId(),
       name: values.name.trim(),
+      sortOrder: editingRule?.rule.sortOrder ?? rules.length,
       ...(values.matchPattern.trim() && { matchPattern: values.matchPattern.trim() }),
       ...(minAmountCents !== undefined && { matchMinAmount: minAmountCents }),
       ...(maxAmountCents !== undefined && { matchMaxAmount: maxAmountCents }),
@@ -146,67 +271,21 @@ export function Rules() {
     closeModal();
   };
 
-  const moveRuleUp = useCallback(
-    (index: number) => {
-      if (index <= 0) return;
-      const newRules = [...rules];
-      const temp = newRules[index - 1];
-      if (temp) {
-        newRules[index - 1] = newRules[index]!;
-        newRules[index] = temp;
-      }
-      reorderRules(newRules);
-    },
-    [rules, reorderRules]
-  );
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const moveRuleDown = useCallback(
-    (index: number) => {
-      if (index >= rules.length - 1) return;
-      const newRules = [...rules];
-      const temp = newRules[index + 1];
-      if (temp) {
-        newRules[index + 1] = newRules[index]!;
-        newRules[index] = temp;
-      }
+    if (over && active.id !== over.id) {
+      const oldIndex = rules.findIndex((r) => r.id === active.id);
+      const newIndex = rules.findIndex((r) => r.id === over.id);
+      const newRules = arrayMove(rules, oldIndex, newIndex);
       reorderRules(newRules);
-    },
-    [rules, reorderRules]
-  );
+    }
+  };
 
   const handleDeleteRule = (id: string) => {
     if (window.confirm('Are you sure you want to delete this rule?')) {
       deleteRule(id);
     }
-  };
-
-  const getRuleSummary = (rule: CategorizationRule): string => {
-    const conditions: string[] = [];
-    if (rule.matchPattern) conditions.push(`Pattern: ${rule.matchPattern}`);
-    if (rule.matchMinAmount !== undefined || rule.matchMaxAmount !== undefined) {
-      const min = rule.matchMinAmount !== undefined ? centsToDisplay(rule.matchMinAmount) : '-∞';
-      const max = rule.matchMaxAmount !== undefined ? centsToDisplay(rule.matchMaxAmount) : '∞';
-      conditions.push(`Amount: ${min} to ${max}`);
-    }
-    if (rule.matchMinDate || rule.matchMaxDate) {
-      const min = rule.matchMinDate ?? '-∞';
-      const max = rule.matchMaxDate ?? '∞';
-      conditions.push(`Date: ${min} to ${max}`);
-    }
-    return conditions.join(' | ') || 'No conditions';
-  };
-
-  const getActionSummary = (rule: CategorizationRule): { label: string; color: string } => {
-    if (rule.actionDelete) return { label: 'Delete', color: 'danger' };
-    if (rule.actionCategoryId) {
-      const cat = categories.find((c) => c.id === rule.actionCategoryId);
-      return { label: `Category: ${cat?.name ?? 'Unknown'}`, color: 'brand' };
-    }
-    if (rule.actionTransferAccountId) {
-      const acc = accounts.find((a) => a.id === rule.actionTransferAccountId);
-      return { label: `Transfer: ${acc?.name ?? 'Unknown'}`, color: 'accent' };
-    }
-    return { label: 'No action', color: 'gray' };
   };
 
   return (
@@ -223,79 +302,33 @@ export function Rules() {
           </Text>
         </Paper>
       ) : (
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th w={50}>#</Table.Th>
-              <Table.Th w={50}>Order</Table.Th>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Conditions</Table.Th>
-              <Table.Th>Action</Table.Th>
-              <Table.Th w={100}>Actions</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {rules.map((rule, index) => {
-              const action = getActionSummary(rule);
-              return (
-                <Table.Tr key={rule.id}>
-                  <Table.Td>
-                    <Text fw={600}>{index + 1}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={4}>
-                      <ActionIcon
-                        variant="subtle"
-                        size="sm"
-                        onClick={() => moveRuleUp(index)}
-                        disabled={index === 0}
-                      >
-                        ▲
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        size="sm"
-                        onClick={() => moveRuleDown(index)}
-                        disabled={index === rules.length - 1}
-                      >
-                        ▼
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text fw={500}>{rule.name}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c="dimmed">
-                      {getRuleSummary(rule)}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color={action.color}>{action.label}</Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={4}>
-                      <ActionIcon
-                        variant="subtle"
-                        color="accent"
-                        onClick={() => openEditModal(rule, index)}
-                      >
-                        ✎
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="danger"
-                        onClick={() => handleDeleteRule(rule.id)}
-                      >
-                        ✕
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={rules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>Conditions</Table.Th>
+                  <Table.Th>Action</Table.Th>
+                  <Table.Th w={100}>Actions</Table.Th>
                 </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {rules.map((rule, index) => (
+                  <SortableRuleRow
+                    key={rule.id}
+                    rule={rule}
+                    index={index}
+                    onEdit={openEditModal}
+                    onDelete={handleDeleteRule}
+                    categories={categories}
+                    accounts={accounts}
+                  />
+                ))}
+              </Table.Tbody>
+            </Table>
+          </SortableContext>
+        </DndContext>
       )}
 
       <Modal

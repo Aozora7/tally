@@ -6,6 +6,7 @@ export interface TransactionCategory {
   name: string;
   type: CategoryType;
   frequency: CategoryFrequency;
+  sortOrder: number;
 }
 
 export interface Account {
@@ -35,6 +36,7 @@ export interface Transaction {
 export interface CategorizationRule {
   id: string;
   name: string;
+  sortOrder: number;
   matchPattern?: string;
   matchMinAmount?: number;
   matchMaxAmount?: number;

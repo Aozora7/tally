@@ -18,6 +18,7 @@ interface FinanceContextValue {
   addCategory: (category: TransactionCategory) => void;
   updateCategory: (category: TransactionCategory) => void;
   deleteCategory: (id: string) => void;
+  reorderCategories: (categories: TransactionCategory[]) => void;
   addAccount: (account: Account) => void;
   updateAccount: (account: Account) => void;
   deleteAccount: (id: string) => void;
@@ -55,11 +56,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         db.transactions.toArray(),
         db.rules.toArray(),
       ]);
-    setCategories(loadedCategories);
+    setCategories(loadedCategories.sort((a, b) => a.sortOrder - b.sortOrder));
     setAccounts(loadedAccounts);
     setTriageTransactions(loadedTriage);
     setTransactions(loadedTransactions);
-    setRules(loadedRules);
+    setRules(loadedRules.sort((a, b) => a.sortOrder - b.sortOrder));
     setIsLoaded(true);
   }, []);
 
@@ -89,10 +90,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [categories, accounts, triageTransactions, transactions, rules]);
 
-  const addCategory = useCallback((category: TransactionCategory) => {
-    setCategories((prev) => [...prev, category]);
-    void db.categories.add(category);
-  }, []);
+  const addCategory = useCallback(
+    (category: TransactionCategory) => {
+      const categoryWithSortOrder = { ...category, sortOrder: categories.length };
+      setCategories((prev) => [...prev, categoryWithSortOrder]);
+      void db.categories.add(categoryWithSortOrder);
+    },
+    [categories.length]
+  );
 
   const updateCategory = useCallback((category: TransactionCategory) => {
     setCategories((prev) => prev.map((c) => (c.id === category.id ? category : c)));
@@ -102,6 +107,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const deleteCategory = useCallback((id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
     void db.categories.delete(id);
+  }, []);
+
+  const reorderCategories = useCallback((newCategories: TransactionCategory[]) => {
+    const categoriesWithSortOrder = newCategories.map((category, index) => ({
+      ...category,
+      sortOrder: index,
+    }));
+    setCategories(categoriesWithSortOrder);
+    void db.categories.clear().then(() => db.categories.bulkAdd(categoriesWithSortOrder));
   }, []);
 
   const addAccount = useCallback((account: Account) => {
@@ -159,10 +173,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     void db.transactions.delete(id);
   }, []);
 
-  const addRule = useCallback((rule: CategorizationRule) => {
-    setRules((prev) => [...prev, rule]);
-    void db.rules.add(rule);
-  }, []);
+  const addRule = useCallback(
+    (rule: CategorizationRule) => {
+      const ruleWithSortOrder = { ...rule, sortOrder: rules.length };
+      setRules((prev) => [...prev, ruleWithSortOrder]);
+      void db.rules.add(ruleWithSortOrder);
+    },
+    [rules.length]
+  );
 
   const updateRule = useCallback((rule: CategorizationRule, index: number) => {
     setRules((prev) => {
@@ -179,8 +197,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const reorderRules = useCallback((newRules: CategorizationRule[]) => {
-    setRules(newRules);
-    void db.rules.clear().then(() => db.rules.bulkAdd(newRules));
+    const rulesWithSortOrder = newRules.map((rule, index) => ({
+      ...rule,
+      sortOrder: index,
+    }));
+    setRules(rulesWithSortOrder);
+    void db.rules.clear().then(() => db.rules.bulkAdd(rulesWithSortOrder));
   }, []);
 
   return (
@@ -195,6 +217,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         addCategory,
         updateCategory,
         deleteCategory,
+        reorderCategories,
         addAccount,
         updateAccount,
         deleteAccount,
