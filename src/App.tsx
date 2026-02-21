@@ -7,6 +7,7 @@ import { Triage } from '@/pages/Triage';
 import { Accounts } from '@/pages/Accounts';
 import { Categories } from '@/pages/Categories';
 import { Rules } from '@/pages/Rules';
+import { PivotTable } from '@/pages/PivotTable';
 import { Settings } from '@/pages/Settings';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/rules" element={<Rules />} />
+            <Route path="/pivot" element={<PivotTable />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </MainLayout>

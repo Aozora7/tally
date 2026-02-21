@@ -14,12 +14,21 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    chunkSizeWarningLimit: 1050,
+    chunkSizeWarningLimit: 1100,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('ag-grid-community')) {
             return 'ag-grid';
+          }
+          if (id.includes('react-dom-client')) {
+            return 'react-dom';
+          }
+          if (id.includes('recharts')) {
+            return 'recharts';
+          }
+          if (id.includes('mantine')) {
+            return 'mantine';
           }
         },
       },

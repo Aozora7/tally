@@ -14,6 +14,7 @@ const navItems = [
   { label: 'Accounts', path: '/accounts' },
   { label: 'Categories', path: '/categories' },
   { label: 'Rules', path: '/rules' },
+  { label: 'Pivot Table', path: '/pivot' },
   { label: 'Settings', path: '/settings' },
 ];
 
