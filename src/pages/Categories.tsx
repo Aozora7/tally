@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Group,
@@ -65,7 +65,7 @@ function SortableCategoryRow({ category, onEdit, onDelete }: SortableCategoryRow
       <Table.Td {...listeners}>{category.name}</Table.Td>
       <Table.Td {...listeners}>{category.type}</Table.Td>
       <Table.Td {...listeners}>{category.frequency}</Table.Td>
-      <Table.Td {...listeners}>
+      <Table.Td>
         <Group gap="xs">
           <Button
             size="xs"
@@ -119,6 +119,21 @@ function CategoryFormModal({
       name: (value) => (value.trim().length > 0 ? null : 'Name is required'),
     },
   });
+
+  useEffect(() => {
+    if (opened) {
+      if (editingCategory) {
+        form.setValues({
+          name: editingCategory.name,
+          type: editingCategory.type,
+          frequency: editingCategory.frequency,
+        });
+      } else {
+        form.reset();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, editingCategory]);
 
   const handleSubmit = (values: CategoryFormData) => {
     if (editingCategory) {

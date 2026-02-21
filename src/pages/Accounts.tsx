@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Button,
   Checkbox,
@@ -38,6 +38,20 @@ function AccountFormModal({ opened, onClose, editingAccount, onSubmit }: Account
       name: (value) => (value.trim().length > 0 ? null : 'Name is required'),
     },
   });
+
+  useEffect(() => {
+    if (opened) {
+      if (editingAccount) {
+        form.setValues({
+          name: editingAccount.name,
+          isDefault: editingAccount.isDefault,
+        });
+      } else {
+        form.reset();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, editingAccount]);
 
   const handleSubmit = (values: AccountFormData) => {
     if (editingAccount) {

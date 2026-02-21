@@ -1,9 +1,271 @@
-import { Center, Text } from '@mantine/core';
+import { useState } from 'react';
+import { Box, Button, Card, FileInput, Group, Modal, Stack, Text, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { exportFullState, downloadJson } from '@/db/export';
+import { importFullState, parseImportFile } from '@/db/import';
+import { useFinance } from '@/context/FinanceContext';
+import type { ExportedState } from '@/db/export';
+
+const APP_VERSION = '1.0.0';
 
 export function Settings() {
+  const { reloadFromDb, clearAllData } = useFinance();
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<ExportedState | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const data = await exportFullState();
+      const filename = `finance-backup-${new Date().toISOString().split('T')[0]}.json`;
+      downloadJson(data, filename);
+      notifications.show({
+        title: 'Export Successful',
+        message: `Exported ${data.transactions.length} transactions to ${filename}`,
+        color: 'brand',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Export Failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportFileSelect = async (file: File | null) => {
+    if (!file) {
+      setImportFile(null);
+      setImportPreview(null);
+      return;
+    }
+    setImportFile(file);
+    try {
+      const data = await parseImportFile(file);
+      setImportPreview(data);
+    } catch (error) {
+      notifications.show({
+        title: 'Invalid Backup File',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
+      setImportFile(null);
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importPreview) return;
+    setIsImporting(true);
+    try {
+      await importFullState(importPreview);
+      await reloadFromDb();
+      notifications.show({
+        title: 'Import Successful',
+        message: `Imported ${importPreview.transactions.length} transactions`,
+        color: 'brand',
+      });
+      setImportModalOpen(false);
+      setImportFile(null);
+      setImportPreview(null);
+    } catch (error) {
+      notifications.show({
+        title: 'Import Failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleClearConfirm = async () => {
+    setIsClearing(true);
+    try {
+      await clearAllData();
+      notifications.show({
+        title: 'Data Cleared',
+        message: 'All data has been deleted',
+        color: 'brand',
+      });
+      setClearModalOpen(false);
+    } catch (error) {
+      notifications.show({
+        title: 'Clear Failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
-    <Center h="100%">
-      <Text size="xl">Settings</Text>
-    </Center>
+    <Box p="md">
+      <Title order={2} mb="lg">
+        Settings
+      </Title>
+
+      <Stack gap="md">
+        <Card withBorder padding="lg">
+          <Title order={4} mb="xs">
+            Data Management
+          </Title>
+          <Text size="sm" c="dimmed" mb="md">
+            Export, import, or clear all your financial data.
+          </Text>
+
+          <Group gap="sm">
+            <Button variant="filled" onClick={handleExport} loading={isExporting}>
+              Export Full State
+            </Button>
+            <Button variant="light" onClick={() => setImportModalOpen(true)}>
+              Import Full State
+            </Button>
+            <Button variant="light" color="danger" onClick={() => setClearModalOpen(true)}>
+              Clear All Data
+            </Button>
+          </Group>
+        </Card>
+
+        <Card withBorder padding="lg">
+          <Title order={4} mb="xs">
+            About
+          </Title>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Version
+            </Text>
+            <Text size="sm" fw={500}>
+              {APP_VERSION}
+            </Text>
+          </Group>
+        </Card>
+      </Stack>
+
+      <Modal
+        opened={importModalOpen}
+        onClose={() => {
+          setImportModalOpen(false);
+          setImportFile(null);
+          setImportPreview(null);
+        }}
+        title="Import Full State"
+        size="lg"
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Select a backup JSON file to restore your data. This will replace ALL existing data.
+          </Text>
+
+          <FileInput
+            label="Backup File"
+            placeholder="Select JSON file"
+            accept=".json"
+            value={importFile}
+            onChange={handleImportFileSelect}
+          />
+
+          {importPreview && (
+            <Card withBorder padding="sm" bg="dark.6">
+              <Title order={5} mb="xs">
+                Preview
+              </Title>
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Text size="sm">Exported At:</Text>
+                  <Text size="sm" fw={500}>
+                    {new Date(importPreview.exportedAt).toLocaleString()}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm">Categories:</Text>
+                  <Text size="sm" fw={500}>
+                    {importPreview.categories.length}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm">Accounts:</Text>
+                  <Text size="sm" fw={500}>
+                    {importPreview.accounts.length}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm">Transactions:</Text>
+                  <Text size="sm" fw={500}>
+                    {importPreview.transactions.length}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm">Triage Transactions:</Text>
+                  <Text size="sm" fw={500}>
+                    {importPreview.triageTransactions.length}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm">Rules:</Text>
+                  <Text size="sm" fw={500}>
+                    {importPreview.rules.length}
+                  </Text>
+                </Group>
+              </Stack>
+            </Card>
+          )}
+
+          <Group justify="flex-end" mt="md">
+            <Button
+              variant="subtle"
+              onClick={() => {
+                setImportModalOpen(false);
+                setImportFile(null);
+                setImportPreview(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="brand"
+              onClick={handleImportConfirm}
+              disabled={!importPreview}
+              loading={isImporting}
+            >
+              Import & Replace
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={clearModalOpen}
+        onClose={() => setClearModalOpen(false)}
+        title="Clear All Data"
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Are you sure you want to delete ALL data? This action cannot be undone.
+          </Text>
+          <Text size="sm" c="danger" fw={500}>
+            This will permanently delete all categories, accounts, transactions, triage
+            transactions, and rules.
+          </Text>
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={() => setClearModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button color="danger" onClick={handleClearConfirm} loading={isClearing}>
+              Delete All Data
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Box>
   );
 }

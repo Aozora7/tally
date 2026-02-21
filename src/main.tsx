@@ -1,8 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MantineProvider, createTheme, type MantineColorsTuple } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import App from './App';
 import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 import './styles/global.css';
 
 const colors: Record<string, MantineColorsTuple> = {
@@ -141,6 +143,7 @@ const theme = createTheme({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MantineProvider theme={theme} defaultColorScheme="dark">
+      <Notifications position="top-right" />
       <App />
     </MantineProvider>
   </StrictMode>

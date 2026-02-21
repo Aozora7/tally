@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Button,
   Group,
@@ -192,13 +192,37 @@ function RuleFormModal({
     },
   });
 
+  useEffect(() => {
+    if (opened) {
+      if (editingRule) {
+        const r = editingRule.rule;
+        form.setValues({
+          name: r.name,
+          matchPattern: r.matchPattern ?? '',
+          matchMinAmount: r.matchMinAmount !== undefined ? centsToDisplay(r.matchMinAmount) : '',
+          matchMaxAmount: r.matchMaxAmount !== undefined ? centsToDisplay(r.matchMaxAmount) : '',
+          matchMinDate: r.matchMinDate ?? '',
+          matchMaxDate: r.matchMaxDate ?? '',
+          actionCategoryId: r.actionCategoryId ?? '',
+          actionTransferAccountId: r.actionTransferAccountId ?? '',
+          actionDelete: r.actionDelete ?? false,
+        });
+      } else {
+        form.reset();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, editingRule]);
+
   const handleSubmit = (values: RuleFormData) => {
-    const minAmountCents = values.matchMinAmount
-      ? displayToCents(values.matchMinAmount)
-      : undefined;
-    const maxAmountCents = values.matchMaxAmount
-      ? displayToCents(values.matchMaxAmount)
-      : undefined;
+    const minAmountCents =
+      values.matchMinAmount !== undefined && values.matchMinAmount.toString().trim() !== ''
+        ? displayToCents(values.matchMinAmount.toString())
+        : undefined;
+    const maxAmountCents =
+      values.matchMaxAmount !== undefined && values.matchMaxAmount.toString().trim() !== ''
+        ? displayToCents(values.matchMaxAmount.toString())
+        : undefined;
 
     const ruleData: CategorizationRule = {
       id: editingRule?.rule.id ?? generateId(),

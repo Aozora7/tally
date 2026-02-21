@@ -29,11 +29,11 @@ function YearlyTableRow({ row, categoryIds }: { row: YearlyPivotRow; categoryIds
       </Table.Td>
       {categoryIds.map((catId) => {
         const cat = row.categories.find((c: { categoryId: string }) => c.categoryId === catId);
+        const amount = cat?.total ?? 0;
+        const color = amount === 0 ? 'dimmed' : amount > 0 ? 'income.6' : 'expense.6';
         return (
           <Table.Td key={catId}>
-            <Text c={cat && cat.total >= 0 ? 'income.6' : 'expense.6'}>
-              {cat ? centsToDisplay(cat.total) : '$0.00'}
-            </Text>
+            <Text c={color}>{centsToDisplay(amount)}</Text>
           </Table.Td>
         );
       })}
@@ -115,11 +115,11 @@ function MonthlyTableRow({ row, categoryIds }: { row: MonthlyPivotRow; categoryI
       </Table.Td>
       {categoryIds.map((catId) => {
         const cat = row.categories.find((c: { categoryId: string }) => c.categoryId === catId);
+        const amount = cat?.total ?? 0;
+        const color = amount === 0 ? 'dimmed' : amount > 0 ? 'income.6' : 'expense.6';
         return (
           <Table.Td key={catId}>
-            <Text c={cat && cat.total >= 0 ? 'income.6' : 'expense.6'}>
-              {cat ? centsToDisplay(cat.total) : '$0.00'}
-            </Text>
+            <Text c={color}>{centsToDisplay(amount)}</Text>
           </Table.Td>
         );
       })}

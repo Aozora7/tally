@@ -278,7 +278,7 @@ export function Dashboard() {
     return filtered;
   }, [transactions, accountFilter]);
 
-  const summary = useTransactionSummary(filteredTransactions, startDate, endDate);
+  const summary = useTransactionSummary(filteredTransactions, categories, startDate, endDate);
   const monthlyTrend = useMonthlyTrend(filteredTransactions, startDate, endDate);
   const categorySummary = useCategorySummary(filteredTransactions, categories, startDate, endDate);
   const accountBalances = useAccountBalances(transactions, accounts);

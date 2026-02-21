@@ -200,6 +200,7 @@ function useColumnDefs(
         flex: 1,
         minWidth: 200,
         editable: true,
+        filter: true,
       },
       {
         field: 'accountId',
@@ -214,6 +215,10 @@ function useColumnDefs(
           values: accountOptions.map((o) => o.value),
         },
         editable: true,
+        filter: true,
+        filterParams: {
+          buttons: ['apply', 'reset'],
+        },
       },
       {
         field: 'categoryId',
@@ -229,6 +234,10 @@ function useColumnDefs(
           values: ['', ...categoryOptions.map((o) => o.value)],
         },
         editable: true,
+        filter: true,
+        filterParams: {
+          buttons: ['apply', 'reset'],
+        },
       },
       {
         field: 'transferAccountId',
@@ -244,6 +253,10 @@ function useColumnDefs(
           values: ['', ...accountOptions.map((o) => o.value)],
         },
         editable: true,
+        filter: true,
+        filterParams: {
+          buttons: ['apply', 'reset'],
+        },
       },
       {
         field: 'groupId',

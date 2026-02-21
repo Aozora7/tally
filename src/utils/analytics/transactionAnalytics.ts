@@ -145,6 +145,10 @@ export function useAccountBalances(
     for (const t of transactions) {
       const existing = byAccount.get(t.accountId) ?? 0;
       byAccount.set(t.accountId, existing + t.amount);
+      if (t.transferAccountId) {
+        const transferExisting = byAccount.get(t.transferAccountId) ?? 0;
+        byAccount.set(t.transferAccountId, transferExisting - t.amount);
+      }
     }
 
     return accounts.map((account) => ({
@@ -158,6 +162,7 @@ export function useAccountBalances(
 
 export function useTransactionSummary(
   transactions: Transaction[],
+  categories: TransactionCategory[],
   startDate?: string,
   endDate?: string
 ): TransactionSummary {
@@ -179,22 +184,24 @@ export function useTransactionSummary(
       };
     }
 
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
     let totalIncome = 0;
     let totalExpenses = 0;
 
     for (const t of filtered) {
-      if (t.amount >= 0) {
+      const category = t.categoryId ? categoryMap.get(t.categoryId) : null;
+      if (category?.type === 'Income') {
         totalIncome += t.amount;
       } else {
-        totalExpenses += Math.abs(t.amount);
+        totalExpenses += t.amount;
       }
     }
 
     return {
       totalIncome,
       totalExpenses,
-      net: totalIncome - totalExpenses,
+      net: totalIncome + totalExpenses,
       transactionCount: filtered.length,
     };
-  }, [transactions, startDate, endDate]);
+  }, [transactions, categories, startDate, endDate]);
 }
