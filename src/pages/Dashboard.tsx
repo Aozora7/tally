@@ -25,6 +25,200 @@ function SummaryCard({ label, value, color }: { label: string; value: string; co
   );
 }
 
+interface SummaryCardsProps {
+  totalIncome: number;
+  totalExpenses: number;
+  net: number;
+  transactionCount: number;
+}
+
+function SummaryCards({ totalIncome, totalExpenses, net, transactionCount }: SummaryCardsProps) {
+  return (
+    <Grid>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+        <SummaryCard label="Total Income" value={centsToDisplay(totalIncome)} color="income.6" />
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+        <SummaryCard
+          label="Total Expenses"
+          value={centsToDisplay(totalExpenses)}
+          color="expense.6"
+        />
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+        <SummaryCard
+          label="Net"
+          value={centsToDisplay(net)}
+          color={net >= 0 ? 'income.6' : 'expense.6'}
+        />
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+        <SummaryCard label="Transactions" value={transactionCount.toString()} color="accent.6" />
+      </Grid.Col>
+    </Grid>
+  );
+}
+
+interface AccountBalancesListProps {
+  balances: {
+    accountId: string;
+    accountName: string;
+    balance: number;
+    isDefault: boolean;
+  }[];
+}
+
+function AccountBalancesList({ balances }: AccountBalancesListProps) {
+  return (
+    <>
+      <Title order={4} mt="md">
+        Account Balances
+      </Title>
+      <Grid>
+        {balances.map((acc) => (
+          <Grid.Col key={acc.accountId} span={{ base: 12, sm: 6, md: 4 }}>
+            <Paper p="sm" withBorder>
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>
+                  {acc.accountName}
+                  {acc.isDefault && ' (Default)'}
+                </Text>
+                <Text size="sm" fw={600} c={acc.balance >= 0 ? 'income.6' : 'expense.6'}>
+                  {centsToDisplay(acc.balance)}
+                </Text>
+              </Group>
+            </Paper>
+          </Grid.Col>
+        ))}
+      </Grid>
+    </>
+  );
+}
+
+interface MonthlyTrendChartProps {
+  data: { month: string; income: number; expenses: number }[];
+}
+
+function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
+  if (data.length === 0) return null;
+
+  return (
+    <>
+      <Title order={4} mt="md">
+        Monthly Trend
+      </Title>
+      <Paper p="md" withBorder>
+        <Box h={300}>
+          <LineChart
+            h={280}
+            data={data}
+            dataKey="month"
+            series={[
+              { name: 'income', color: 'income.6' },
+              { name: 'expenses', color: 'expense.6' },
+            ]}
+            curveType="monotone"
+            tickLine="y"
+            gridAxis="xy"
+            valueFormatter={(value) => `$${value.toFixed(2)}`}
+          />
+        </Box>
+      </Paper>
+    </>
+  );
+}
+
+interface SpendingByCategoryChartProps {
+  data: { category: string; amount: number }[];
+}
+
+function SpendingByCategoryChart({ data }: SpendingByCategoryChartProps) {
+  if (data.length === 0) return null;
+
+  return (
+    <>
+      <Title order={4}>Spending by Category</Title>
+      <Paper p="md" withBorder mt="xs">
+        <BarChart
+          h={300}
+          data={data}
+          dataKey="category"
+          series={[{ name: 'amount', color: 'brand.6' }]}
+          tickLine="y"
+          gridAxis="xy"
+          valueFormatter={(value) => `$${value.toFixed(2)}`}
+        />
+      </Paper>
+    </>
+  );
+}
+
+interface CategoryBreakdownChartProps {
+  data: { name: string; value: number; color: string }[];
+}
+
+function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
+  if (data.length === 0) return null;
+
+  return (
+    <>
+      <Title order={4}>Category Breakdown</Title>
+      <Paper p="md" withBorder mt="xs">
+        <DonutChart
+          h={300}
+          data={data}
+          withLabelsLine
+          labelsType="percent"
+          tooltipDataSource="segment"
+          valueFormatter={(value) => `$${value.toFixed(2)}`}
+        />
+      </Paper>
+    </>
+  );
+}
+
+interface DashboardFiltersProps {
+  dateRange: string;
+  onDateRangeChange: (value: string) => void;
+  accountFilter: string;
+  onAccountFilterChange: (value: string) => void;
+  accountOptions: { value: string; label: string }[];
+}
+
+function DashboardFilters({
+  dateRange,
+  onDateRangeChange,
+  accountFilter,
+  onAccountFilterChange,
+  accountOptions,
+}: DashboardFiltersProps) {
+  return (
+    <Group justify="space-between">
+      <Title order={3}>Dashboard</Title>
+      <Group gap="sm">
+        <Select
+          value={dateRange}
+          onChange={(v) => onDateRangeChange(v ?? 'all')}
+          data={[
+            { value: 'all', label: 'All Time' },
+            { value: 'this-month', label: 'This Month' },
+            { value: 'last-month', label: 'Last Month' },
+            { value: 'this-year', label: 'This Year' },
+            { value: 'last-year', label: 'Last Year' },
+          ]}
+          w={140}
+        />
+        <Select
+          value={accountFilter}
+          onChange={(v) => onAccountFilterChange(v ?? 'all')}
+          data={accountOptions}
+          w={160}
+        />
+      </Group>
+    </Group>
+  );
+}
+
 export function Dashboard() {
   const { transactions, accounts, categories } = useFinance();
 
@@ -134,142 +328,31 @@ export function Dashboard() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={3}>Dashboard</Title>
-        <Group gap="sm">
-          <Select
-            value={dateRange}
-            onChange={(v) => setDateRange(v ?? 'all')}
-            data={[
-              { value: 'all', label: 'All Time' },
-              { value: 'this-month', label: 'This Month' },
-              { value: 'last-month', label: 'Last Month' },
-              { value: 'this-year', label: 'This Year' },
-              { value: 'last-year', label: 'Last Year' },
-            ]}
-            w={140}
-          />
-          <Select
-            value={accountFilter}
-            onChange={(v) => setAccountFilter(v ?? 'all')}
-            data={accountOptions}
-            w={160}
-          />
-        </Group>
-      </Group>
+      <DashboardFilters
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        accountFilter={accountFilter}
+        onAccountFilterChange={setAccountFilter}
+        accountOptions={accountOptions}
+      />
 
-      <Grid>
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Total Income"
-            value={centsToDisplay(summary.totalIncome)}
-            color="income.6"
-          />
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Total Expenses"
-            value={centsToDisplay(summary.totalExpenses)}
-            color="expense.6"
-          />
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Net"
-            value={centsToDisplay(summary.net)}
-            color={summary.net >= 0 ? 'income.6' : 'expense.6'}
-          />
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <SummaryCard
-            label="Transactions"
-            value={summary.transactionCount.toString()}
-            color="accent.6"
-          />
-        </Grid.Col>
-      </Grid>
+      <SummaryCards
+        totalIncome={summary.totalIncome}
+        totalExpenses={summary.totalExpenses}
+        net={summary.net}
+        transactionCount={summary.transactionCount}
+      />
 
-      <Title order={4} mt="md">
-        Account Balances
-      </Title>
-      <Grid>
-        {accountBalances.map((acc) => (
-          <Grid.Col key={acc.accountId} span={{ base: 12, sm: 6, md: 4 }}>
-            <Paper p="sm" withBorder>
-              <Group justify="space-between">
-                <Text size="sm" fw={500}>
-                  {acc.accountName}
-                  {acc.isDefault && ' (Default)'}
-                </Text>
-                <Text size="sm" fw={600} c={acc.balance >= 0 ? 'income.6' : 'expense.6'}>
-                  {centsToDisplay(acc.balance)}
-                </Text>
-              </Group>
-            </Paper>
-          </Grid.Col>
-        ))}
-      </Grid>
+      <AccountBalancesList balances={accountBalances} />
 
-      {chartMonthlyTrend.length > 0 && (
-        <>
-          <Title order={4} mt="md">
-            Monthly Trend
-          </Title>
-          <Paper p="md" withBorder>
-            <Box h={300}>
-              <LineChart
-                h={280}
-                data={chartMonthlyTrend}
-                dataKey="month"
-                series={[
-                  { name: 'income', color: 'income.6' },
-                  { name: 'expenses', color: 'expense.6' },
-                ]}
-                curveType="monotone"
-                tickLine="y"
-                gridAxis="xy"
-                valueFormatter={(value) => `$${value.toFixed(2)}`}
-              />
-            </Box>
-          </Paper>
-        </>
-      )}
+      <MonthlyTrendChart data={chartMonthlyTrend} />
 
       <Grid mt="md">
         <Grid.Col span={{ base: 12, md: 8 }}>
-          {expenseByCategory.length > 0 && (
-            <>
-              <Title order={4}>Spending by Category</Title>
-              <Paper p="md" withBorder mt="xs">
-                <BarChart
-                  h={300}
-                  data={expenseByCategory}
-                  dataKey="category"
-                  series={[{ name: 'amount', color: 'brand.6' }]}
-                  tickLine="y"
-                  gridAxis="xy"
-                  valueFormatter={(value) => `$${value.toFixed(2)}`}
-                />
-              </Paper>
-            </>
-          )}
+          <SpendingByCategoryChart data={expenseByCategory} />
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 4 }}>
-          {donutData.length > 0 && (
-            <>
-              <Title order={4}>Category Breakdown</Title>
-              <Paper p="md" withBorder mt="xs">
-                <DonutChart
-                  h={300}
-                  data={donutData}
-                  withLabelsLine
-                  labelsType="percent"
-                  tooltipDataSource="segment"
-                  valueFormatter={(value) => `$${value.toFixed(2)}`}
-                />
-              </Paper>
-            </>
-          )}
+          <CategoryBreakdownChart data={donutData} />
         </Grid.Col>
       </Grid>
 

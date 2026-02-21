@@ -9,13 +9,13 @@ interface MainLayoutProps {
 
 const navItems = [
   { label: 'Dashboard', path: '/' },
+  { label: 'Pivot Table', path: '/pivot' },
   { label: 'Transactions', path: '/transactions' },
   { label: 'Triage', path: '/triage' },
   { label: 'Import', path: '/import' },
   { label: 'Accounts', path: '/accounts' },
   { label: 'Categories', path: '/categories' },
   { label: 'Rules', path: '/rules' },
-  { label: 'Pivot Table', path: '/pivot' },
   { label: 'Settings', path: '/settings' },
 ];
 

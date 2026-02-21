@@ -134,8 +134,10 @@ interface PreviewStepProps {
 }
 
 function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport }: PreviewStepProps) {
+  const hasInvalid = invalidRows.length > 0;
+
   return (
-    <Stack gap="md">
+    <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Group justify="space-between">
         <Text>
           Found <strong>{validRows.length}</strong> valid transactions out of{' '}
@@ -149,12 +151,15 @@ function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport }: Pr
         </Group>
       </Group>
 
-      {validRows.length > 0 && <PreviewTable title="Valid Rows" rows={validRows} />}
-      {invalidRows.length > 0 && (
+      {validRows.length > 0 && (
+        <PreviewTable title="Valid Rows" rows={validRows} fillSpace={!hasInvalid} />
+      )}
+      {hasInvalid && (
         <PreviewTable
           title={`Invalid Rows (${invalidRows.length} - missing date or amount)`}
           rows={invalidRows}
           isInvalid
+          fillSpace
         />
       )}
     </Stack>
@@ -165,16 +170,25 @@ interface PreviewTableProps {
   title: string;
   rows: ParsedImportRow[];
   isInvalid?: boolean;
+  fillSpace?: boolean;
 }
 
-function PreviewTable({ title, rows, isInvalid = false }: PreviewTableProps) {
+function PreviewTable({ title, rows, isInvalid = false, fillSpace = false }: PreviewTableProps) {
   return (
-    <Stack gap="xs">
+    <Stack
+      gap="xs"
+      flex={fillSpace ? 1 : undefined}
+      style={fillSpace ? { minHeight: 0 } : undefined}
+    >
       <Text fw={500} c={isInvalid ? 'warning.6' : 'dimmed'}>
         {title}
       </Text>
-      <Paper withBorder>
-        <ScrollArea.Autosize mah={400}>
+      <Paper
+        withBorder
+        flex={fillSpace ? 1 : undefined}
+        style={fillSpace ? { minHeight: 0, display: 'flex' } : undefined}
+      >
+        <ScrollArea style={fillSpace ? { flex: 1 } : undefined} offsetScrollbars={!fillSpace}>
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
@@ -189,7 +203,7 @@ function PreviewTable({ title, rows, isInvalid = false }: PreviewTableProps) {
               ))}
             </Table.Tbody>
           </Table>
-        </ScrollArea.Autosize>
+        </ScrollArea>
       </Paper>
     </Stack>
   );

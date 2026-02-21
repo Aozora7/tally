@@ -61,11 +61,11 @@ function SortableCategoryRow({ category, onEdit, onDelete }: SortableCategoryRow
   };
 
   return (
-    <Table.Tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Table.Td>{category.name}</Table.Td>
-      <Table.Td>{category.type}</Table.Td>
-      <Table.Td>{category.frequency}</Table.Td>
-      <Table.Td>
+    <Table.Tr ref={setNodeRef} style={style} {...attributes}>
+      <Table.Td {...listeners}>{category.name}</Table.Td>
+      <Table.Td {...listeners}>{category.type}</Table.Td>
+      <Table.Td {...listeners}>{category.frequency}</Table.Td>
+      <Table.Td {...listeners}>
         <Group gap="xs">
           <Button
             size="xs"
@@ -94,6 +94,106 @@ function SortableCategoryRow({ category, onEdit, onDelete }: SortableCategoryRow
   );
 }
 
+interface CategoryFormModalProps {
+  opened: boolean;
+  onClose: () => void;
+  editingCategory: TransactionCategory | null;
+  categoryCount: number;
+  onSubmit: (category: TransactionCategory) => void;
+}
+
+function CategoryFormModal({
+  opened,
+  onClose,
+  editingCategory,
+  categoryCount,
+  onSubmit,
+}: CategoryFormModalProps) {
+  const form = useForm<CategoryFormData>({
+    initialValues: {
+      name: '',
+      type: 'Essential',
+      frequency: 'Regular',
+    },
+    validate: {
+      name: (value) => (value.trim().length > 0 ? null : 'Name is required'),
+    },
+  });
+
+  const handleSubmit = (values: CategoryFormData) => {
+    if (editingCategory) {
+      onSubmit({
+        ...editingCategory,
+        name: values.name.trim(),
+        type: values.type,
+        frequency: values.frequency,
+      });
+    } else {
+      onSubmit({
+        id: generateId(),
+        name: values.name.trim(),
+        type: values.type,
+        frequency: values.frequency,
+        sortOrder: categoryCount,
+      });
+    }
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={editingCategory ? 'Edit Category' : 'Add Category'}
+    >
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md">
+          <TextInput
+            label="Name"
+            placeholder="Enter category name"
+            {...form.getInputProps('name')}
+          />
+          <Select label="Type" data={CATEGORY_TYPES} {...form.getInputProps('type')} />
+          <Select
+            label="Frequency"
+            data={CATEGORY_FREQUENCIES}
+            {...form.getInputProps('frequency')}
+          />
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">{editingCategory ? 'Save' : 'Create'}</Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+}
+
+interface DeleteConfirmModalProps {
+  opened: boolean;
+  onClose: () => void;
+  category: TransactionCategory | null;
+  onConfirm: () => void;
+}
+
+function DeleteConfirmModal({ opened, onClose, category, onConfirm }: DeleteConfirmModalProps) {
+  return (
+    <Modal opened={opened} onClose={onClose} title="Delete Category">
+      <Text>Are you sure you want to delete &quot;{category?.name}&quot;?</Text>
+      <Group justify="flex-end" mt="md">
+        <Button variant="subtle" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button color="red" onClick={onConfirm}>
+          Delete
+        </Button>
+      </Group>
+    </Modal>
+  );
+}
+
 export function Categories() {
   const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } =
     useFinance();
@@ -109,30 +209,13 @@ export function Categories() {
     })
   );
 
-  const form = useForm<CategoryFormData>({
-    initialValues: {
-      name: '',
-      type: 'Essential',
-      frequency: 'Regular',
-    },
-    validate: {
-      name: (value) => (value.trim().length > 0 ? null : 'Name is required'),
-    },
-  });
-
   const openCreateModal = () => {
     setEditingCategory(null);
-    form.reset();
     setModalOpened(true);
   };
 
   const openEditModal = (category: TransactionCategory) => {
     setEditingCategory(category);
-    form.setValues({
-      name: category.name,
-      type: category.type,
-      frequency: category.frequency,
-    });
     setModalOpened(true);
   };
 
@@ -141,25 +224,13 @@ export function Categories() {
     setDeleteOpened(true);
   };
 
-  const handleSubmit = (values: CategoryFormData) => {
+  const handleSubmit = (category: TransactionCategory) => {
     if (editingCategory) {
-      updateCategory({
-        ...editingCategory,
-        name: values.name.trim(),
-        type: values.type,
-        frequency: values.frequency,
-      });
+      updateCategory(category);
     } else {
-      addCategory({
-        id: generateId(),
-        name: values.name.trim(),
-        type: values.type,
-        frequency: values.frequency,
-        sortOrder: categories.length,
-      });
+      addCategory(category);
     }
     setModalOpened(false);
-    form.reset();
   };
 
   const handleDelete = () => {
@@ -200,69 +271,46 @@ export function Categories() {
             items={categories.map((c) => c.id)}
             strategy={verticalListSortingStrategy}
           >
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>Type</Table.Th>
-                  <Table.Th>Frequency</Table.Th>
-                  <Table.Th>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {categories.map((category) => (
-                  <SortableCategoryRow
-                    key={category.id}
-                    category={category}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteModal}
-                  />
-                ))}
-              </Table.Tbody>
-            </Table>
+            <Paper p="md" withBorder>
+              <Table highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Name</Table.Th>
+                    <Table.Th>Type</Table.Th>
+                    <Table.Th>Frequency</Table.Th>
+                    <Table.Th>Actions</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {categories.map((category) => (
+                    <SortableCategoryRow
+                      key={category.id}
+                      category={category}
+                      onEdit={openEditModal}
+                      onDelete={openDeleteModal}
+                    />
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Paper>
           </SortableContext>
         </DndContext>
       )}
 
-      <Modal
+      <CategoryFormModal
         opened={modalOpened}
         onClose={() => setModalOpened(false)}
-        title={editingCategory ? 'Edit Category' : 'Add Category'}
-      >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack gap="md">
-            <TextInput
-              label="Name"
-              placeholder="Enter category name"
-              {...form.getInputProps('name')}
-            />
-            <Select label="Type" data={CATEGORY_TYPES} {...form.getInputProps('type')} />
-            <Select
-              label="Frequency"
-              data={CATEGORY_FREQUENCIES}
-              {...form.getInputProps('frequency')}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setModalOpened(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">{editingCategory ? 'Save' : 'Create'}</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+        editingCategory={editingCategory}
+        categoryCount={categories.length}
+        onSubmit={handleSubmit}
+      />
 
-      <Modal opened={deleteOpened} onClose={() => setDeleteOpened(false)} title="Delete Category">
-        <Text>Are you sure you want to delete &quot;{deletingCategory?.name}&quot;?</Text>
-        <Group justify="flex-end" mt="md">
-          <Button variant="subtle" onClick={() => setDeleteOpened(false)}>
-            Cancel
-          </Button>
-          <Button color="red" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Group>
-      </Modal>
+      <DeleteConfirmModal
+        opened={deleteOpened}
+        onClose={() => setDeleteOpened(false)}
+        category={deletingCategory}
+        onConfirm={handleDelete}
+      />
     </Stack>
   );
 }

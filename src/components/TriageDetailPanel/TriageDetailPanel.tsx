@@ -65,6 +65,116 @@ function ButtonSelect({
   );
 }
 
+interface SplitPartEditorProps {
+  split: SplitPart;
+  index: number;
+  categoryOptions: { value: string; label: string }[];
+  transferOptions: { value: string; label: string }[];
+  onAmountChange: (id: string, value: string) => void;
+  onChange: (id: string, field: keyof SplitPart, value: string) => void;
+  onRemove: (id: string) => void;
+}
+
+function SplitPartEditor({
+  split,
+  index,
+  categoryOptions,
+  transferOptions,
+  onAmountChange,
+  onChange,
+  onRemove,
+}: SplitPartEditorProps) {
+  return (
+    <Paper p="sm" withBorder>
+      <Stack gap="xs">
+        <Group justify="space-between">
+          <Text size="sm" fw={500}>
+            Part {index + 1}
+          </Text>
+          <ActionIcon variant="subtle" color="danger" onClick={() => onRemove(split.id)}>
+            ×
+          </ActionIcon>
+        </Group>
+        <Group grow>
+          <TextInput
+            placeholder="Amount"
+            value={split.amount}
+            onChange={(e) => onAmountChange(split.id, e.currentTarget.value)}
+          />
+          <TextInput
+            placeholder="Description (optional)"
+            value={split.description}
+            onChange={(e) => onChange(split.id, 'description', e.currentTarget.value)}
+          />
+        </Group>
+        <ButtonSelect
+          label="Category"
+          options={categoryOptions}
+          value={split.categoryId}
+          onChange={(value) => onChange(split.id, 'categoryId', value)}
+          allowNone
+        />
+        {transferOptions.length > 0 && (
+          <ButtonSelect
+            label="Transfer To"
+            options={transferOptions}
+            value={split.transferAccountId}
+            onChange={(value) => onChange(split.id, 'transferAccountId', value)}
+            allowNone
+          />
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+interface SplitEditorProps {
+  splits: SplitPart[];
+  categoryOptions: { value: string; label: string }[];
+  transferOptions: { value: string; label: string }[];
+  onAddSplit: () => void;
+  onRemoveSplit: (id: string) => void;
+  onSplitAmountChange: (id: string, value: string) => void;
+  onSplitChange: (id: string, field: keyof SplitPart, value: string) => void;
+  onCancel: () => void;
+}
+
+function SplitEditor({
+  splits,
+  categoryOptions,
+  transferOptions,
+  onAddSplit,
+  onRemoveSplit,
+  onSplitAmountChange,
+  onSplitChange,
+  onCancel,
+}: SplitEditorProps) {
+  return (
+    <Stack gap="sm">
+      {splits.map((split, index) => (
+        <SplitPartEditor
+          key={split.id}
+          split={split}
+          index={index}
+          categoryOptions={categoryOptions}
+          transferOptions={transferOptions}
+          onAmountChange={onSplitAmountChange}
+          onChange={onSplitChange}
+          onRemove={onRemoveSplit}
+        />
+      ))}
+      <Group>
+        <Button variant="light" size="sm" onClick={onAddSplit}>
+          Add Split Part
+        </Button>
+        <Button variant="subtle" size="sm" onClick={onCancel}>
+          Cancel Split
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
 export function TriageDetailPanel({
   selectedTransaction,
   onSaved,
@@ -327,64 +437,16 @@ export function TriageDetailPanel({
             Split Transaction
           </Button>
         ) : (
-          <Stack gap="sm">
-            {splits.map((split, index) => (
-              <Paper key={split.id} p="sm" withBorder>
-                <Stack gap="xs">
-                  <Group justify="space-between">
-                    <Text size="sm" fw={500}>
-                      Part {index + 1}
-                    </Text>
-                    <ActionIcon
-                      variant="subtle"
-                      color="danger"
-                      onClick={() => handleRemoveSplit(split.id)}
-                    >
-                      ×
-                    </ActionIcon>
-                  </Group>
-                  <Group grow>
-                    <TextInput
-                      placeholder="Amount"
-                      value={split.amount}
-                      onChange={(e) => handleSplitChange(split.id, 'amount', e.currentTarget.value)}
-                    />
-                    <TextInput
-                      placeholder="Description (optional)"
-                      value={split.description}
-                      onChange={(e) =>
-                        handleSplitChange(split.id, 'description', e.currentTarget.value)
-                      }
-                    />
-                  </Group>
-                  <ButtonSelect
-                    label="Category"
-                    options={categoryOptions}
-                    value={split.categoryId}
-                    onChange={(value) => handleSplitChange(split.id, 'categoryId', value)}
-                    allowNone
-                  />
-                  {transferOptions.length > 0 && (
-                    <ButtonSelect
-                      label="Transfer To"
-                      options={transferOptions}
-                      value={split.transferAccountId}
-                      onChange={(value) => handleSplitChange(split.id, 'transferAccountId', value)}
-                      allowNone
-                    />
-                  )}
-                </Stack>
-              </Paper>
-            ))}
-            <Group>
-              <Button variant="light" size="sm" onClick={handleAddSplit}>
-                Add Split Part
-              </Button>
-              <Button variant="subtle" size="sm" onClick={() => setIsSplit(false)}>
-                Cancel Split
-              </Button>
-            </Group>
-          </Stack>
+          <SplitEditor
+            splits={splits}
+            categoryOptions={categoryOptions}
+            transferOptions={transferOptions}
+            onAddSplit={handleAddSplit}
+            onRemoveSplit={handleRemoveSplit}
+            onSplitAmountChange={handleSplitAmountChange}
+            onSplitChange={handleSplitChange}
+            onCancel={() => setIsSplit(false)}
+          />
         )}
 
         <Divider />

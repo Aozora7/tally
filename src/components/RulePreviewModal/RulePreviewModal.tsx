@@ -22,12 +22,151 @@ import {
   isDuplicateTransaction,
   type RulePreview,
 } from '@/utils/rulesEngine';
-import type { Transaction } from '@/types';
+import type { CategorizationRule, Transaction } from '@/types';
 
 interface RulePreviewModalProps {
   opened: boolean;
   onClose: () => void;
   source: 'triage' | 'transaction';
+}
+
+interface RuleSelectorProps {
+  rules: CategorizationRule[];
+  selectedRuleIds: Set<string>;
+  onToggle: (ruleId: string) => void;
+  onSelectAll: () => void;
+}
+
+function RuleSelector({ rules, selectedRuleIds, onToggle, onSelectAll }: RuleSelectorProps) {
+  return (
+    <Paper p="sm" withBorder>
+      <Group justify="space-between">
+        <Text fw={500}>Select Rules to Apply</Text>
+        <Checkbox
+          label="Select All"
+          checked={selectedRuleIds.size === rules.length && rules.length > 0}
+          indeterminate={selectedRuleIds.size > 0 && selectedRuleIds.size < rules.length}
+          onChange={onSelectAll}
+        />
+      </Group>
+      <ScrollArea.Autosize mah={150} mt="sm">
+        <Stack gap="xs">
+          {rules.length === 0 ? (
+            <Text c="dimmed" ta="center">
+              No rules defined. Create rules first.
+            </Text>
+          ) : (
+            rules.map((rule) => (
+              <Checkbox
+                key={rule.id}
+                label={rule.name}
+                checked={selectedRuleIds.has(rule.id)}
+                onChange={() => onToggle(rule.id)}
+              />
+            ))
+          )}
+        </Stack>
+      </ScrollArea.Autosize>
+    </Paper>
+  );
+}
+
+interface PreviewTableProps {
+  previews: RulePreview[];
+  getCategoryName: (id: string | undefined) => string;
+  getAccountName: (id: string | undefined) => string;
+  renderChangeValue: (change: RulePreview['changes'][number]) => {
+    oldDisplay: string;
+    newDisplay: string;
+  };
+}
+
+function PreviewTableRow({
+  preview,
+  change,
+  changeIndex,
+  renderChangeValue,
+}: {
+  preview: RulePreview;
+  change: RulePreview['changes'][number];
+  changeIndex: number;
+  renderChangeValue: (change: RulePreview['changes'][number]) => {
+    oldDisplay: string;
+    newDisplay: string;
+  };
+}) {
+  const { oldDisplay, newDisplay } = renderChangeValue(change);
+  const fieldLabel =
+    change.field === 'clearCategory'
+      ? 'Category'
+      : change.field === 'clearTransfer'
+        ? 'Transfer'
+        : change.field === 'categoryId'
+          ? 'Category'
+          : change.field === 'transferAccountId'
+            ? 'Transfer'
+            : 'Delete';
+
+  return (
+    <Table.Tr>
+      <Table.Td>{changeIndex === 0 ? preview.transaction.date : ''}</Table.Td>
+      <Table.Td>{changeIndex === 0 ? preview.transaction.description : ''}</Table.Td>
+      <Table.Td>
+        {changeIndex === 0 ? (
+          <Text c={preview.transaction.amount >= 0 ? 'income.6' : 'expense.6'}>
+            {centsToDisplay(preview.transaction.amount)}
+          </Text>
+        ) : (
+          ''
+        )}
+      </Table.Td>
+      <Table.Td>
+        <Badge color={change.field === 'delete' ? 'danger' : 'accent'} variant="light">
+          {fieldLabel}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text c="dimmed">{oldDisplay}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text fw={500} c="brand">
+          {newDisplay}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
+  );
+}
+
+function PreviewTable({ previews, renderChangeValue }: PreviewTableProps) {
+  return (
+    <ScrollArea.Autosize mah={300}>
+      <Table striped highlightOnHover>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Date</Table.Th>
+            <Table.Th>Description</Table.Th>
+            <Table.Th>Amount</Table.Th>
+            <Table.Th>Field</Table.Th>
+            <Table.Th>Old Value</Table.Th>
+            <Table.Th>New Value</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {previews.map((preview) =>
+            preview.changes.map((change, changeIndex) => (
+              <PreviewTableRow
+                key={`${preview.transactionId}-${changeIndex}`}
+                preview={preview}
+                change={change}
+                changeIndex={changeIndex}
+                renderChangeValue={renderChangeValue}
+              />
+            ))
+          )}
+        </Table.Tbody>
+      </Table>
+    </ScrollArea.Autosize>
+  );
 }
 
 export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalProps) {
@@ -215,35 +354,12 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
   return (
     <Modal opened={opened} onClose={handleClose} title="Apply Rules" size="xl">
       <Stack gap="md">
-        <Paper p="sm" withBorder>
-          <Group justify="space-between">
-            <Text fw={500}>Select Rules to Apply</Text>
-            <Checkbox
-              label="Select All"
-              checked={selectedRuleIds.size === rules.length && rules.length > 0}
-              indeterminate={selectedRuleIds.size > 0 && selectedRuleIds.size < rules.length}
-              onChange={handleSelectAll}
-            />
-          </Group>
-          <ScrollArea.Autosize mah={150} mt="sm">
-            <Stack gap="xs">
-              {rules.length === 0 ? (
-                <Text c="dimmed" ta="center">
-                  No rules defined. Create rules first.
-                </Text>
-              ) : (
-                rules.map((rule) => (
-                  <Checkbox
-                    key={rule.id}
-                    label={rule.name}
-                    checked={selectedRuleIds.has(rule.id)}
-                    onChange={() => handleToggleRule(rule.id)}
-                  />
-                ))
-              )}
-            </Stack>
-          </ScrollArea.Autosize>
-        </Paper>
+        <RuleSelector
+          rules={rules}
+          selectedRuleIds={selectedRuleIds}
+          onToggle={handleToggleRule}
+          onSelectAll={handleSelectAll}
+        />
 
         <Divider />
 
@@ -263,70 +379,12 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
                 No transactions match the selected rules.
               </Text>
             ) : (
-              <ScrollArea.Autosize mah={300}>
-                <Table striped highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Date</Table.Th>
-                      <Table.Th>Description</Table.Th>
-                      <Table.Th>Amount</Table.Th>
-                      <Table.Th>Field</Table.Th>
-                      <Table.Th>Old Value</Table.Th>
-                      <Table.Th>New Value</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {relevantPreviews.map((preview) =>
-                      preview.changes.map((change, changeIndex) => {
-                        const { oldDisplay, newDisplay } = renderChangeValue(change);
-                        return (
-                          <Table.Tr key={`${preview.transactionId}-${changeIndex}`}>
-                            <Table.Td>{changeIndex === 0 ? preview.transaction.date : ''}</Table.Td>
-                            <Table.Td>
-                              {changeIndex === 0 ? preview.transaction.description : ''}
-                            </Table.Td>
-                            <Table.Td>
-                              {changeIndex === 0 ? (
-                                <Text
-                                  c={preview.transaction.amount >= 0 ? 'income.6' : 'expense.6'}
-                                >
-                                  {centsToDisplay(preview.transaction.amount)}
-                                </Text>
-                              ) : (
-                                ''
-                              )}
-                            </Table.Td>
-                            <Table.Td>
-                              <Badge
-                                color={change.field === 'delete' ? 'danger' : 'accent'}
-                                variant="light"
-                              >
-                                {change.field === 'clearCategory'
-                                  ? 'Category'
-                                  : change.field === 'clearTransfer'
-                                    ? 'Transfer'
-                                    : change.field === 'categoryId'
-                                      ? 'Category'
-                                      : change.field === 'transferAccountId'
-                                        ? 'Transfer'
-                                        : 'Delete'}
-                              </Badge>
-                            </Table.Td>
-                            <Table.Td>
-                              <Text c="dimmed">{oldDisplay}</Text>
-                            </Table.Td>
-                            <Table.Td>
-                              <Text fw={500} c="brand">
-                                {newDisplay}
-                              </Text>
-                            </Table.Td>
-                          </Table.Tr>
-                        );
-                      })
-                    )}
-                  </Table.Tbody>
-                </Table>
-              </ScrollArea.Autosize>
+              <PreviewTable
+                previews={relevantPreviews}
+                getCategoryName={getCategoryName}
+                getAccountName={getAccountName}
+                renderChangeValue={renderChangeValue}
+              />
             )}
 
             <Divider />

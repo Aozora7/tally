@@ -12,7 +12,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
 import { centsToDisplay, displayToCents } from '@/utils/currency';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
-import type { Transaction } from '@/types';
+import type { Account, Transaction } from '@/types';
 import { useDisclosure } from '@mantine/hooks';
 import { RulePreviewModal } from '../components/RulePreviewModal/RulePreviewModal';
 
@@ -59,19 +59,21 @@ function currencyValueParser(params: { newValue: string }): number {
   return displayToCents(params.newValue);
 }
 
-export function Transactions() {
-  const {
-    transactions,
-    accounts,
-    categories,
-    addTransaction,
-    updateTransaction,
-    deleteTransaction,
-  } = useFinance();
-  const { rules } = useFinance();
-  const [rulesModalOpened, rulesModalHandlers] = useDisclosure(false);
-  const [modalOpened, setModalOpened] = useState(false);
+interface AddTransactionFormProps {
+  opened: boolean;
+  onClose: () => void;
+  accounts: Account[];
+  categories: { id: string; name: string }[];
+  onAdd: (transaction: Transaction) => void;
+}
 
+function AddTransactionForm({
+  opened,
+  onClose,
+  accounts,
+  categories,
+  onAdd,
+}: AddTransactionFormProps) {
   const accountOptions = useMemo(
     () => accounts.map((a) => ({ value: a.id, label: a.name })),
     [accounts]
@@ -97,27 +99,75 @@ export function Transactions() {
       description: (value) => (value.trim().length > 0 ? null : 'Description is required'),
       accountId: (value) => (value.length > 0 ? null : 'Account is required'),
       categoryId: (value, values) => {
-        if (value && values.transferAccountId) {
-          return 'Cannot have both category and transfer';
-        }
-        if (!value && !values.transferAccountId) {
-          return 'Must have either a category or transfer';
-        }
+        if (value && values.transferAccountId) return 'Cannot have both category and transfer';
+        if (!value && !values.transferAccountId) return 'Must have either a category or transfer';
         return null;
       },
       transferAccountId: (value, values) => {
-        if (value && values.categoryId) {
-          return 'Cannot have both category and transfer';
-        }
-        if (!value && !values.categoryId) {
-          return 'Must have either a category or transfer';
-        }
+        if (value && values.categoryId) return 'Cannot have both category and transfer';
+        if (!value && !values.categoryId) return 'Must have either a category or transfer';
         return null;
       },
     },
   });
 
-  const columnDefs = useMemo<ColDef<Transaction>[]>(
+  const handleSubmit = (values: TransactionFormData) => {
+    const transaction: Transaction = {
+      id: generateId(),
+      date: values.date,
+      amount: displayToCents(values.amount),
+      description: values.description.trim(),
+      accountId: values.accountId,
+      ...(values.categoryId && { categoryId: values.categoryId }),
+      ...(values.transferAccountId && { transferAccountId: values.transferAccountId }),
+    };
+    onAdd(transaction);
+    onClose();
+    form.reset();
+  };
+
+  return (
+    <Modal opened={opened} onClose={onClose} title="Add Transaction">
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md">
+          <TextInput label="Date" placeholder="YYYY-MM-DD" {...form.getInputProps('date')} />
+          <TextInput label="Amount" placeholder="$0.00" {...form.getInputProps('amount')} />
+          <TextInput
+            label="Description"
+            placeholder="Enter description"
+            {...form.getInputProps('description')}
+          />
+          <Select label="Account" data={accountOptions} {...form.getInputProps('accountId')} />
+          <Select
+            label="Category"
+            data={[{ value: '', label: 'None' }, ...categoryOptions]}
+            {...form.getInputProps('categoryId')}
+          />
+          <Select
+            label="Transfer To"
+            data={[{ value: '', label: 'None' }, ...accountOptions]}
+            {...form.getInputProps('transferAccountId')}
+          />
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">Add</Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+}
+
+function useColumnDefs(
+  accounts: Account[],
+  categories: { id: string; name: string }[],
+  accountOptions: { value: string; label: string }[],
+  categoryOptions: { value: string; label: string }[],
+  deleteTransaction: (id: string) => void
+) {
+  return useMemo<ColDef<Transaction>[]>(
     () => [
       {
         field: 'date',
@@ -219,6 +269,38 @@ export function Transactions() {
     ],
     [accounts, categories, accountOptions, categoryOptions, deleteTransaction]
   );
+}
+
+export function Transactions() {
+  const {
+    transactions,
+    accounts,
+    categories,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    rules,
+  } = useFinance();
+  const [rulesModalOpened, rulesModalHandlers] = useDisclosure(false);
+  const [modalOpened, setModalOpened] = useState(false);
+
+  const accountOptions = useMemo(
+    () => accounts.map((a) => ({ value: a.id, label: a.name })),
+    [accounts]
+  );
+
+  const categoryOptions = useMemo(
+    () => categories.map((c) => ({ value: c.id, label: c.name })),
+    [categories]
+  );
+
+  const columnDefs = useColumnDefs(
+    accounts,
+    categories,
+    accountOptions,
+    categoryOptions,
+    deleteTransaction
+  );
 
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<Transaction>) => {
@@ -235,21 +317,6 @@ export function Transactions() {
     },
     [updateTransaction]
   );
-
-  const handleAddTransaction = (values: TransactionFormData) => {
-    const transaction: Transaction = {
-      id: generateId(),
-      date: values.date,
-      amount: displayToCents(values.amount),
-      description: values.description.trim(),
-      accountId: values.accountId,
-      ...(values.categoryId && { categoryId: values.categoryId }),
-      ...(values.transferAccountId && { transferAccountId: values.transferAccountId }),
-    };
-    addTransaction(transaction);
-    setModalOpened(false);
-    form.reset();
-  };
 
   return (
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
@@ -281,36 +348,13 @@ export function Transactions() {
         />
       </div>
 
-      <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Add Transaction">
-        <form onSubmit={form.onSubmit(handleAddTransaction)}>
-          <Stack gap="md">
-            <TextInput label="Date" placeholder="YYYY-MM-DD" {...form.getInputProps('date')} />
-            <TextInput label="Amount" placeholder="$0.00" {...form.getInputProps('amount')} />
-            <TextInput
-              label="Description"
-              placeholder="Enter description"
-              {...form.getInputProps('description')}
-            />
-            <Select label="Account" data={accountOptions} {...form.getInputProps('accountId')} />
-            <Select
-              label="Category"
-              data={[{ value: '', label: 'None' }, ...categoryOptions]}
-              {...form.getInputProps('categoryId')}
-            />
-            <Select
-              label="Transfer To"
-              data={[{ value: '', label: 'None' }, ...accountOptions]}
-              {...form.getInputProps('transferAccountId')}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setModalOpened(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Add</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+      <AddTransactionForm
+        opened={modalOpened}
+        onClose={() => setModalOpened(false)}
+        accounts={accounts}
+        categories={categories}
+        onAdd={addTransaction}
+      />
     </Stack>
   );
 }

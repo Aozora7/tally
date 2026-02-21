@@ -4,6 +4,7 @@ import {
   Checkbox,
   Group,
   Modal,
+  Paper,
   Stack,
   Table,
   Text,
@@ -20,16 +21,14 @@ interface AccountFormData {
   isDefault: boolean;
 }
 
-export function Accounts() {
-  const { accounts, transactions, addAccount, updateAccount, deleteAccount } = useFinance();
-  const [modalOpened, setModalOpened] = useState(false);
-  const [deleteOpened, setDeleteOpened] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+interface AccountFormModalProps {
+  opened: boolean;
+  onClose: () => void;
+  editingAccount: Account | null;
+  onSubmit: (account: Account, isEditing: boolean) => void;
+}
 
-  const defaultAccount = useMemo(() => accounts.find((a) => a.isDefault), [accounts]);
-
+function AccountFormModal({ opened, onClose, editingAccount, onSubmit }: AccountFormModalProps) {
   const form = useForm<AccountFormData>({
     initialValues: {
       name: '',
@@ -40,18 +39,175 @@ export function Accounts() {
     },
   });
 
+  const handleSubmit = (values: AccountFormData) => {
+    if (editingAccount) {
+      onSubmit(
+        {
+          ...editingAccount,
+          name: values.name.trim(),
+          isDefault: values.isDefault,
+        },
+        true
+      );
+    } else {
+      onSubmit(
+        {
+          id: generateId(),
+          name: values.name.trim(),
+          isDefault: values.isDefault,
+        },
+        false
+      );
+    }
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={editingAccount ? 'Edit Account' : 'Add Account'}
+    >
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md">
+          <TextInput
+            label="Name"
+            placeholder="Enter account name"
+            {...form.getInputProps('name')}
+          />
+          <Checkbox
+            label="Set as default account"
+            description="The default account is used for CSV imports"
+            {...form.getInputProps('isDefault', { type: 'checkbox' })}
+          />
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">{editingAccount ? 'Save' : 'Create'}</Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+}
+
+interface DeleteAccountModalProps {
+  opened: boolean;
+  onClose: () => void;
+  deletingAccount: Account | null;
+  deleteError: string | null;
+  onConfirm: () => void;
+}
+
+function DeleteAccountModal({
+  opened,
+  onClose,
+  deletingAccount,
+  deleteError,
+  onConfirm,
+}: DeleteAccountModalProps) {
+  return (
+    <Modal opened={opened} onClose={onClose} title="Delete Account">
+      <Stack gap="md">
+        {deleteError ? (
+          <Text c="danger.6">{deleteError}</Text>
+        ) : (
+          <Text>
+            Are you sure you want to delete &quot;{deletingAccount?.name}&quot;? This action cannot
+            be undone.
+          </Text>
+        )}
+        <Group justify="flex-end">
+          <Button variant="subtle" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button color="danger" onClick={onConfirm} disabled={!!deleteError}>
+            Delete
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}
+
+interface AccountsTableProps {
+  accounts: Account[];
+  onEdit: (account: Account) => void;
+  onDelete: (account: Account) => void;
+}
+
+function AccountsTable({ accounts, onEdit, onDelete }: AccountsTableProps) {
+  return (
+    <Table highlightOnHover>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th>Name</Table.Th>
+          <Table.Th>Default</Table.Th>
+          <Table.Th>Actions</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {accounts.map((account) => (
+          <AccountRow key={account.id} account={account} onEdit={onEdit} onDelete={onDelete} />
+        ))}
+      </Table.Tbody>
+    </Table>
+  );
+}
+
+const AccountRow = ({
+  account,
+  onEdit,
+  onDelete,
+}: {
+  account: Account;
+  onEdit: (a: Account) => void;
+  onDelete: (a: Account) => void;
+}) => {
+  return (
+    <Table.Tr key={account.id}>
+      <Table.Td>{account.name}</Table.Td>
+      <Table.Td>
+        {account.isDefault ? (
+          <Text c="brand.6" fw={500}>
+            Default
+          </Text>
+        ) : (
+          <Text c="dimmed">—</Text>
+        )}
+      </Table.Td>
+      <Table.Td>
+        <Group gap="xs">
+          <Button size="xs" variant="light" onClick={() => onEdit(account)}>
+            Edit
+          </Button>
+          <Button size="xs" variant="light" color="danger" onClick={() => onDelete(account)}>
+            Delete
+          </Button>
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  );
+};
+
+export function Accounts() {
+  const { accounts, transactions, addAccount, updateAccount, deleteAccount } = useFinance();
+  const [modalOpened, setModalOpened] = useState(false);
+  const [deleteOpened, setDeleteOpened] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const defaultAccount = useMemo(() => accounts.find((a) => a.isDefault), [accounts]);
+
   const openCreateModal = () => {
     setEditingAccount(null);
-    form.reset();
     setModalOpened(true);
   };
 
   const openEditModal = (account: Account) => {
     setEditingAccount(account);
-    form.setValues({
-      name: account.name,
-      isDefault: account.isDefault,
-    });
     setModalOpened(true);
   };
 
@@ -68,28 +224,19 @@ export function Accounts() {
     setDeleteOpened(true);
   };
 
-  const handleSubmit = (values: AccountFormData) => {
-    if (editingAccount) {
-      if (values.isDefault && !editingAccount.isDefault && defaultAccount) {
+  const handleFormSubmit = (account: Account, isEditing: boolean) => {
+    if (isEditing) {
+      if (account.isDefault && !editingAccount?.isDefault && defaultAccount) {
         updateAccount({ ...defaultAccount, isDefault: false });
       }
-      updateAccount({
-        ...editingAccount,
-        name: values.name.trim(),
-        isDefault: values.isDefault,
-      });
+      updateAccount(account);
     } else {
-      if (values.isDefault && defaultAccount) {
+      if (account.isDefault && defaultAccount) {
         updateAccount({ ...defaultAccount, isDefault: false });
       }
-      addAccount({
-        id: generateId(),
-        name: values.name.trim(),
-        isDefault: values.isDefault,
-      });
+      addAccount(account);
     }
     setModalOpened(false);
-    form.reset();
   };
 
   const handleDelete = () => {
@@ -100,31 +247,6 @@ export function Accounts() {
     }
   };
 
-  const rows = accounts.map((account) => (
-    <Table.Tr key={account.id}>
-      <Table.Td>{account.name}</Table.Td>
-      <Table.Td>
-        {account.isDefault ? (
-          <Text c="brand.6" fw={500}>
-            Default
-          </Text>
-        ) : (
-          <Text c="dimmed">—</Text>
-        )}
-      </Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          <Button size="xs" variant="light" onClick={() => openEditModal(account)}>
-            Edit
-          </Button>
-          <Button size="xs" variant="light" color="danger" onClick={() => openDeleteModal(account)}>
-            Delete
-          </Button>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
-
   return (
     <Stack gap="md">
       <Group justify="space-between">
@@ -132,68 +254,28 @@ export function Accounts() {
         <Button onClick={openCreateModal}>Add Account</Button>
       </Group>
 
-      {accounts.length === 0 ? (
-        <Text c="dimmed">No accounts yet. Click &quot;Add Account&quot; to create one.</Text>
-      ) : (
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Default</Table.Th>
-              <Table.Th>Actions</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
-      )}
+      <Paper p="md" withBorder>
+        {accounts.length === 0 ? (
+          <Text c="dimmed">No accounts yet. Click &quot;Add Account&quot; to create one.</Text>
+        ) : (
+          <AccountsTable accounts={accounts} onEdit={openEditModal} onDelete={openDeleteModal} />
+        )}
+      </Paper>
 
-      <Modal
+      <AccountFormModal
         opened={modalOpened}
         onClose={() => setModalOpened(false)}
-        title={editingAccount ? 'Edit Account' : 'Add Account'}
-      >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack gap="md">
-            <TextInput
-              label="Name"
-              placeholder="Enter account name"
-              {...form.getInputProps('name')}
-            />
-            <Checkbox
-              label="Set as default account"
-              description="The default account is used for CSV imports"
-              {...form.getInputProps('isDefault', { type: 'checkbox' })}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setModalOpened(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">{editingAccount ? 'Save' : 'Create'}</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+        editingAccount={editingAccount}
+        onSubmit={handleFormSubmit}
+      />
 
-      <Modal opened={deleteOpened} onClose={() => setDeleteOpened(false)} title="Delete Account">
-        <Stack gap="md">
-          {deleteError ? (
-            <Text c="danger.6">{deleteError}</Text>
-          ) : (
-            <Text>
-              Are you sure you want to delete &quot;{deletingAccount?.name}&quot;? This action
-              cannot be undone.
-            </Text>
-          )}
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={() => setDeleteOpened(false)}>
-              Cancel
-            </Button>
-            <Button color="danger" onClick={handleDelete} disabled={!!deleteError}>
-              Delete
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      <DeleteAccountModal
+        opened={deleteOpened}
+        onClose={() => setDeleteOpened(false)}
+        deletingAccount={deletingAccount}
+        deleteError={deleteError}
+        onConfirm={handleDelete}
+      />
     </Stack>
   );
 }

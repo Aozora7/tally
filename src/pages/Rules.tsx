@@ -39,14 +39,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function centsToDecimalString(cents: number): string {
-  const absCents = Math.abs(cents);
-  const dollars = Math.floor(absCents / 100);
-  const remainingCents = absCents % 100;
-  const sign = cents < 0 ? '-' : '';
-  return `${sign}${dollars}.${remainingCents.toString().padStart(2, '0')}`;
-}
-
 interface RuleFormData {
   name: string;
   matchPattern: string;
@@ -119,16 +111,16 @@ function SortableRuleRow({
   const action = getActionSummary(rule);
 
   return (
-    <Table.Tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Table.Td>
+    <Table.Tr ref={setNodeRef} style={style} {...attributes}>
+      <Table.Td {...listeners}>
         <Text fw={500}>{rule.name}</Text>
       </Table.Td>
-      <Table.Td>
+      <Table.Td {...listeners}>
         <Text size="sm" c="dimmed">
           {getRuleSummary(rule)}
         </Text>
       </Table.Td>
-      <Table.Td>
+      <Table.Td {...listeners}>
         <Badge color={action.color}>{action.label}</Badge>
       </Table.Td>
       <Table.Td>
@@ -159,30 +151,28 @@ function SortableRuleRow({
   );
 }
 
-export function Rules() {
-  const { rules, categories, accounts, addRule, updateRule, deleteRule, reorderRules } =
-    useFinance();
-  const [modalOpened, setModalOpened] = useState(false);
-  const [editingRule, setEditingRule] = useState<{
-    rule: CategorizationRule;
-    index: number;
-  } | null>(null);
+interface RuleFormModalProps {
+  opened: boolean;
+  onClose: () => void;
+  editingRule: { rule: CategorizationRule; index: number } | null;
+  rules: CategorizationRule[];
+  categories: { id: string; name: string }[];
+  transferOptions: { value: string; label: string }[];
+  onSubmit: (rule: CategorizationRule, index?: number) => void;
+}
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
+function RuleFormModal({
+  opened,
+  onClose,
+  editingRule,
+  rules,
+  categories,
+  transferOptions,
+  onSubmit,
+}: RuleFormModalProps) {
   const categoryOptions = useMemo(
     () => categories.map((c) => ({ value: c.id, label: c.name })),
     [categories]
-  );
-
-  const transferOptions = useMemo(
-    () => accounts.filter((a) => !a.isDefault).map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
   );
 
   const form = useForm<RuleFormData>({
@@ -201,36 +191,6 @@ export function Rules() {
       name: (value) => (value.trim().length > 0 ? null : 'Name is required'),
     },
   });
-
-  const openAddModal = () => {
-    setEditingRule(null);
-    form.reset();
-    setModalOpened(true);
-  };
-
-  const openEditModal = (rule: CategorizationRule, index: number) => {
-    setEditingRule({ rule, index });
-    form.setValues({
-      name: rule.name,
-      matchPattern: rule.matchPattern ?? '',
-      matchMinAmount:
-        rule.matchMinAmount !== undefined ? centsToDecimalString(rule.matchMinAmount) : '',
-      matchMaxAmount:
-        rule.matchMaxAmount !== undefined ? centsToDecimalString(rule.matchMaxAmount) : '',
-      matchMinDate: rule.matchMinDate ?? '',
-      matchMaxDate: rule.matchMaxDate ?? '',
-      actionCategoryId: rule.actionCategoryId ?? '',
-      actionTransferAccountId: rule.actionTransferAccountId ?? '',
-      actionDelete: rule.actionDelete ?? false,
-    });
-    setModalOpened(true);
-  };
-
-  const closeModal = () => {
-    setModalOpened(false);
-    setEditingRule(null);
-    form.reset();
-  };
 
   const handleSubmit = (values: RuleFormData) => {
     const minAmountCents = values.matchMinAmount
@@ -263,11 +223,169 @@ export function Rules() {
     }
 
     if (editingRule) {
-      updateRule(ruleData, editingRule.index);
+      onSubmit(ruleData, editingRule.index);
+    } else {
+      onSubmit(ruleData);
+    }
+
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={editingRule ? 'Edit Rule' : 'Add Rule'}
+      size="lg"
+    >
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md">
+          <TextInput
+            label="Rule Name"
+            placeholder="Enter rule name"
+            required
+            {...form.getInputProps('name')}
+          />
+
+          <Text fw={500} mt="sm">
+            Conditions (at least one required)
+          </Text>
+
+          <TextInput
+            label="Match Pattern (Regex)"
+            placeholder="e.g., amazon|AMZN"
+            description="Regular expression to match against transaction description"
+            {...form.getInputProps('matchPattern')}
+          />
+
+          <Group grow>
+            <NumberInput
+              label="Min Amount"
+              placeholder="No limit"
+              decimalScale={2}
+              fixedDecimalScale
+              {...form.getInputProps('matchMinAmount')}
+            />
+            <NumberInput
+              label="Max Amount"
+              placeholder="No limit"
+              decimalScale={2}
+              fixedDecimalScale
+              {...form.getInputProps('matchMaxAmount')}
+            />
+          </Group>
+
+          <Group grow>
+            <TextInput
+              label="Min Date"
+              placeholder="YYYY-MM-DD"
+              {...form.getInputProps('matchMinDate')}
+            />
+            <TextInput
+              label="Max Date"
+              placeholder="YYYY-MM-DD"
+              {...form.getInputProps('matchMaxDate')}
+            />
+          </Group>
+
+          <Text fw={500} mt="sm">
+            Action (exactly one required)
+          </Text>
+
+          <Select
+            label="Assign Category"
+            data={[{ value: '', label: 'None' }, ...categoryOptions]}
+            {...form.getInputProps('actionCategoryId')}
+            onChange={(value) => {
+              form.setFieldValue('actionCategoryId', value ?? '');
+              if (value) {
+                form.setFieldValue('actionTransferAccountId', '');
+                form.setFieldValue('actionDelete', false);
+              }
+            }}
+          />
+
+          {transferOptions.length > 0 && (
+            <Select
+              label="Transfer To Account"
+              data={[{ value: '', label: 'None' }, ...transferOptions]}
+              {...form.getInputProps('actionTransferAccountId')}
+              onChange={(value) => {
+                form.setFieldValue('actionTransferAccountId', value ?? '');
+                if (value) {
+                  form.setFieldValue('actionCategoryId', '');
+                  form.setFieldValue('actionDelete', false);
+                }
+              }}
+            />
+          )}
+
+          <Checkbox
+            label="Delete matching transactions"
+            {...form.getInputProps('actionDelete', { type: 'checkbox' })}
+            onChange={(e) => {
+              form.setFieldValue('actionDelete', e.currentTarget.checked);
+              if (e.currentTarget.checked) {
+                form.setFieldValue('actionCategoryId', '');
+                form.setFieldValue('actionTransferAccountId', '');
+              }
+            }}
+          />
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">{editingRule ? 'Update' : 'Add'}</Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+}
+
+export function Rules() {
+  const { rules, categories, accounts, addRule, updateRule, deleteRule, reorderRules } =
+    useFinance();
+  const [modalOpened, setModalOpened] = useState(false);
+  const [editingRule, setEditingRule] = useState<{
+    rule: CategorizationRule;
+    index: number;
+  } | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const transferOptions = useMemo(
+    () => accounts.filter((a) => !a.isDefault).map((a) => ({ value: a.id, label: a.name })),
+    [accounts]
+  );
+
+  const openAddModal = () => {
+    setEditingRule(null);
+    setModalOpened(true);
+  };
+
+  const openEditModal = (rule: CategorizationRule, index: number) => {
+    setEditingRule({ rule, index });
+    setModalOpened(true);
+  };
+
+  const closeModal = () => {
+    setModalOpened(false);
+    setEditingRule(null);
+  };
+
+  const handleSubmit = (ruleData: CategorizationRule, index?: number) => {
+    if (index !== undefined) {
+      updateRule(ruleData, index);
     } else {
       addRule(ruleData);
     }
-
     closeModal();
   };
 
@@ -295,151 +413,55 @@ export function Rules() {
         <Button onClick={openAddModal}>Add Rule</Button>
       </Group>
 
-      {rules.length === 0 ? (
-        <Paper p="md" withBorder>
+      <Paper p="md" withBorder>
+        {rules.length === 0 ? (
           <Text c="dimmed" ta="center">
             No rules defined. Create rules to automatically categorize transactions.
           </Text>
-        </Paper>
-      ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={rules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>Conditions</Table.Th>
-                  <Table.Th>Action</Table.Th>
-                  <Table.Th w={100}>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {rules.map((rule, index) => (
-                  <SortableRuleRow
-                    key={rule.id}
-                    rule={rule}
-                    index={index}
-                    onEdit={openEditModal}
-                    onDelete={handleDeleteRule}
-                    categories={categories}
-                    accounts={accounts}
-                  />
-                ))}
-              </Table.Tbody>
-            </Table>
-          </SortableContext>
-        </DndContext>
-      )}
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={rules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+              <Table highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Name</Table.Th>
+                    <Table.Th>Conditions</Table.Th>
+                    <Table.Th>Action</Table.Th>
+                    <Table.Th w={100}>Actions</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {rules.map((rule, index) => (
+                    <SortableRuleRow
+                      key={rule.id}
+                      rule={rule}
+                      index={index}
+                      onEdit={openEditModal}
+                      onDelete={handleDeleteRule}
+                      categories={categories}
+                      accounts={accounts}
+                    />
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </SortableContext>
+          </DndContext>
+        )}
+      </Paper>
 
-      <Modal
+      <RuleFormModal
         opened={modalOpened}
         onClose={closeModal}
-        title={editingRule ? 'Edit Rule' : 'Add Rule'}
-        size="lg"
-      >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack gap="md">
-            <TextInput
-              label="Rule Name"
-              placeholder="Enter rule name"
-              required
-              {...form.getInputProps('name')}
-            />
-
-            <Text fw={500} mt="sm">
-              Conditions (at least one required)
-            </Text>
-
-            <TextInput
-              label="Match Pattern (Regex)"
-              placeholder="e.g., amazon|AMZN"
-              description="Regular expression to match against transaction description"
-              {...form.getInputProps('matchPattern')}
-            />
-
-            <Group grow>
-              <NumberInput
-                label="Min Amount"
-                placeholder="No limit"
-                decimalScale={2}
-                fixedDecimalScale
-                {...form.getInputProps('matchMinAmount')}
-              />
-              <NumberInput
-                label="Max Amount"
-                placeholder="No limit"
-                decimalScale={2}
-                fixedDecimalScale
-                {...form.getInputProps('matchMaxAmount')}
-              />
-            </Group>
-
-            <Group grow>
-              <TextInput
-                label="Min Date"
-                placeholder="YYYY-MM-DD"
-                {...form.getInputProps('matchMinDate')}
-              />
-              <TextInput
-                label="Max Date"
-                placeholder="YYYY-MM-DD"
-                {...form.getInputProps('matchMaxDate')}
-              />
-            </Group>
-
-            <Text fw={500} mt="sm">
-              Action (exactly one required)
-            </Text>
-
-            <Select
-              label="Assign Category"
-              data={[{ value: '', label: 'None' }, ...categoryOptions]}
-              {...form.getInputProps('actionCategoryId')}
-              onChange={(value) => {
-                form.setFieldValue('actionCategoryId', value ?? '');
-                if (value) {
-                  form.setFieldValue('actionTransferAccountId', '');
-                  form.setFieldValue('actionDelete', false);
-                }
-              }}
-            />
-
-            {transferOptions.length > 0 && (
-              <Select
-                label="Transfer To Account"
-                data={[{ value: '', label: 'None' }, ...transferOptions]}
-                {...form.getInputProps('actionTransferAccountId')}
-                onChange={(value) => {
-                  form.setFieldValue('actionTransferAccountId', value ?? '');
-                  if (value) {
-                    form.setFieldValue('actionCategoryId', '');
-                    form.setFieldValue('actionDelete', false);
-                  }
-                }}
-              />
-            )}
-
-            <Checkbox
-              label="Delete matching transactions"
-              {...form.getInputProps('actionDelete', { type: 'checkbox' })}
-              onChange={(e) => {
-                form.setFieldValue('actionDelete', e.currentTarget.checked);
-                if (e.currentTarget.checked) {
-                  form.setFieldValue('actionCategoryId', '');
-                  form.setFieldValue('actionTransferAccountId', '');
-                }
-              }}
-            />
-
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={closeModal}>
-                Cancel
-              </Button>
-              <Button type="submit">{editingRule ? 'Update' : 'Add'}</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+        editingRule={editingRule}
+        rules={rules}
+        categories={categories}
+        transferOptions={transferOptions}
+        onSubmit={handleSubmit}
+      />
     </Stack>
   );
 }
