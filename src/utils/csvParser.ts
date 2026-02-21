@@ -127,7 +127,7 @@ function scoreDateColumn(values: string[]): number {
 }
 
 function scoreAmountColumn(values: string[]): number {
-  const amountPattern = /^-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?$/;
+  const amountPattern = /^[€$£¥]?\s*-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?[€$£¥]?\s*$/;
 
   let matchCount = 0;
   for (const value of values) {
@@ -198,6 +198,7 @@ function parseAmount(value: string): number | null {
   if (!trimmed) return null;
 
   let normalized = trimmed.replace(/\s/g, '');
+  normalized = normalized.replace(/[€$£¥]/g, '');
   normalized = normalized.replace(/,/g, '.');
 
   const lastDotIndex = normalized.lastIndexOf('.');

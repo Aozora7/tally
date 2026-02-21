@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Dashboard', path: '/' },
   { label: 'Transactions', path: '/transactions' },
   { label: 'Triage', path: '/triage' },
+  { label: 'Import', path: '/import' },
   { label: 'Accounts', path: '/accounts' },
   { label: 'Categories', path: '/categories' },
   { label: 'Rules', path: '/rules' },
@@ -48,7 +49,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           ))}
         </AppShell.Section>
       </AppShell.Navbar>
-      <AppShell.Main style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <AppShell.Main
+        style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100vh' }}
+      >
         {children}
       </AppShell.Main>
     </AppShell>

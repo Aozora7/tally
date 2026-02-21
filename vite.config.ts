@@ -24,9 +24,6 @@ export default defineConfig({
           if (id.includes('react-dom-client')) {
             return 'react-dom';
           }
-          if (id.includes('recharts')) {
-            return 'recharts';
-          }
           if (id.includes('mantine')) {
             return 'mantine';
           }

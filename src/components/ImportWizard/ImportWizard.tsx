@@ -3,13 +3,13 @@ import {
   Button,
   Group,
   Stack,
-  Title,
   Text,
   FileInput,
   Select,
   Table,
   Alert,
   Stepper,
+  Paper,
   ScrollArea,
 } from '@mantine/core';
 import { useFinance } from '@/context/FinanceContext';
@@ -29,6 +29,229 @@ const FIELD_OPTIONS: { value: ImportableField | 'none'; label: string }[] = [
   { value: 'none', label: '(ignore)' },
 ];
 
+interface UploadStepProps {
+  onUpload: (file: File | null) => void;
+}
+
+function UploadStep({ onUpload }: UploadStepProps) {
+  return (
+    <Stack gap="md">
+      <Text>Upload a CSV file from your bank statement to import transactions.</Text>
+      <FileInput placeholder="Click to select a CSV file" accept=".csv,.tsv" onChange={onUpload} />
+    </Stack>
+  );
+}
+
+interface MappingStepProps {
+  parseResult: ParseResult;
+  mapping: ColumnMapping[];
+  canProceed: boolean;
+  onMappingChange: (csvColumn: string, targetField: ImportableField | 'none') => void;
+  onCancel: () => void;
+  onContinue: () => void;
+}
+
+function MappingStep({
+  parseResult,
+  mapping,
+  canProceed,
+  onMappingChange,
+  onCancel,
+  onContinue,
+}: MappingStepProps) {
+  return (
+    <Stack gap="md">
+      <Text>Map the CSV columns to transaction fields. Date and Amount are required.</Text>
+
+      <Paper withBorder>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>CSV Column</Table.Th>
+              <Table.Th>Map To</Table.Th>
+              <Table.Th>Sample Values</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {mapping.map((m) => (
+              <MappingRow
+                key={m.csvColumn}
+                mapping={m}
+                sampleValues={parseResult.rows.slice(0, 3).map((r) => r[m.csvColumn])}
+                onChange={onMappingChange}
+              />
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Paper>
+
+      <Group justify="flex-end">
+        <Button variant="subtle" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button disabled={!canProceed} onClick={onContinue}>
+          Continue
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
+interface MappingRowProps {
+  mapping: ColumnMapping;
+  sampleValues: (string | undefined)[];
+  onChange: (csvColumn: string, targetField: ImportableField | 'none') => void;
+}
+
+function MappingRow({ mapping, sampleValues, onChange }: MappingRowProps) {
+  return (
+    <Table.Tr>
+      <Table.Td>{mapping.csvColumn}</Table.Td>
+      <Table.Td>
+        <Select
+          data={FIELD_OPTIONS}
+          value={mapping.targetField ?? 'none'}
+          onChange={(value) =>
+            onChange(mapping.csvColumn, (value ?? 'none') as ImportableField | 'none')
+          }
+        />
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" c="dimmed">
+          {sampleValues.join(', ')}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
+  );
+}
+
+interface PreviewStepProps {
+  validRows: ParsedImportRow[];
+  invalidRows: ParsedImportRow[];
+  totalRows: number;
+  onBack: () => void;
+  onImport: () => void;
+}
+
+function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport }: PreviewStepProps) {
+  return (
+    <Stack gap="md">
+      <Group justify="space-between">
+        <Text>
+          Found <strong>{validRows.length}</strong> valid transactions out of{' '}
+          <strong>{totalRows}</strong> total rows.
+        </Text>
+        <Group>
+          <Button variant="subtle" onClick={onBack}>
+            Back
+          </Button>
+          <Button onClick={onImport}>Import {validRows.length} Transactions</Button>
+        </Group>
+      </Group>
+
+      {validRows.length > 0 && <PreviewTable title="Valid Rows" rows={validRows} />}
+      {invalidRows.length > 0 && (
+        <PreviewTable
+          title={`Invalid Rows (${invalidRows.length} - missing date or amount)`}
+          rows={invalidRows}
+          isInvalid
+        />
+      )}
+    </Stack>
+  );
+}
+
+interface PreviewTableProps {
+  title: string;
+  rows: ParsedImportRow[];
+  isInvalid?: boolean;
+}
+
+function PreviewTable({ title, rows, isInvalid = false }: PreviewTableProps) {
+  return (
+    <Stack gap="xs">
+      <Text fw={500} c={isInvalid ? 'warning.6' : 'dimmed'}>
+        {title}
+      </Text>
+      <Paper withBorder>
+        <ScrollArea.Autosize mah={400}>
+          <Table striped highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Date</Table.Th>
+                <Table.Th>Amount</Table.Th>
+                <Table.Th>Description</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {rows.map((row, index) => (
+                <PreviewRow key={index} row={row} isInvalid={isInvalid} />
+              ))}
+            </Table.Tbody>
+          </Table>
+        </ScrollArea.Autosize>
+      </Paper>
+    </Stack>
+  );
+}
+
+interface PreviewRowProps {
+  row: ParsedImportRow;
+  isInvalid: boolean;
+}
+
+function PreviewRow({ row, isInvalid }: PreviewRowProps) {
+  if (isInvalid) {
+    return (
+      <Table.Tr>
+        <Table.Td c={row.date ? 'dimmed' : 'danger.6'}>{row.date ?? '(missing)'}</Table.Td>
+        <Table.Td c={row.amount !== null ? 'expense.6' : 'danger.6'}>
+          {row.amount !== null ? centsToDisplay(row.amount) : '(missing)'}
+        </Table.Td>
+        <Table.Td>
+          <Text lineClamp={1}>{row.description}</Text>
+        </Table.Td>
+      </Table.Tr>
+    );
+  }
+
+  return (
+    <Table.Tr>
+      <Table.Td>{row.date}</Table.Td>
+      <Table.Td c={row.amount! >= 0 ? 'income.6' : 'expense.6'}>
+        {centsToDisplay(row.amount!)}
+      </Table.Td>
+      <Table.Td>
+        <Text lineClamp={1}>{row.description}</Text>
+      </Table.Td>
+    </Table.Tr>
+  );
+}
+
+interface CompleteStepProps {
+  importedCount: number;
+  duplicateCount: number;
+  onReset: () => void;
+}
+
+function CompleteStep({ importedCount, duplicateCount, onReset }: CompleteStepProps) {
+  return (
+    <Stack gap="md">
+      <Alert color="brand" title="Import Complete">
+        Successfully imported {importedCount} transactions to Triage.
+      </Alert>
+      {duplicateCount > 0 && (
+        <Alert color="warning">
+          {duplicateCount} duplicate transaction{duplicateCount !== 1 ? 's' : ''} were skipped.
+        </Alert>
+      )}
+      <Group>
+        <Button onClick={onReset}>Import Another File</Button>
+      </Group>
+    </Stack>
+  );
+}
+
 export function ImportWizard() {
   const { addTriageTransactions, triageTransactions, transactions } = useFinance();
   const [activeStep, setActiveStep] = useState<Step>('upload');
@@ -36,10 +259,10 @@ export function ImportWizard() {
   const [mapping, setMapping] = useState<ColumnMapping[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [duplicateCount, setDuplicateCount] = useState<number>(0);
+  const [importedCount, setImportedCount] = useState<number>(0);
 
   const handleFileUpload = async (file: File | null) => {
     if (!file) return;
-
     setError(null);
     try {
       const result = await parseCsvFile(file);
@@ -68,6 +291,10 @@ export function ImportWizard() {
 
   const validRows = useMemo<ParsedImportRow[]>(() => {
     return parsedRows.filter((row) => row.date && row.amount !== null);
+  }, [parsedRows]);
+
+  const invalidRows = useMemo<ParsedImportRow[]>(() => {
+    return parsedRows.filter((row) => !row.date || row.amount === null);
   }, [parsedRows]);
 
   const canProceed = useMemo(() => {
@@ -103,23 +330,12 @@ export function ImportWizard() {
     setDuplicateCount(0);
   };
 
-  const [importedCount, setImportedCount] = useState<number>(0);
+  const stepIndex =
+    activeStep === 'upload' ? 0 : activeStep === 'mapping' ? 1 : activeStep === 'preview' ? 2 : 3;
 
   return (
-    <Stack gap="md">
-      <Title order={3}>Import Transactions</Title>
-
-      <Stepper
-        active={
-          activeStep === 'upload'
-            ? 0
-            : activeStep === 'mapping'
-              ? 1
-              : activeStep === 'preview'
-                ? 2
-                : 3
-        }
-      >
+    <Stack gap="md" flex={1} style={{ minHeight: 0, maxHeight: 'calc(100vh - 180px)' }}>
+      <Stepper active={stepIndex}>
         <Stepper.Step label="Upload" description="Select CSV file" />
         <Stepper.Step label="Map Columns" description="Match columns to fields" />
         <Stepper.Step label="Preview" description="Review data" />
@@ -132,131 +348,35 @@ export function ImportWizard() {
         </Alert>
       )}
 
-      {activeStep === 'upload' && (
-        <Stack gap="md">
-          <Text>Upload a CSV file from your bank statement to import transactions.</Text>
-          <FileInput
-            placeholder="Click to select a CSV file"
-            accept=".csv,.tsv"
-            onChange={handleFileUpload}
-          />
-        </Stack>
-      )}
+      {activeStep === 'upload' && <UploadStep onUpload={handleFileUpload} />}
 
       {activeStep === 'mapping' && parseResult && (
-        <Stack gap="md">
-          <Text>Map the CSV columns to transaction fields. Date and Amount are required.</Text>
-
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>CSV Column</Table.Th>
-                <Table.Th>Map To</Table.Th>
-                <Table.Th>Sample Values</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {mapping.map((m) => (
-                <Table.Tr key={m.csvColumn}>
-                  <Table.Td>{m.csvColumn}</Table.Td>
-                  <Table.Td>
-                    <Select
-                      data={FIELD_OPTIONS}
-                      value={m.targetField ?? 'none'}
-                      onChange={(value) =>
-                        handleMappingChange(
-                          m.csvColumn,
-                          (value ?? 'none') as ImportableField | 'none'
-                        )
-                      }
-                    />
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c="dimmed">
-                      {parseResult.rows
-                        .slice(0, 3)
-                        .map((r) => r[m.csvColumn])
-                        .join(', ')}
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={handleReset}>
-              Cancel
-            </Button>
-            <Button disabled={!canProceed} onClick={() => setActiveStep('preview')}>
-              Continue
-            </Button>
-          </Group>
-        </Stack>
+        <MappingStep
+          parseResult={parseResult}
+          mapping={mapping}
+          canProceed={canProceed}
+          onMappingChange={handleMappingChange}
+          onCancel={handleReset}
+          onContinue={() => setActiveStep('preview')}
+        />
       )}
 
       {activeStep === 'preview' && (
-        <Stack gap="md">
-          <Text>
-            Found <strong>{validRows.length}</strong> valid transactions out of{' '}
-            <strong>{parsedRows.length}</strong> total rows.
-          </Text>
-
-          {parsedRows.length !== validRows.length && (
-            <Alert color="warning">
-              {parsedRows.length - validRows.length} rows have missing date or amount and will be
-              skipped.
-            </Alert>
-          )}
-
-          <ScrollArea h={400}>
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Date</Table.Th>
-                  <Table.Th>Amount</Table.Th>
-                  <Table.Th>Description</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {validRows.slice(0, 100).map((row, index) => (
-                  <Table.Tr key={index}>
-                    <Table.Td>{row.date}</Table.Td>
-                    <Table.Td c={row.amount! >= 0 ? 'income.6' : 'expense.6'}>
-                      {centsToDisplay(row.amount!)}
-                    </Table.Td>
-                    <Table.Td>
-                      <Text lineClamp={1}>{row.description}</Text>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </ScrollArea>
-
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={() => setActiveStep('mapping')}>
-              Back
-            </Button>
-            <Button onClick={handleImport}>Import {validRows.length} Transactions</Button>
-          </Group>
-        </Stack>
+        <PreviewStep
+          validRows={validRows}
+          invalidRows={invalidRows}
+          totalRows={parsedRows.length}
+          onBack={() => setActiveStep('mapping')}
+          onImport={handleImport}
+        />
       )}
 
       {activeStep === 'complete' && (
-        <Stack gap="md">
-          <Alert color="brand" title="Import Complete">
-            Successfully imported {importedCount} transactions to Triage.
-          </Alert>
-          {duplicateCount > 0 && (
-            <Alert color="warning">
-              {duplicateCount} duplicate transaction{duplicateCount !== 1 ? 's' : ''} were skipped.
-            </Alert>
-          )}
-          <Group>
-            <Button onClick={handleReset}>Import Another File</Button>
-          </Group>
-        </Stack>
+        <CompleteStep
+          importedCount={importedCount}
+          duplicateCount={duplicateCount}
+          onReset={handleReset}
+        />
       )}
     </Stack>
   );

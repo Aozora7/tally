@@ -1,15 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Stack, Title, Text, Collapse, Button, Group, Center, Box } from '@mantine/core';
+import { Stack, Title, Text, Button, Group, Box } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useFinance } from '@/context/FinanceContext';
-import { ImportWizard } from '@/components/ImportWizard/ImportWizard';
 import { TriageGrid } from '@/components/TriageGrid/TriageGrid';
 import { TriageDetailPanel } from '@/components/TriageDetailPanel/TriageDetailPanel';
 import { RulePreviewModal } from '@/components/RulePreviewModal/RulePreviewModal';
 
 export function Triage() {
-  const { triageTransactions, rules } = useFinance();
-  const [importOpened, importHandlers] = useDisclosure(false);
+  const { triageTransactions } = useFinance();
   const [rulesModalOpened, rulesModalHandlers] = useDisclosure(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -67,42 +65,14 @@ export function Triage() {
     setSelectedId(id);
   }, []);
 
-  if (triageTransactions.length === 0) {
-    return (
-      <Stack gap="md">
-        <Title order={3}>Triage</Title>
-        <Center h={200}>
-          <Stack align="center" gap="md">
-            <Text c="dimmed">No transactions to triage</Text>
-            <Text size="sm" c="dimmed">
-              Import a CSV file to get started
-            </Text>
-            <ImportWizard />
-          </Stack>
-        </Center>
-      </Stack>
-    );
-  }
-
   return (
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Group justify="space-between">
         <Title order={3}>Triage</Title>
-        <Group gap="xs">
-          {rules.length > 0 && (
-            <Button variant="light" onClick={() => rulesModalHandlers.open()}>
-              Apply Rules
-            </Button>
-          )}
-          <Button variant="subtle" onClick={() => importHandlers.toggle()}>
-            {importOpened ? 'Hide Import' : 'Import CSV'}
-          </Button>
-        </Group>
+        <Button variant="light" onClick={() => rulesModalHandlers.open()}>
+          Apply Rules
+        </Button>
       </Group>
-
-      <Collapse in={importOpened}>
-        <ImportWizard />
-      </Collapse>
 
       <TriageDetailPanel
         selectedTransaction={selectedTransaction}
@@ -115,7 +85,7 @@ export function Triage() {
         remaining
       </Text>
 
-      <Box flex={1} style={{ minHeight: 200 }}>
+      <Box flex={1} style={{ minHeight: 0 }}>
         <TriageGrid selectedId={selectedId} onSelect={handleSelect} />
       </Box>
 

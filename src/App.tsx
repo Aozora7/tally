@@ -9,6 +9,7 @@ import { Categories } from '@/pages/Categories';
 import { Rules } from '@/pages/Rules';
 import { PivotTable } from '@/pages/PivotTable';
 import { Settings } from '@/pages/Settings';
+import { ImportWizard } from './components/ImportWizard/ImportWizard';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/transactions" element={<Transactions />} />
+            <Route path="/import" element={<ImportWizard />} />
             <Route path="/triage" element={<Triage />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/categories" element={<Categories />} />
