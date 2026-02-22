@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ActionIcon,
   Button,
   Group,
   Modal,
@@ -12,6 +13,7 @@ import {
   Paper,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { IconPencil, IconTrash, IconPlus, IconTags } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
 import type { TransactionCategory, CategoryType, CategoryFrequency } from '@/types';
@@ -66,28 +68,27 @@ function SortableCategoryRow({ category, onEdit, onDelete }: SortableCategoryRow
       <Table.Td {...listeners}>{category.type}</Table.Td>
       <Table.Td {...listeners}>{category.frequency}</Table.Td>
       <Table.Td>
-        <Group gap="xs">
-          <Button
-            size="xs"
-            variant="light"
+        <Group gap={4}>
+          <ActionIcon
+            color="accent"
             onClick={(e) => {
               e.stopPropagation();
               onEdit(category);
             }}
+            aria-label="Edit"
           >
-            Edit
-          </Button>
-          <Button
-            size="xs"
-            variant="light"
-            color="red"
+            <IconPencil size={16} stroke={1.5} />
+          </ActionIcon>
+          <ActionIcon
+            color="danger"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(category);
             }}
+            aria-label="Delete"
           >
-            Delete
-          </Button>
+            <IconTrash size={16} stroke={1.5} />
+          </ActionIcon>
         </Group>
       </Table.Td>
     </Table.Tr>
@@ -201,7 +202,7 @@ function DeleteConfirmModal({ opened, onClose, category, onConfirm }: DeleteConf
         <Button variant="subtle" onClick={onClose}>
           Cancel
         </Button>
-        <Button color="red" onClick={onConfirm}>
+        <Button color="danger" onClick={onConfirm}>
           Delete
         </Button>
       </Group>
@@ -270,15 +271,20 @@ export function Categories() {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Title order={2}>Categories</Title>
-        <Button onClick={openCreateModal}>Add Category</Button>
+        <Title order={3}>Categories</Title>
+        <Button leftSection={<IconPlus size={16} />} onClick={openCreateModal}>
+          Add Category
+        </Button>
       </Group>
 
       {categories.length === 0 ? (
         <Paper p="md" withBorder>
-          <Text c="dimmed" ta="center">
-            No categories yet. Click &quot;Add Category&quot; to create one.
-          </Text>
+          <Stack align="center" gap="sm" py="xl">
+            <IconTags size={48} stroke={1} color="var(--mantine-color-dimmed)" />
+            <Text c="dimmed" ta="center">
+              No categories yet. Click &quot;Add Category&quot; to create one.
+            </Text>
+          </Stack>
         </Paper>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -293,7 +299,7 @@ export function Categories() {
                     <Table.Th>Name</Table.Th>
                     <Table.Th>Type</Table.Th>
                     <Table.Th>Frequency</Table.Th>
-                    <Table.Th>Actions</Table.Th>
+                    <Table.Th w={80}>Actions</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Stack, Title, Text, Button, Group, Box } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { IconPlaylistAdd } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { TriageGrid } from '@/components/TriageGrid/TriageGrid';
 import { TriageDetailPanel } from '@/components/TriageDetailPanel/TriageDetailPanel';
@@ -69,7 +70,11 @@ export function Triage() {
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Group justify="space-between">
         <Title order={3}>Triage</Title>
-        <Button variant="light" onClick={() => rulesModalHandlers.open()}>
+        <Button
+          variant="light"
+          leftSection={<IconPlaylistAdd size={16} />}
+          onClick={() => rulesModalHandlers.open()}
+        >
           Apply Rules
         </Button>
       </Group>

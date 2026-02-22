@@ -1,6 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Stack, Group, Paper, Text, Title, Select, Grid, Box } from '@mantine/core';
 import { BarChart, LineChart, DonutChart } from '@mantine/charts';
+import {
+  IconArrowUpRight,
+  IconArrowDownRight,
+  IconScale,
+  IconReceipt,
+  IconChartBarOff,
+} from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { centsToDisplay } from '@/utils/currency';
 import {
@@ -9,18 +16,40 @@ import {
   useCategorySummary,
   useAccountBalances,
 } from '@/utils/analytics/transactionAnalytics';
+import type { ComponentType } from 'react';
 
-function SummaryCard({ label, value, color }: { label: string; value: string; color: string }) {
+function SummaryCard({
+  label,
+  value,
+  color,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  color: string;
+  icon: ComponentType<{ size?: number; stroke?: number }>;
+}) {
   return (
-    <Paper p="md" withBorder>
-      <Stack gap={4}>
-        <Text size="sm" c="dimmed">
-          {label}
-        </Text>
-        <Text size="xl" fw={700} c={color}>
-          {value}
-        </Text>
-      </Stack>
+    <Paper
+      p="md"
+      withBorder
+      style={{
+        borderLeft: `3px solid var(--mantine-color-${color.replace('.', '-')})`,
+      }}
+    >
+      <Group justify="space-between" align="flex-start">
+        <Stack gap={4}>
+          <Text size="sm" c="dimmed">
+            {label}
+          </Text>
+          <Text size="xl" fw={700} c={color} ff="monospace">
+            {value}
+          </Text>
+        </Stack>
+        <Box opacity={0.4}>
+          <Icon size={28} stroke={1.5} />
+        </Box>
+      </Group>
     </Paper>
   );
 }
@@ -36,13 +65,19 @@ function SummaryCards({ totalIncome, totalExpenses, net, transactionCount }: Sum
   return (
     <Grid>
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-        <SummaryCard label="Total Income" value={centsToDisplay(totalIncome)} color="income.6" />
+        <SummaryCard
+          label="Total Income"
+          value={centsToDisplay(totalIncome)}
+          color="income.6"
+          icon={IconArrowUpRight}
+        />
       </Grid.Col>
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
         <SummaryCard
           label="Total Expenses"
           value={centsToDisplay(totalExpenses)}
           color="expense.6"
+          icon={IconArrowDownRight}
         />
       </Grid.Col>
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
@@ -50,10 +85,16 @@ function SummaryCards({ totalIncome, totalExpenses, net, transactionCount }: Sum
           label="Net"
           value={centsToDisplay(net)}
           color={net >= 0 ? 'income.6' : 'expense.6'}
+          icon={IconScale}
         />
       </Grid.Col>
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-        <SummaryCard label="Transactions" value={transactionCount.toString()} color="accent.6" />
+        <SummaryCard
+          label="Transactions"
+          value={transactionCount.toString()}
+          color="accent.6"
+          icon={IconReceipt}
+        />
       </Grid.Col>
     </Grid>
   );
@@ -83,7 +124,12 @@ function AccountBalancesList({ balances }: AccountBalancesListProps) {
                   {acc.accountName}
                   {acc.isDefault && ' (Default)'}
                 </Text>
-                <Text size="sm" fw={600} c={acc.balance >= 0 ? 'income.6' : 'expense.6'}>
+                <Text
+                  size="sm"
+                  fw={600}
+                  c={acc.balance >= 0 ? 'income.6' : 'expense.6'}
+                  ff="monospace"
+                >
                   {centsToDisplay(acc.balance)}
                 </Text>
               </Group>
@@ -358,9 +404,12 @@ export function Dashboard() {
 
       {transactions.length === 0 && (
         <Paper p="xl" withBorder>
-          <Text c="dimmed" ta="center">
-            No transactions yet. Import some transactions to see your financial overview.
-          </Text>
+          <Stack align="center" gap="sm" py="xl">
+            <IconChartBarOff size={48} stroke={1} color="var(--mantine-color-dimmed)" />
+            <Text c="dimmed" ta="center">
+              No transactions yet. Import some transactions to see your financial overview.
+            </Text>
+          </Stack>
         </Paper>
       )}
     </Stack>

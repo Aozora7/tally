@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
+  ActionIcon,
   Button,
   Checkbox,
   Group,
@@ -12,6 +13,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { IconPencil, IconTrash, IconPlus, IconBuildingBank } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
 import type { Account } from '@/types';
@@ -158,7 +160,7 @@ function AccountsTable({ accounts, onEdit, onDelete }: AccountsTableProps) {
         <Table.Tr>
           <Table.Th>Name</Table.Th>
           <Table.Th>Default</Table.Th>
-          <Table.Th>Actions</Table.Th>
+          <Table.Th w={80}>Actions</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
@@ -192,13 +194,13 @@ const AccountRow = ({
         )}
       </Table.Td>
       <Table.Td>
-        <Group gap="xs">
-          <Button size="xs" variant="light" onClick={() => onEdit(account)}>
-            Edit
-          </Button>
-          <Button size="xs" variant="light" color="danger" onClick={() => onDelete(account)}>
-            Delete
-          </Button>
+        <Group gap={4}>
+          <ActionIcon color="accent" onClick={() => onEdit(account)} aria-label="Edit">
+            <IconPencil size={16} stroke={1.5} />
+          </ActionIcon>
+          <ActionIcon color="danger" onClick={() => onDelete(account)} aria-label="Delete">
+            <IconTrash size={16} stroke={1.5} />
+          </ActionIcon>
         </Group>
       </Table.Td>
     </Table.Tr>
@@ -264,13 +266,18 @@ export function Accounts() {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Title order={2}>Accounts</Title>
-        <Button onClick={openCreateModal}>Add Account</Button>
+        <Title order={3}>Accounts</Title>
+        <Button leftSection={<IconPlus size={16} />} onClick={openCreateModal}>
+          Add Account
+        </Button>
       </Group>
 
       <Paper p="md" withBorder>
         {accounts.length === 0 ? (
-          <Text c="dimmed">No accounts yet. Click &quot;Add Account&quot; to create one.</Text>
+          <Stack align="center" gap="sm" py="xl">
+            <IconBuildingBank size={48} stroke={1} color="var(--mantine-color-dimmed)" />
+            <Text c="dimmed">No accounts yet. Click &quot;Add Account&quot; to create one.</Text>
+          </Stack>
         ) : (
           <AccountsTable accounts={accounts} onEdit={openEditModal} onDelete={openDeleteModal} />
         )}

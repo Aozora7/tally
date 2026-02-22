@@ -18,6 +18,7 @@ import {
 import { useForm } from '@mantine/form';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
+import { IconPencil, IconTrash, IconPlus, IconRobotOff } from '@tabler/icons-react';
 import { centsToDisplay, displayToCents } from '@/utils/currency';
 import { validateRule } from '@/utils/rulesEngine';
 import type { CategorizationRule } from '@/types';
@@ -113,7 +114,9 @@ function SortableRuleRow({
   return (
     <Table.Tr ref={setNodeRef} style={style} {...attributes}>
       <Table.Td {...listeners}>
-        <Text fw={500}>{rule.name}</Text>
+        <Text size="sm" fw={500}>
+          {rule.name}
+        </Text>
       </Table.Td>
       <Table.Td {...listeners}>
         <Text size="sm" c="dimmed">
@@ -126,24 +129,24 @@ function SortableRuleRow({
       <Table.Td>
         <Group gap={4}>
           <ActionIcon
-            variant="subtle"
             color="accent"
             onClick={(e) => {
               e.stopPropagation();
               onEdit(rule, index);
             }}
+            aria-label="Edit"
           >
-            ✎
+            <IconPencil size={16} stroke={1.5} />
           </ActionIcon>
           <ActionIcon
-            variant="subtle"
             color="danger"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(rule.id);
             }}
+            aria-label="Delete"
           >
-            ✕
+            <IconTrash size={16} stroke={1.5} />
           </ActionIcon>
         </Group>
       </Table.Td>
@@ -434,14 +437,19 @@ export function Rules() {
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={3}>Rules</Title>
-        <Button onClick={openAddModal}>Add Rule</Button>
+        <Button leftSection={<IconPlus size={16} />} onClick={openAddModal}>
+          Add Rule
+        </Button>
       </Group>
 
       <Paper p="md" withBorder>
         {rules.length === 0 ? (
-          <Text c="dimmed" ta="center">
-            No rules defined. Create rules to automatically categorize transactions.
-          </Text>
+          <Stack align="center" gap="sm" py="xl">
+            <IconRobotOff size={48} stroke={1} color="var(--mantine-color-dimmed)" />
+            <Text c="dimmed" ta="center">
+              No rules defined. Create rules to automatically categorize transactions.
+            </Text>
+          </Stack>
         ) : (
           <DndContext
             sensors={sensors}

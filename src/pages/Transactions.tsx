@@ -8,6 +8,7 @@ import {
 } from 'ag-grid-community';
 import { Button, Group, Modal, Stack, TextInput, Select, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { IconPlus, IconTrash, IconPlaylistAdd } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
 import { centsToDisplay, displayToCents } from '@/utils/currency';
@@ -272,6 +273,7 @@ function useColumnDefs(
             size="xs"
             variant="light"
             color="danger"
+            leftSection={<IconTrash size={14} />}
             onClick={() => deleteTransaction(params.data.id)}
           >
             Delete
@@ -341,9 +343,15 @@ export function Transactions() {
       <Group justify="space-between">
         <Title order={3}>Transactions</Title>
         <Group>
-          <Button onClick={() => setModalOpened(true)}>Add Transaction</Button>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setModalOpened(true)}>
+            Add Transaction
+          </Button>
           {rules.length > 0 && (
-            <Button variant="light" onClick={() => rulesModalHandlers.open()}>
+            <Button
+              variant="light"
+              leftSection={<IconPlaylistAdd size={16} />}
+              onClick={() => rulesModalHandlers.open()}
+            >
               Apply Rules
             </Button>
           )}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Box, Button, Card, FileInput, Group, Modal, Stack, Text, Title } from '@mantine/core';
+import { Button, FileInput, Group, Modal, Paper, Stack, Text, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconDownload, IconUpload, IconTrash } from '@tabler/icons-react';
 import { exportFullState, downloadJson } from '@/db/export';
 import { importFullState, parseImportFile } from '@/db/import';
 import { useFinance } from '@/context/FinanceContext';
@@ -107,47 +108,57 @@ export function Settings() {
   };
 
   return (
-    <Box p="md">
-      <Title order={2} mb="lg">
-        Settings
-      </Title>
+    <Stack gap="md">
+      <Title order={3}>Settings</Title>
 
-      <Stack gap="md">
-        <Card withBorder padding="lg">
-          <Title order={4} mb="xs">
-            Data Management
-          </Title>
-          <Text size="sm" c="dimmed" mb="md">
-            Export, import, or clear all your financial data.
+      <Paper p="md" withBorder>
+        <Title order={4} mb="xs">
+          Data Management
+        </Title>
+        <Text size="sm" c="dimmed" mb="md">
+          Export, import, or clear all your financial data.
+        </Text>
+
+        <Group gap="sm">
+          <Button
+            leftSection={<IconDownload size={16} />}
+            variant="filled"
+            onClick={handleExport}
+            loading={isExporting}
+          >
+            Export Full State
+          </Button>
+          <Button
+            leftSection={<IconUpload size={16} />}
+            variant="light"
+            onClick={() => setImportModalOpen(true)}
+          >
+            Import Full State
+          </Button>
+          <Button
+            leftSection={<IconTrash size={16} />}
+            variant="light"
+            color="danger"
+            onClick={() => setClearModalOpen(true)}
+          >
+            Clear All Data
+          </Button>
+        </Group>
+      </Paper>
+
+      <Paper p="md" withBorder>
+        <Title order={4} mb="xs">
+          About
+        </Title>
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">
+            Version
           </Text>
-
-          <Group gap="sm">
-            <Button variant="filled" onClick={handleExport} loading={isExporting}>
-              Export Full State
-            </Button>
-            <Button variant="light" onClick={() => setImportModalOpen(true)}>
-              Import Full State
-            </Button>
-            <Button variant="light" color="danger" onClick={() => setClearModalOpen(true)}>
-              Clear All Data
-            </Button>
-          </Group>
-        </Card>
-
-        <Card withBorder padding="lg">
-          <Title order={4} mb="xs">
-            About
-          </Title>
-          <Group justify="space-between">
-            <Text size="sm" c="dimmed">
-              Version
-            </Text>
-            <Text size="sm" fw={500}>
-              {APP_VERSION}
-            </Text>
-          </Group>
-        </Card>
-      </Stack>
+          <Text size="sm" fw={500}>
+            {APP_VERSION}
+          </Text>
+        </Group>
+      </Paper>
 
       <Modal
         opened={importModalOpen}
@@ -173,7 +184,7 @@ export function Settings() {
           />
 
           {importPreview && (
-            <Card withBorder padding="sm" bg="dark.6">
+            <Paper p="sm" withBorder>
               <Title order={5} mb="xs">
                 Preview
               </Title>
@@ -215,7 +226,7 @@ export function Settings() {
                   </Text>
                 </Group>
               </Stack>
-            </Card>
+            </Paper>
           )}
 
           <Group justify="flex-end" mt="md">
@@ -266,6 +277,6 @@ export function Settings() {
           </Group>
         </Stack>
       </Modal>
-    </Box>
+    </Stack>
   );
 }

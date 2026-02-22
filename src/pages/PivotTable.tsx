@@ -1,4 +1,6 @@
-import { Stack, Title, Table, Text, Paper, Group, Badge } from '@mantine/core';
+import { useState } from 'react';
+import { Stack, Title, Table, Text, Paper, Group, Badge, SegmentedControl } from '@mantine/core';
+import { IconTableOff } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import {
   useYearlyPivotTable,
@@ -8,13 +10,23 @@ import {
 } from '@/utils/analytics/yearlyPivotTable';
 import { centsToDisplay } from '@/utils/currency';
 import type { TransactionCategory } from '@/types';
+import type { MantineSize } from '@mantine/core';
 
 interface YearlyTableProps {
   data: YearlyPivotRow[];
   sortedCategories: TransactionCategory[];
+  fontSize: MantineSize;
 }
 
-function YearlyTableRow({ row, categoryIds }: { row: YearlyPivotRow; categoryIds: string[] }) {
+function YearlyTableRow({
+  row,
+  categoryIds,
+  fontSize,
+}: {
+  row: YearlyPivotRow;
+  categoryIds: string[];
+  fontSize: MantineSize;
+}) {
   return (
     <Table.Tr key={row.year}>
       <Table.Td
@@ -25,7 +37,9 @@ function YearlyTableRow({ row, categoryIds }: { row: YearlyPivotRow; categoryIds
           fontWeight: 600,
         }}
       >
-        {row.year}
+        <Text size={fontSize} fw={600}>
+          {row.year}
+        </Text>
       </Table.Td>
       {categoryIds.map((catId) => {
         const cat = row.categories.find((c: { categoryId: string }) => c.categoryId === catId);
@@ -33,31 +47,36 @@ function YearlyTableRow({ row, categoryIds }: { row: YearlyPivotRow; categoryIds
         const color = amount === 0 ? 'dimmed' : amount > 0 ? 'income.6' : 'expense.6';
         return (
           <Table.Td key={catId}>
-            <Text c={color}>{centsToDisplay(amount)}</Text>
+            <Text size={fontSize} c={color}>
+              {centsToDisplay(amount)}
+            </Text>
           </Table.Td>
         );
       })}
       <Table.Td>
         <Badge
+          size={fontSize === 'xs' ? 'xs' : 'sm'}
           color={row.savingsRate >= 50 ? 'brand' : row.savingsRate >= 0 ? 'warning' : 'danger'}
         >
           {row.savingsRate.toFixed(1)}%
         </Badge>
       </Table.Td>
       <Table.Td>
-        <Text c="expense.6">{centsToDisplay(Math.round(row.monthlyAvgExpenses))}</Text>
+        <Text size={fontSize} c="expense.6">
+          {centsToDisplay(Math.round(row.monthlyAvgExpenses))}
+        </Text>
       </Table.Td>
     </Table.Tr>
   );
 }
 
-function YearlyTable({ data, sortedCategories }: YearlyTableProps) {
+function YearlyTable({ data, sortedCategories, fontSize }: YearlyTableProps) {
   const categoryIds = sortedCategories.map((c) => c.id);
 
   return (
     <>
       <Paper withBorder style={{ overflowX: 'auto' }}>
-        <Table striped highlightOnHover>
+        <Table striped highlightOnHover fz={fontSize}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th
@@ -78,7 +97,12 @@ function YearlyTable({ data, sortedCategories }: YearlyTableProps) {
           </Table.Thead>
           <Table.Tbody>
             {data.map((row) => (
-              <YearlyTableRow key={row.year} row={row} categoryIds={categoryIds} />
+              <YearlyTableRow
+                key={row.year}
+                row={row}
+                categoryIds={categoryIds}
+                fontSize={fontSize}
+              />
             ))}
           </Table.Tbody>
         </Table>
@@ -98,9 +122,18 @@ function YearlyTable({ data, sortedCategories }: YearlyTableProps) {
 interface MonthlyTableProps {
   data: MonthlyPivotRow[];
   sortedCategories: TransactionCategory[];
+  fontSize: MantineSize;
 }
 
-function MonthlyTableRow({ row, categoryIds }: { row: MonthlyPivotRow; categoryIds: string[] }) {
+function MonthlyTableRow({
+  row,
+  categoryIds,
+  fontSize,
+}: {
+  row: MonthlyPivotRow;
+  categoryIds: string[];
+  fontSize: MantineSize;
+}) {
   return (
     <Table.Tr key={row.month}>
       <Table.Td
@@ -111,7 +144,9 @@ function MonthlyTableRow({ row, categoryIds }: { row: MonthlyPivotRow; categoryI
           fontWeight: 600,
         }}
       >
-        {row.month}
+        <Text size={fontSize} fw={600}>
+          {row.month}
+        </Text>
       </Table.Td>
       {categoryIds.map((catId) => {
         const cat = row.categories.find((c: { categoryId: string }) => c.categoryId === catId);
@@ -119,12 +154,14 @@ function MonthlyTableRow({ row, categoryIds }: { row: MonthlyPivotRow; categoryI
         const color = amount === 0 ? 'dimmed' : amount > 0 ? 'income.6' : 'expense.6';
         return (
           <Table.Td key={catId}>
-            <Text c={color}>{centsToDisplay(amount)}</Text>
+            <Text size={fontSize} c={color}>
+              {centsToDisplay(amount)}
+            </Text>
           </Table.Td>
         );
       })}
       <Table.Td>
-        <Text c="expense.6" fw={600}>
+        <Text size={fontSize} c="expense.6" fw={600}>
           {centsToDisplay(row.totalExpenses)}
         </Text>
       </Table.Td>
@@ -132,12 +169,12 @@ function MonthlyTableRow({ row, categoryIds }: { row: MonthlyPivotRow; categoryI
   );
 }
 
-function MonthlyTable({ data, sortedCategories }: MonthlyTableProps) {
+function MonthlyTable({ data, sortedCategories, fontSize }: MonthlyTableProps) {
   const categoryIds = sortedCategories.map((c) => c.id);
 
   return (
     <Paper withBorder style={{ overflowX: 'auto' }}>
-      <Table striped highlightOnHover>
+      <Table striped highlightOnHover fz={fontSize}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th
@@ -153,7 +190,12 @@ function MonthlyTable({ data, sortedCategories }: MonthlyTableProps) {
         </Table.Thead>
         <Table.Tbody>
           {data.map((row) => (
-            <MonthlyTableRow key={row.month} row={row} categoryIds={categoryIds} />
+            <MonthlyTableRow
+              key={row.month}
+              row={row}
+              categoryIds={categoryIds}
+              fontSize={fontSize}
+            />
           ))}
         </Table.Tbody>
       </Table>
@@ -164,9 +206,12 @@ function MonthlyTable({ data, sortedCategories }: MonthlyTableProps) {
 function EmptyState({ message }: { message: string }) {
   return (
     <Paper p="md" withBorder>
-      <Text c="dimmed" ta="center">
-        {message}
-      </Text>
+      <Stack align="center" gap="sm" py="xl">
+        <IconTableOff size={48} stroke={1} color="var(--mantine-color-dimmed)" />
+        <Text c="dimmed" ta="center">
+          {message}
+        </Text>
+      </Stack>
     </Paper>
   );
 }
@@ -175,26 +220,45 @@ export function PivotTable() {
   const { transactions, categories } = useFinance();
   const yearlyData = useYearlyPivotTable(transactions, categories);
   const monthlyData = useMonthlyPivotTable(transactions, categories);
+  const [fontSize, setFontSize] = useState<MantineSize>('sm');
 
   const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <Stack gap="xl">
+      <Group justify="space-between">
+        <Title order={3}>Pivot Tables</Title>
+        <SegmentedControl
+          size="xs"
+          value={fontSize}
+          onChange={(v) => setFontSize(v as MantineSize)}
+          data={[
+            { label: 'XS', value: 'xs' },
+            { label: 'SM', value: 'sm' },
+            { label: 'MD', value: 'md' },
+          ]}
+        />
+      </Group>
+
       <Stack gap="md">
-        <Title order={3}>Yearly Pivot Table</Title>
+        <Title order={4}>Yearly</Title>
         {yearlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the yearly summary." />
         ) : (
-          <YearlyTable data={yearlyData} sortedCategories={sortedCategories} />
+          <YearlyTable data={yearlyData} sortedCategories={sortedCategories} fontSize={fontSize} />
         )}
       </Stack>
 
       <Stack gap="md">
-        <Title order={3}>Monthly Pivot Table</Title>
+        <Title order={4}>Monthly</Title>
         {monthlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the monthly summary." />
         ) : (
-          <MonthlyTable data={monthlyData} sortedCategories={sortedCategories} />
+          <MonthlyTable
+            data={monthlyData}
+            sortedCategories={sortedCategories}
+            fontSize={fontSize}
+          />
         )}
       </Stack>
     </Stack>

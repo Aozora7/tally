@@ -12,6 +12,7 @@ import {
   Paper,
   ScrollArea,
 } from '@mantine/core';
+import { IconUpload, IconDownload } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { parseCsvFile, applyMapping, type ParseResult } from '@/utils/csvParser';
 import { centsToDisplay } from '@/utils/currency';
@@ -147,7 +148,9 @@ function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport }: Pr
           <Button variant="subtle" onClick={onBack}>
             Back
           </Button>
-          <Button onClick={onImport}>Import {validRows.length} Transactions</Button>
+          <Button leftSection={<IconDownload size={16} />} onClick={onImport}>
+            Import {validRows.length} Transactions
+          </Button>
         </Group>
       </Group>
 
@@ -260,7 +263,9 @@ function CompleteStep({ importedCount, duplicateCount, onReset }: CompleteStepPr
         </Alert>
       )}
       <Group>
-        <Button onClick={onReset}>Import Another File</Button>
+        <Button leftSection={<IconUpload size={16} />} onClick={onReset}>
+          Import Another File
+        </Button>
       </Group>
     </Stack>
   );
