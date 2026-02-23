@@ -10,14 +10,18 @@ import type { ExportedState } from '@/db/export';
 const APP_VERSION = '1.0.0';
 
 export function Settings() {
-  const { reloadFromDb, clearAllData } = useFinance();
+  const { reloadFromDb, clearAllData, clearTransactions, clearTriageTransactions } = useFinance();
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearTransactionsModalOpen, setClearTransactionsModalOpen] = useState(false);
+  const [clearTriageModalOpen, setClearTriageModalOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<ExportedState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isClearingTransactions, setIsClearingTransactions] = useState(false);
+  const [isClearingTriage, setIsClearingTriage] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -107,6 +111,48 @@ export function Settings() {
     }
   };
 
+  const handleClearTransactionsConfirm = async () => {
+    setIsClearingTransactions(true);
+    try {
+      await clearTransactions();
+      notifications.show({
+        title: 'Transactions Cleared',
+        message: 'All transactions have been deleted',
+        color: 'brand',
+      });
+      setClearTransactionsModalOpen(false);
+    } catch (error) {
+      notifications.show({
+        title: 'Clear Failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
+    } finally {
+      setIsClearingTransactions(false);
+    }
+  };
+
+  const handleClearTriageConfirm = async () => {
+    setIsClearingTriage(true);
+    try {
+      await clearTriageTransactions();
+      notifications.show({
+        title: 'Triage Cleared',
+        message: 'All triage transactions have been deleted',
+        color: 'brand',
+      });
+      setClearTriageModalOpen(false);
+    } catch (error) {
+      notifications.show({
+        title: 'Clear Failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
+    } finally {
+      setIsClearingTriage(false);
+    }
+  };
+
   return (
     <Stack gap="md">
       <Title order={3}>Settings</Title>
@@ -134,6 +180,22 @@ export function Settings() {
             onClick={() => setImportModalOpen(true)}
           >
             Import Full State
+          </Button>
+          <Button
+            leftSection={<IconTrash size={16} />}
+            variant="light"
+            color="danger"
+            onClick={() => setClearTransactionsModalOpen(true)}
+          >
+            Clear Transactions
+          </Button>
+          <Button
+            leftSection={<IconTrash size={16} />}
+            variant="light"
+            color="warning"
+            onClick={() => setClearTriageModalOpen(true)}
+          >
+            Clear Triage
           </Button>
           <Button
             leftSection={<IconTrash size={16} />}
@@ -273,6 +335,61 @@ export function Settings() {
             </Button>
             <Button color="danger" onClick={handleClearConfirm} loading={isClearing}>
               Delete All Data
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={clearTransactionsModalOpen}
+        onClose={() => setClearTransactionsModalOpen(false)}
+        title="Clear Transactions"
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Are you sure you want to delete all transactions? This action cannot be undone.
+          </Text>
+          <Text size="sm" c="danger" fw={500}>
+            This will permanently delete all transactions. Categories, accounts, and rules will be
+            preserved.
+          </Text>
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={() => setClearTransactionsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onClick={handleClearTransactionsConfirm}
+              loading={isClearingTransactions}
+            >
+              Delete Transactions
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={clearTriageModalOpen}
+        onClose={() => setClearTriageModalOpen(false)}
+        title="Clear Triage"
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Are you sure you want to delete all triage transactions? This action cannot be undone.
+          </Text>
+          <Text size="sm" c="warning" fw={500}>
+            This will permanently delete all triage transactions. All other data will be preserved.
+          </Text>
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={() => setClearTriageModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button color="warning" onClick={handleClearTriageConfirm} loading={isClearingTriage}>
+              Delete Triage
             </Button>
           </Group>
         </Stack>

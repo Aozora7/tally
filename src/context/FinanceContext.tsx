@@ -36,6 +36,8 @@ interface FinanceContextValue {
   reorderRules: (rules: CategorizationRule[]) => void;
   reloadFromDb: () => Promise<void>;
   clearAllData: () => Promise<void>;
+  clearTransactions: () => Promise<void>;
+  clearTriageTransactions: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextValue | null>(null);
@@ -227,6 +229,16 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setRules([]);
   }, []);
 
+  const clearTransactions = useCallback(async () => {
+    await db.transactions.clear();
+    setTransactions([]);
+  }, []);
+
+  const clearTriageTransactions = useCallback(async () => {
+    await db.triageTransactions.clear();
+    setTriageTransactions([]);
+  }, []);
+
   return (
     <FinanceContext.Provider
       value={{
@@ -257,6 +269,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         reorderRules,
         reloadFromDb,
         clearAllData,
+        clearTransactions,
+        clearTriageTransactions,
       }}
     >
       {children}
