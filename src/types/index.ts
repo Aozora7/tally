@@ -37,6 +37,33 @@ export interface Transaction {
   groupId?: string;
 }
 
+export interface Security {
+  id: string;
+  ticker: string;
+  isin: string;
+  label: string;
+  exchange: string;
+}
+
+export type SecurityTransactionType = 'Buy' | 'Sell';
+
+export interface SecurityTransaction {
+  id: string;
+  date: string;
+  type: SecurityTransactionType;
+  securityId: string;
+  units: number;
+  pricePerUnit: number;
+  fees: number;
+}
+
+export interface SecurityPriceCache {
+  id: string;
+  securityId: string;
+  yearMonth: string;
+  price: number;
+}
+
 export interface CategorizationRule {
   id: string;
   name: string;

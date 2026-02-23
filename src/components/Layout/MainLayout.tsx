@@ -12,6 +12,8 @@ import {
   IconRobot,
   IconSettings,
   IconWallet,
+  IconChartLine,
+  IconArrowsExchange,
 } from '@tabler/icons-react';
 import type { ReactNode, ComponentType } from 'react';
 
@@ -38,6 +40,13 @@ const navSections: NavSection[] = [
       { label: 'Transactions', path: '/transactions', icon: IconReceipt },
       { label: 'Triage', path: '/triage', icon: IconChecklist },
       { label: 'Import', path: '/import', icon: IconUpload },
+    ],
+  },
+  {
+    label: 'PORTFOLIO',
+    items: [
+      { label: 'Securities', path: '/securities', icon: IconChartLine },
+      { label: 'Trades', path: '/securities/transactions', icon: IconArrowsExchange },
     ],
   },
   {

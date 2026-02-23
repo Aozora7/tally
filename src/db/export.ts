@@ -5,6 +5,9 @@ import type {
   TriageTransaction,
   Transaction,
   CategorizationRule,
+  Security,
+  SecurityTransaction,
+  SecurityPriceCache,
 } from '@/types';
 
 export interface ExportedState {
@@ -15,15 +18,30 @@ export interface ExportedState {
   triageTransactions: TriageTransaction[];
   transactions: Transaction[];
   rules: CategorizationRule[];
+  securities?: Security[];
+  securityTransactions?: SecurityTransaction[];
+  securityPriceCache?: SecurityPriceCache[];
 }
 
 export async function exportFullState(): Promise<ExportedState> {
-  const [categories, accounts, triageTransactions, transactions, rules] = await Promise.all([
+  const [
+    categories,
+    accounts,
+    triageTransactions,
+    transactions,
+    rules,
+    securities,
+    securityTransactions,
+    securityPriceCache,
+  ] = await Promise.all([
     db.categories.toArray(),
     db.accounts.toArray(),
     db.triageTransactions.toArray(),
     db.transactions.toArray(),
     db.rules.toArray(),
+    db.securities.toArray(),
+    db.securityTransactions.toArray(),
+    db.securityPriceCache.toArray(),
   ]);
 
   return {
@@ -34,6 +52,9 @@ export async function exportFullState(): Promise<ExportedState> {
     triageTransactions,
     transactions,
     rules,
+    securities,
+    securityTransactions,
+    securityPriceCache,
   };
 }
 

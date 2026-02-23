@@ -1,0 +1,135 @@
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { db } from '@/db/database';
+import type { Security, SecurityTransaction, SecurityPriceCache } from '@/types';
+
+interface SecuritiesContextValue {
+  isLoaded: boolean;
+  securities: Security[];
+  securityTransactions: SecurityTransaction[];
+  securityPriceCache: SecurityPriceCache[];
+  addSecurity: (security: Security) => void;
+  updateSecurity: (security: Security) => void;
+  deleteSecurity: (id: string) => void;
+  addSecurityTransaction: (transaction: SecurityTransaction) => void;
+  updateSecurityTransaction: (transaction: SecurityTransaction) => void;
+  deleteSecurityTransaction: (id: string) => void;
+  setSecurityPriceEntries: (entries: SecurityPriceCache[]) => void;
+  reloadFromDb: () => Promise<void>;
+}
+
+const SecuritiesContext = createContext<SecuritiesContextValue | null>(null);
+
+export function SecuritiesProvider({ children }: { children: ReactNode }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [securities, setSecurities] = useState<Security[]>([]);
+  const [securityTransactions, setSecurityTransactions] = useState<SecurityTransaction[]>([]);
+  const [securityPriceCache, setSecurityPriceCache] = useState<SecurityPriceCache[]>([]);
+
+  const reloadFromDb = useCallback(async () => {
+    const [loadedSecurities, loadedTransactions, loadedPriceCache] = await Promise.all([
+      db.securities.toArray(),
+      db.securityTransactions.toArray(),
+      db.securityPriceCache.toArray(),
+    ]);
+    setSecurities(loadedSecurities);
+    setSecurityTransactions(loadedTransactions);
+    setSecurityPriceCache(loadedPriceCache);
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    void reloadFromDb();
+  }, [reloadFromDb]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        void db.transaction(
+          'rw',
+          [db.securities, db.securityTransactions, db.securityPriceCache],
+          async () => {
+            await Promise.all([
+              db.securities.bulkPut(securities),
+              db.securityTransactions.bulkPut(securityTransactions),
+              db.securityPriceCache.bulkPut(securityPriceCache),
+            ]);
+          }
+        );
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [securities, securityTransactions, securityPriceCache]);
+
+  const addSecurity = useCallback((security: Security) => {
+    setSecurities((prev) => [...prev, security]);
+    void db.securities.add(security);
+  }, []);
+
+  const updateSecurity = useCallback((security: Security) => {
+    setSecurities((prev) => prev.map((s) => (s.id === security.id ? security : s)));
+    void db.securities.put(security);
+  }, []);
+
+  const deleteSecurity = useCallback((id: string) => {
+    setSecurities((prev) => prev.filter((s) => s.id !== id));
+    void db.securities.delete(id);
+  }, []);
+
+  const addSecurityTransaction = useCallback((transaction: SecurityTransaction) => {
+    setSecurityTransactions((prev) => [...prev, transaction]);
+    void db.securityTransactions.add(transaction);
+  }, []);
+
+  const updateSecurityTransaction = useCallback((transaction: SecurityTransaction) => {
+    setSecurityTransactions((prev) =>
+      prev.map((t) => (t.id === transaction.id ? transaction : t))
+    );
+    void db.securityTransactions.put(transaction);
+  }, []);
+
+  const deleteSecurityTransaction = useCallback((id: string) => {
+    setSecurityTransactions((prev) => prev.filter((t) => t.id !== id));
+    void db.securityTransactions.delete(id);
+  }, []);
+
+  const setSecurityPriceEntries = useCallback((entries: SecurityPriceCache[]) => {
+    setSecurityPriceCache((prev) => {
+      const map = new Map(prev.map((e) => [e.id, e]));
+      for (const entry of entries) {
+        map.set(entry.id, entry);
+      }
+      return Array.from(map.values());
+    });
+    void db.securityPriceCache.bulkPut(entries);
+  }, []);
+
+  return (
+    <SecuritiesContext.Provider
+      value={{
+        isLoaded,
+        securities,
+        securityTransactions,
+        securityPriceCache,
+        addSecurity,
+        updateSecurity,
+        deleteSecurity,
+        addSecurityTransaction,
+        updateSecurityTransaction,
+        deleteSecurityTransaction,
+        setSecurityPriceEntries,
+        reloadFromDb,
+      }}
+    >
+      {children}
+    </SecuritiesContext.Provider>
+  );
+}
+
+export function useSecurities(): SecuritiesContextValue {
+  const context = useContext(SecuritiesContext);
+  if (!context) {
+    throw new Error('useSecurities must be used within a SecuritiesProvider');
+  }
+  return context;
+}

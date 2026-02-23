@@ -6,6 +6,9 @@ import type {
   Transaction,
   CategorizationRule,
   Setting,
+  Security,
+  SecurityTransaction,
+  SecurityPriceCache,
 } from '@/types';
 
 class FinanceDatabase extends Dexie {
@@ -15,6 +18,9 @@ class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction>;
   rules!: Table<CategorizationRule>;
   settings!: Table<Setting>;
+  securities!: Table<Security>;
+  securityTransactions!: Table<SecurityTransaction>;
+  securityPriceCache!: Table<SecurityPriceCache>;
 
   constructor() {
     super('ImpersonalFinance');
@@ -25,6 +31,17 @@ class FinanceDatabase extends Dexie {
       transactions: 'id',
       rules: 'id',
       settings: 'key',
+    });
+    this.version(3).stores({
+      categories: 'id',
+      accounts: 'id',
+      triageTransactions: 'id',
+      transactions: 'id',
+      rules: 'id',
+      settings: 'key',
+      securities: 'id',
+      securityTransactions: 'id, securityId',
+      securityPriceCache: 'id, securityId',
     });
   }
 }
