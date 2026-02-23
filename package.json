@@ -11,7 +11,10 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "keywords": [
     "finance",
@@ -32,6 +35,9 @@
     "@mantine/hooks": "^8.3.15",
     "@mantine/notifications": "^8.3.15",
     "@tabler/icons-react": "^3.37.1",
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
+    "@tauri-apps/plugin-fs": "^2.4.5",
     "@vitejs/plugin-react": "^5.1.4",
     "ag-grid-community": "^35.1.0",
     "ag-grid-react": "^35.1.0",
@@ -45,6 +51,7 @@
     "vite": "^7.3.1"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.10.0",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

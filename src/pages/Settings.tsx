@@ -16,6 +16,7 @@ import { exportFullState, downloadJson } from '@/db/export';
 import { importFullState, parseImportFile } from '@/db/import';
 import { useFinance } from '@/context/FinanceContext';
 import type { ExportedState } from '@/db/export';
+import { isTauri, readJsonFile, writeJsonFile } from '@/utils/tauri';
 
 const APP_VERSION = '1.0.0';
 
@@ -46,12 +47,28 @@ export function Settings() {
     try {
       const data = await exportFullState();
       const filename = `finance-backup-${new Date().toISOString().split('T')[0]}.json`;
-      downloadJson(data, filename);
-      notifications.show({
-        title: 'Export Successful',
-        message: `Exported ${data.transactions.length} transactions to ${filename}`,
-        color: 'brand',
-      });
+
+      if (isTauri()) {
+        const savedPath = await writeJsonFile(data, {
+          title: 'Export Backup',
+          defaultPath: filename,
+          filters: [{ name: 'JSON', extensions: ['json'] }],
+        });
+        if (savedPath) {
+          notifications.show({
+            title: 'Export Successful',
+            message: `Exported ${data.transactions.length} transactions to ${savedPath}`,
+            color: 'brand',
+          });
+        }
+      } else {
+        downloadJson(data, filename);
+        notifications.show({
+          title: 'Export Successful',
+          message: `Exported ${data.transactions.length} transactions to ${filename}`,
+          color: 'brand',
+        });
+      }
     } catch (error) {
       notifications.show({
         title: 'Export Failed',
@@ -80,6 +97,25 @@ export function Settings() {
         color: 'danger',
       });
       setImportFile(null);
+    }
+  };
+
+  const handleImportFromDialog = async () => {
+    try {
+      const result = await readJsonFile<ExportedState>({
+        title: 'Import Backup',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      });
+      if (result) {
+        setImportPreview(result.data);
+        setImportModalOpen(true);
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Invalid Backup File',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
     }
   };
 
@@ -205,7 +241,13 @@ export function Settings() {
           <Button
             leftSection={<IconUpload size={16} />}
             variant="light"
-            onClick={() => setImportModalOpen(true)}
+            onClick={() => {
+              if (isTauri()) {
+                handleImportFromDialog();
+              } else {
+                setImportModalOpen(true);
+              }
+            }}
           >
             Import Full State
           </Button>
@@ -281,16 +323,20 @@ export function Settings() {
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Select a backup JSON file to restore your data. This will replace ALL existing data.
+            {isTauri()
+              ? 'Review the backup data below. This will replace ALL existing data.'
+              : 'Select a backup JSON file to restore your data. This will replace ALL existing data.'}
           </Text>
 
-          <FileInput
-            label="Backup File"
-            placeholder="Select JSON file"
-            accept=".json"
-            value={importFile}
-            onChange={handleImportFileSelect}
-          />
+          {!isTauri() && (
+            <FileInput
+              label="Backup File"
+              placeholder="Select JSON file"
+              accept=".json"
+              value={importFile}
+              onChange={handleImportFileSelect}
+            />
+          )}
 
           {importPreview && (
             <Paper p="sm" withBorder>

@@ -8,7 +8,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...tseslint.configs.stylistic,
   {
-    ignores: ['dist/**', 'build/**', 'node_modules/**', '*.config.*'],
+    ignores: ['dist/**', 'build/**', 'node_modules/**', '*.config.*', 'src-tauri/**'],
   },
   {
     files: ['src/**/*.{js,jsx,mjs,cjs,ts,tsx}'],
@@ -39,10 +39,7 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { prefer: 'type-imports' },
-      ],
+      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
     },
   },
   eslintConfigPrettier
