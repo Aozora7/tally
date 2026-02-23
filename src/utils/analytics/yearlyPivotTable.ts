@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import type { Transaction, TransactionCategory } from '@/types';
+import type { Transaction, TransactionCategory, CategoryType } from '@/types';
 
 export interface YearlyPivotRow {
   year: string;
-  categories: { categoryId: string; name: string; total: number }[];
+  typeTotals: { type: CategoryType; total: number }[];
   totalIncome: number;
   totalExpenses: number;
   savingsRate: number;
@@ -13,9 +13,11 @@ export interface YearlyPivotRow {
 
 export interface MonthlyPivotRow {
   month: string;
-  categories: { categoryId: string; name: string; total: number }[];
+  typeTotals: { type: CategoryType; total: number }[];
   totalExpenses: number;
 }
+
+const CATEGORY_TYPES: CategoryType[] = ['Income', 'Fixed', 'Cyclical', 'Irregular'];
 
 export function useYearlyPivotTable(
   transactions: Transaction[],
@@ -25,11 +27,16 @@ export function useYearlyPivotTable(
     const nonTransferTransactions = transactions.filter((t) => !t.transferAccountId);
     if (nonTransferTransactions.length === 0 || categories.length === 0) return [];
 
+    const categoryTypeMap = new Map<string, CategoryType>();
+    for (const cat of categories) {
+      categoryTypeMap.set(cat.id, cat.type);
+    }
+
     const byYear = new Map<
       string,
       {
         months: Set<string>;
-        categories: Map<string, number>;
+        typeTotals: Map<CategoryType, number>;
         income: number;
         expenses: number;
       }
@@ -43,7 +50,7 @@ export function useYearlyPivotTable(
       if (!yearData) {
         yearData = {
           months: new Set(),
-          categories: new Map(),
+          typeTotals: new Map(),
           income: 0,
           expenses: 0,
         };
@@ -59,12 +66,13 @@ export function useYearlyPivotTable(
       }
 
       if (t.categoryId) {
-        const existing = yearData.categories.get(t.categoryId) ?? 0;
-        yearData.categories.set(t.categoryId, existing + t.amount);
+        const catType = categoryTypeMap.get(t.categoryId);
+        if (catType) {
+          const existing = yearData.typeTotals.get(catType) ?? 0;
+          yearData.typeTotals.set(catType, existing + t.amount);
+        }
       }
     }
-
-    const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
 
     const results: YearlyPivotRow[] = [];
     const sortedYears = Array.from(byYear.keys()).sort();
@@ -72,10 +80,9 @@ export function useYearlyPivotTable(
     for (const year of sortedYears) {
       const data = byYear.get(year)!;
 
-      const categoryTotals = sortedCategories.map((cat) => ({
-        categoryId: cat.id,
-        name: cat.name,
-        total: data.categories.get(cat.id) ?? 0,
+      const typeTotals = CATEGORY_TYPES.map((type) => ({
+        type,
+        total: data.typeTotals.get(type) ?? 0,
       }));
 
       const savingsRate = data.income > 0 ? ((data.income - data.expenses) / data.income) * 100 : 0;
@@ -84,7 +91,7 @@ export function useYearlyPivotTable(
 
       results.push({
         year,
-        categories: categoryTotals,
+        typeTotals,
         totalIncome: data.income,
         totalExpenses: data.expenses,
         savingsRate,
@@ -105,10 +112,15 @@ export function useMonthlyPivotTable(
     const nonTransferTransactions = transactions.filter((t) => !t.transferAccountId);
     if (nonTransferTransactions.length === 0 || categories.length === 0) return [];
 
+    const categoryTypeMap = new Map<string, CategoryType>();
+    for (const cat of categories) {
+      categoryTypeMap.set(cat.id, cat.type);
+    }
+
     const byMonth = new Map<
       string,
       {
-        categories: Map<string, number>;
+        typeTotals: Map<CategoryType, number>;
         expenses: number;
       }
     >();
@@ -119,7 +131,7 @@ export function useMonthlyPivotTable(
       let monthData = byMonth.get(month);
       if (!monthData) {
         monthData = {
-          categories: new Map(),
+          typeTotals: new Map(),
           expenses: 0,
         };
         byMonth.set(month, monthData);
@@ -130,12 +142,13 @@ export function useMonthlyPivotTable(
       }
 
       if (t.categoryId) {
-        const existing = monthData.categories.get(t.categoryId) ?? 0;
-        monthData.categories.set(t.categoryId, existing + t.amount);
+        const catType = categoryTypeMap.get(t.categoryId);
+        if (catType) {
+          const existing = monthData.typeTotals.get(catType) ?? 0;
+          monthData.typeTotals.set(catType, existing + t.amount);
+        }
       }
     }
-
-    const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
 
     const results: MonthlyPivotRow[] = [];
     const sortedMonths = Array.from(byMonth.keys()).sort();
@@ -143,15 +156,14 @@ export function useMonthlyPivotTable(
     for (const month of sortedMonths) {
       const data = byMonth.get(month)!;
 
-      const categoryTotals = sortedCategories.map((cat) => ({
-        categoryId: cat.id,
-        name: cat.name,
-        total: data.categories.get(cat.id) ?? 0,
+      const typeTotals = CATEGORY_TYPES.map((type) => ({
+        type,
+        total: data.typeTotals.get(type) ?? 0,
       }));
 
       results.push({
         month,
-        categories: categoryTotals,
+        typeTotals,
         totalExpenses: data.expenses,
       });
     }

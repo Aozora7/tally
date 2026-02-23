@@ -9,24 +9,23 @@ import {
   type MonthlyPivotRow,
 } from '@/utils/analytics/yearlyPivotTable';
 import { useCurrency } from '@/utils/currency';
-import type { TransactionCategory } from '@/types';
+import type { CategoryType } from '@/types';
 import type { MantineSize } from '@mantine/core';
+
+const CATEGORY_TYPES: CategoryType[] = ['Income', 'Fixed', 'Cyclical', 'Irregular'];
 
 interface YearlyTableProps {
   data: YearlyPivotRow[];
-  sortedCategories: TransactionCategory[];
   fontSize: MantineSize;
   format: (cents: number) => string;
 }
 
 function YearlyTableRow({
   row,
-  categoryIds,
   fontSize,
   format,
 }: {
   row: YearlyPivotRow;
-  categoryIds: string[];
   fontSize: MantineSize;
   format: (cents: number) => string;
 }) {
@@ -44,14 +43,12 @@ function YearlyTableRow({
           {row.year}
         </Text>
       </Table.Td>
-      {categoryIds.map((catId) => {
-        const cat = row.categories.find((c: { categoryId: string }) => c.categoryId === catId);
-        const amount = cat?.total ?? 0;
-        const color = amount === 0 ? 'dimmed' : amount > 0 ? 'income.6' : 'expense.6';
+      {row.typeTotals.map(({ type, total }) => {
+        const color = total === 0 ? 'dimmed' : total > 0 ? 'income.6' : 'expense.6';
         return (
-          <Table.Td key={catId}>
+          <Table.Td key={type}>
             <Text size={fontSize} c={color}>
-              {format(amount)}
+              {format(total)}
             </Text>
           </Table.Td>
         );
@@ -73,9 +70,7 @@ function YearlyTableRow({
   );
 }
 
-function YearlyTable({ data, sortedCategories, fontSize, format }: YearlyTableProps) {
-  const categoryIds = sortedCategories.map((c) => c.id);
-
+function YearlyTable({ data, fontSize, format }: YearlyTableProps) {
   return (
     <>
       <Paper withBorder style={{ overflowX: 'auto' }}>
@@ -91,8 +86,8 @@ function YearlyTable({ data, sortedCategories, fontSize, format }: YearlyTablePr
               >
                 Year
               </Table.Th>
-              {sortedCategories.map((cat) => (
-                <Table.Th key={cat.id}>{cat.name}</Table.Th>
+              {CATEGORY_TYPES.map((type) => (
+                <Table.Th key={type}>{type}</Table.Th>
               ))}
               <Table.Th>SR</Table.Th>
               <Table.Th>Expenses/m</Table.Th>
@@ -100,13 +95,7 @@ function YearlyTable({ data, sortedCategories, fontSize, format }: YearlyTablePr
           </Table.Thead>
           <Table.Tbody>
             {data.map((row) => (
-              <YearlyTableRow
-                key={row.year}
-                row={row}
-                categoryIds={categoryIds}
-                fontSize={fontSize}
-                format={format}
-              />
+              <YearlyTableRow key={row.year} row={row} fontSize={fontSize} format={format} />
             ))}
           </Table.Tbody>
         </Table>
@@ -125,19 +114,16 @@ function YearlyTable({ data, sortedCategories, fontSize, format }: YearlyTablePr
 
 interface MonthlyTableProps {
   data: MonthlyPivotRow[];
-  sortedCategories: TransactionCategory[];
   fontSize: MantineSize;
   format: (cents: number) => string;
 }
 
 function MonthlyTableRow({
   row,
-  categoryIds,
   fontSize,
   format,
 }: {
   row: MonthlyPivotRow;
-  categoryIds: string[];
   fontSize: MantineSize;
   format: (cents: number) => string;
 }) {
@@ -155,14 +141,12 @@ function MonthlyTableRow({
           {row.month}
         </Text>
       </Table.Td>
-      {categoryIds.map((catId) => {
-        const cat = row.categories.find((c: { categoryId: string }) => c.categoryId === catId);
-        const amount = cat?.total ?? 0;
-        const color = amount === 0 ? 'dimmed' : amount > 0 ? 'income.6' : 'expense.6';
+      {row.typeTotals.map(({ type, total }) => {
+        const color = total === 0 ? 'dimmed' : total > 0 ? 'income.6' : 'expense.6';
         return (
-          <Table.Td key={catId}>
+          <Table.Td key={type}>
             <Text size={fontSize} c={color}>
-              {format(amount)}
+              {format(total)}
             </Text>
           </Table.Td>
         );
@@ -176,9 +160,7 @@ function MonthlyTableRow({
   );
 }
 
-function MonthlyTable({ data, sortedCategories, fontSize, format }: MonthlyTableProps) {
-  const categoryIds = sortedCategories.map((c) => c.id);
-
+function MonthlyTable({ data, fontSize, format }: MonthlyTableProps) {
   return (
     <Paper withBorder style={{ overflowX: 'auto' }}>
       <Table striped highlightOnHover fz={fontSize}>
@@ -189,21 +171,15 @@ function MonthlyTable({ data, sortedCategories, fontSize, format }: MonthlyTable
             >
               Month
             </Table.Th>
-            {sortedCategories.map((cat) => (
-              <Table.Th key={cat.id}>{cat.name}</Table.Th>
+            {CATEGORY_TYPES.map((type) => (
+              <Table.Th key={type}>{type}</Table.Th>
             ))}
             <Table.Th>Total</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           {data.map((row) => (
-            <MonthlyTableRow
-              key={row.month}
-              row={row}
-              categoryIds={categoryIds}
-              fontSize={fontSize}
-              format={format}
-            />
+            <MonthlyTableRow key={row.month} row={row} fontSize={fontSize} format={format} />
           ))}
         </Table.Tbody>
       </Table>
@@ -231,8 +207,6 @@ export function PivotTable() {
   const monthlyData = useMonthlyPivotTable(transactions, categories);
   const [fontSize, setFontSize] = useState<MantineSize>('sm');
 
-  const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
-
   return (
     <Stack gap="xl">
       <Group justify="space-between">
@@ -254,12 +228,7 @@ export function PivotTable() {
         {yearlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the yearly summary." />
         ) : (
-          <YearlyTable
-            data={yearlyData}
-            sortedCategories={sortedCategories}
-            fontSize={fontSize}
-            format={format}
-          />
+          <YearlyTable data={yearlyData} fontSize={fontSize} format={format} />
         )}
       </Stack>
 
@@ -268,12 +237,7 @@ export function PivotTable() {
         {monthlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the monthly summary." />
         ) : (
-          <MonthlyTable
-            data={monthlyData}
-            sortedCategories={sortedCategories}
-            fontSize={fontSize}
-            format={format}
-          />
+          <MonthlyTable data={monthlyData} fontSize={fontSize} format={format} />
         )}
       </Stack>
     </Stack>
