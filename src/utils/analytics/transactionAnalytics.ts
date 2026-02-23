@@ -32,13 +32,23 @@ export interface TransactionSummary {
 
 export function useMonthlyTrend(
   transactions: Transaction[],
+  categories: TransactionCategory[],
   startDate?: string,
   endDate?: string
 ): MonthlyData[] {
   return useMemo(() => {
     if (transactions.length === 0) return [];
 
-    let filtered = transactions;
+    const excludedCategories = new Set<string>();
+    for (const cat of categories) {
+      if (cat.excludeFromReports) {
+        excludedCategories.add(cat.id);
+      }
+    }
+
+    let filtered = transactions.filter(
+      (t) => !t.categoryId || !excludedCategories.has(t.categoryId)
+    );
     if (startDate) {
       filtered = filtered.filter((t) => t.date >= startDate);
     }
@@ -75,7 +85,7 @@ export function useMonthlyTrend(
     }
 
     return results;
-  }, [transactions, startDate, endDate]);
+  }, [transactions, categories, startDate, endDate]);
 }
 
 export function useCategorySummary(
@@ -88,7 +98,16 @@ export function useCategorySummary(
   return useMemo(() => {
     if (transactions.length === 0 || categories.length === 0) return [];
 
-    let filtered = transactions.filter((t) => t.categoryId);
+    const excludedCategories = new Set<string>();
+    for (const cat of categories) {
+      if (cat.excludeFromReports) {
+        excludedCategories.add(cat.id);
+      }
+    }
+
+    let filtered = transactions.filter(
+      (t) => t.categoryId && !excludedCategories.has(t.categoryId)
+    );
     if (startDate) {
       filtered = filtered.filter((t) => t.date >= startDate);
     }
@@ -167,7 +186,17 @@ export function useTransactionSummary(
   endDate?: string
 ): TransactionSummary {
   return useMemo(() => {
-    let filtered = transactions;
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const excludedCategories = new Set<string>();
+    for (const cat of categories) {
+      if (cat.excludeFromReports) {
+        excludedCategories.add(cat.id);
+      }
+    }
+
+    let filtered = transactions.filter(
+      (t) => !t.categoryId || !excludedCategories.has(t.categoryId)
+    );
     if (startDate) {
       filtered = filtered.filter((t) => t.date >= startDate);
     }
@@ -184,11 +213,13 @@ export function useTransactionSummary(
       };
     }
 
-    const categoryMap = new Map(categories.map((c) => [c.id, c]));
     let totalIncome = 0;
     let totalExpenses = 0;
 
     for (const t of filtered) {
+      if (t.transferAccountId) {
+        continue;
+      }
       const category = t.categoryId ? categoryMap.get(t.categoryId) : null;
       if (category?.type === 'Income') {
         totalIncome += t.amount;

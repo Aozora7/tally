@@ -193,8 +193,7 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
   const defaultAccount = useMemo(() => accounts.find((a) => a.isDefault), [accounts]);
 
   useEffect(() => {
-    console.log(accounts, opened, defaultAccount, defaultAccountId);
-    if (accounts && opened && defaultAccount && !defaultAccountId) {
+    if (opened && defaultAccount && !defaultAccountId) {
       setDefaultAccountId(defaultAccount.id);
     }
   }, [opened, defaultAccount, defaultAccountId]);

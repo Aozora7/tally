@@ -10,6 +10,7 @@ export interface TransactionCategory {
   name: string;
   type: CategoryType;
   sortOrder: number;
+  excludeFromReports: boolean;
 }
 
 export interface Account {

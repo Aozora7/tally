@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ActionIcon,
   Button,
+  Checkbox,
   Group,
   Modal,
   Select,
@@ -40,6 +41,7 @@ const CATEGORY_TYPES: CategoryType[] = ['Income', 'Fixed', 'Cyclical', 'Irregula
 interface CategoryFormData {
   name: string;
   type: CategoryType;
+  excludeFromReports: boolean;
 }
 
 interface SortableCategoryRowProps {
@@ -111,6 +113,7 @@ function CategoryFormModal({
     initialValues: {
       name: '',
       type: 'Fixed',
+      excludeFromReports: false,
     },
     validate: {
       name: (value) => (value.trim().length > 0 ? null : 'Name is required'),
@@ -123,6 +126,7 @@ function CategoryFormModal({
         form.setValues({
           name: editingCategory.name,
           type: editingCategory.type,
+          excludeFromReports: editingCategory.excludeFromReports,
         });
       } else {
         form.reset();
@@ -137,6 +141,7 @@ function CategoryFormModal({
         ...editingCategory,
         name: values.name.trim(),
         type: values.type,
+        excludeFromReports: values.excludeFromReports,
       });
     } else {
       onSubmit({
@@ -144,6 +149,7 @@ function CategoryFormModal({
         name: values.name.trim(),
         type: values.type,
         sortOrder: categoryCount,
+        excludeFromReports: values.excludeFromReports,
       });
     }
     onClose();
@@ -163,6 +169,11 @@ function CategoryFormModal({
             {...form.getInputProps('name')}
           />
           <Select label="Type" data={CATEGORY_TYPES} {...form.getInputProps('type')} />
+          <Checkbox
+            label="Exclude from reports"
+            description="Hide transactions in this category from pivot tables and visualizations"
+            {...form.getInputProps('excludeFromReports', { type: 'checkbox' })}
+          />
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={onClose}>
               Cancel

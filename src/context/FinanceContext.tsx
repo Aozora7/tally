@@ -113,9 +113,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const addCategory = useCallback(
     (category: TransactionCategory) => {
-      const categoryWithSortOrder = { ...category, sortOrder: categories.length };
-      setCategories((prev) => [...prev, categoryWithSortOrder]);
-      void db.categories.add(categoryWithSortOrder);
+      const categoryWithDefaults = {
+        ...category,
+        sortOrder: categories.length,
+        excludeFromReports: category.excludeFromReports ?? false,
+      };
+      setCategories((prev) => [...prev, categoryWithDefaults]);
+      void db.categories.add(categoryWithDefaults);
     },
     [categories.length]
   );

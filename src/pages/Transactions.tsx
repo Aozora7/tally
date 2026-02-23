@@ -55,12 +55,12 @@ function currencyValueParser(params: { newValue: string }): number {
   return displayToCents(params.newValue);
 }
 
-function useCurrencyFormatter() {
+function useCurrencyValueGetter() {
   const { format } = useCurrency();
   return useCallback(
-    (params: { value: number | null | undefined }) => {
-      if (params.value === null || params.value === undefined) return '';
-      return format(params.value);
+    (params: { data: Transaction | null | undefined }) => {
+      if (params.data?.amount === null || params.data?.amount === undefined) return '';
+      return format(params.data.amount);
     },
     [format]
   );
@@ -174,7 +174,7 @@ function useColumnDefs(
   categoryOptions: { value: string; label: string }[],
   deleteTransaction: (id: string) => void
 ) {
-  const currencyValueFormatter = useCurrencyFormatter();
+  const currencyValueGetter = useCurrencyValueGetter();
   return useMemo<ColDef<Transaction>[]>(
     () => [
       {
@@ -189,14 +189,19 @@ function useColumnDefs(
         field: 'amount',
         headerName: 'Amount',
         width: 120,
-        valueFormatter: currencyValueFormatter,
+        valueGetter: currencyValueGetter,
         valueParser: currencyValueParser,
+        comparator: (_valueA, _valueB, nodeA, nodeB) => {
+          const a = nodeA.data?.amount ?? 0;
+          const b = nodeB.data?.amount ?? 0;
+          return a - b;
+        },
         editable: true,
         cellStyle: (params) => {
-          if (params.value === null || params.value === undefined) return {};
+          if (params.data?.amount === null || params.data?.amount === undefined) return {};
           return {
             color:
-              params.value >= 0
+              params.data.amount >= 0
                 ? 'var(--mantine-color-income-6)'
                 : 'var(--mantine-color-expense-6)',
           };
@@ -224,6 +229,10 @@ function useColumnDefs(
         },
         editable: true,
         filter: true,
+        filterValueGetter: (params) => {
+          const account = accounts.find((a) => a.id === params.data?.accountId);
+          return account?.name ?? '';
+        },
         filterParams: {
           buttons: ['apply', 'reset'],
         },
@@ -243,6 +252,12 @@ function useColumnDefs(
         },
         editable: true,
         filter: true,
+        filterValueGetter: (params) => {
+          if (!params.data) return '(None)';
+          if (!params.data.categoryId) return '(None)';
+          const category = categories.find((c) => c.id === params.data!.categoryId);
+          return category?.name ?? '';
+        },
         filterParams: {
           buttons: ['apply', 'reset'],
         },
@@ -262,6 +277,12 @@ function useColumnDefs(
         },
         editable: true,
         filter: true,
+        filterValueGetter: (params) => {
+          if (!params.data) return '(None)';
+          if (!params.data.transferAccountId) return '(None)';
+          const account = accounts.find((a) => a.id === params.data!.transferAccountId);
+          return account?.name ?? '';
+        },
         filterParams: {
           buttons: ['apply', 'reset'],
         },
@@ -289,14 +310,7 @@ function useColumnDefs(
         editable: false,
       },
     ],
-    [
-      accounts,
-      categories,
-      accountOptions,
-      categoryOptions,
-      deleteTransaction,
-      currencyValueFormatter,
-    ]
+    [accounts, categories, accountOptions, categoryOptions, deleteTransaction, currencyValueGetter]
   );
 }
 

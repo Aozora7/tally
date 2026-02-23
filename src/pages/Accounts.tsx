@@ -16,6 +16,8 @@ import { useForm } from '@mantine/form';
 import { IconPencil, IconTrash, IconPlus, IconBuildingBank } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
+import { useCurrency } from '@/utils/currency';
+import { useAccountBalances } from '@/utils/analytics/transactionAnalytics';
 import type { Account } from '@/types';
 
 interface AccountFormData {
@@ -149,23 +151,33 @@ function DeleteAccountModal({
 
 interface AccountsTableProps {
   accounts: Account[];
+  balances: Map<string, number>;
+  format: (cents: number) => string;
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
 }
 
-function AccountsTable({ accounts, onEdit, onDelete }: AccountsTableProps) {
+function AccountsTable({ accounts, balances, format, onEdit, onDelete }: AccountsTableProps) {
   return (
     <Table highlightOnHover>
       <Table.Thead>
         <Table.Tr>
           <Table.Th>Name</Table.Th>
+          <Table.Th>Balance</Table.Th>
           <Table.Th>Default</Table.Th>
           <Table.Th w={80}>Actions</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
         {accounts.map((account) => (
-          <AccountRow key={account.id} account={account} onEdit={onEdit} onDelete={onDelete} />
+          <AccountRow
+            key={account.id}
+            account={account}
+            balance={balances.get(account.id) ?? 0}
+            format={format}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         ))}
       </Table.Tbody>
     </Table>
@@ -174,16 +186,25 @@ function AccountsTable({ accounts, onEdit, onDelete }: AccountsTableProps) {
 
 const AccountRow = ({
   account,
+  balance,
+  format,
   onEdit,
   onDelete,
 }: {
   account: Account;
+  balance: number;
+  format: (cents: number) => string;
   onEdit: (a: Account) => void;
   onDelete: (a: Account) => void;
 }) => {
   return (
     <Table.Tr key={account.id}>
       <Table.Td>{account.name}</Table.Td>
+      <Table.Td>
+        <Text fw={500} c={balance >= 0 ? 'income.6' : 'expense.6'} ff="monospace">
+          {format(balance)}
+        </Text>
+      </Table.Td>
       <Table.Td>
         {account.isDefault ? (
           <Text c="brand.6" fw={500}>
@@ -209,6 +230,8 @@ const AccountRow = ({
 
 export function Accounts() {
   const { accounts, transactions, addAccount, updateAccount, deleteAccount } = useFinance();
+  const { format } = useCurrency();
+  const accountBalances = useAccountBalances(transactions, accounts);
   const [modalOpened, setModalOpened] = useState(false);
   const [deleteOpened, setDeleteOpened] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -216,6 +239,10 @@ export function Accounts() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const defaultAccount = useMemo(() => accounts.find((a) => a.isDefault), [accounts]);
+  const balancesMap = useMemo(
+    () => new Map(accountBalances.map((b) => [b.accountId, b.balance])),
+    [accountBalances]
+  );
 
   const openCreateModal = () => {
     setEditingAccount(null);
@@ -279,7 +306,13 @@ export function Accounts() {
             <Text c="dimmed">No accounts yet. Click &quot;Add Account&quot; to create one.</Text>
           </Stack>
         ) : (
-          <AccountsTable accounts={accounts} onEdit={openEditModal} onDelete={openDeleteModal} />
+          <AccountsTable
+            accounts={accounts}
+            balances={balancesMap}
+            format={format}
+            onEdit={openEditModal}
+            onDelete={openDeleteModal}
+          />
         )}
       </Paper>
 

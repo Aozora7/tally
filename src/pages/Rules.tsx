@@ -393,7 +393,7 @@ export function Rules() {
   );
 
   const transferOptions = useMemo(
-    () => accounts.filter((a) => !a.isDefault).map((a) => ({ value: a.id, label: a.name })),
+    () => accounts.map((a) => ({ value: a.id, label: a.name })),
     [accounts]
   );
 

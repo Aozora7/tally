@@ -14,7 +14,6 @@ import {
   useTransactionSummary,
   useMonthlyTrend,
   useCategorySummary,
-  useAccountBalances,
 } from '@/utils/analytics/transactionAnalytics';
 import type { ComponentType } from 'react';
 
@@ -104,48 +103,6 @@ function SummaryCards({
         />
       </Grid.Col>
     </Grid>
-  );
-}
-
-interface AccountBalancesListProps {
-  balances: {
-    accountId: string;
-    accountName: string;
-    balance: number;
-    isDefault: boolean;
-  }[];
-  format: (cents: number) => string;
-}
-
-function AccountBalancesList({ balances, format }: AccountBalancesListProps) {
-  return (
-    <>
-      <Title order={4} mt="md">
-        Account Balances
-      </Title>
-      <Grid>
-        {balances.map((acc) => (
-          <Grid.Col key={acc.accountId} span={{ base: 12, sm: 6, md: 4 }}>
-            <Paper p="sm" withBorder>
-              <Group justify="space-between">
-                <Text size="sm" fw={500}>
-                  {acc.accountName}
-                  {acc.isDefault && ' (Default)'}
-                </Text>
-                <Text
-                  size="sm"
-                  fw={600}
-                  c={acc.balance >= 0 ? 'income.6' : 'expense.6'}
-                  ff="monospace"
-                >
-                  {format(acc.balance)}
-                </Text>
-              </Group>
-            </Paper>
-          </Grid.Col>
-        ))}
-      </Grid>
-    </>
   );
 }
 
@@ -334,9 +291,8 @@ export function Dashboard() {
   }, [transactions, accountFilter]);
 
   const summary = useTransactionSummary(filteredTransactions, categories, startDate, endDate);
-  const monthlyTrend = useMonthlyTrend(filteredTransactions, startDate, endDate);
+  const monthlyTrend = useMonthlyTrend(filteredTransactions, categories, startDate, endDate);
   const categorySummary = useCategorySummary(filteredTransactions, categories, startDate, endDate);
-  const accountBalances = useAccountBalances(transactions, accounts);
 
   const expenseByCategory = useMemo(
     () =>
@@ -403,8 +359,6 @@ export function Dashboard() {
         transactionCount={summary.transactionCount}
         format={format}
       />
-
-      <AccountBalancesList balances={accountBalances} format={format} />
 
       <MonthlyTrendChart data={chartMonthlyTrend} />
 

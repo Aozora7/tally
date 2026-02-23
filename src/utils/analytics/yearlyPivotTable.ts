@@ -28,9 +28,17 @@ export function useYearlyPivotTable(
     if (nonTransferTransactions.length === 0 || categories.length === 0) return [];
 
     const categoryTypeMap = new Map<string, CategoryType>();
+    const excludedCategories = new Set<string>();
     for (const cat of categories) {
       categoryTypeMap.set(cat.id, cat.type);
+      if (cat.excludeFromReports) {
+        excludedCategories.add(cat.id);
+      }
     }
+
+    const reportableTransactions = nonTransferTransactions.filter(
+      (t) => !t.categoryId || !excludedCategories.has(t.categoryId)
+    );
 
     const byYear = new Map<
       string,
@@ -42,7 +50,7 @@ export function useYearlyPivotTable(
       }
     >();
 
-    for (const t of nonTransferTransactions) {
+    for (const t of reportableTransactions) {
       const year = t.date.substring(0, 4);
       const month = t.date.substring(0, 7);
 
@@ -113,9 +121,17 @@ export function useMonthlyPivotTable(
     if (nonTransferTransactions.length === 0 || categories.length === 0) return [];
 
     const categoryTypeMap = new Map<string, CategoryType>();
+    const excludedCategories = new Set<string>();
     for (const cat of categories) {
       categoryTypeMap.set(cat.id, cat.type);
+      if (cat.excludeFromReports) {
+        excludedCategories.add(cat.id);
+      }
     }
+
+    const reportableTransactions = nonTransferTransactions.filter(
+      (t) => !t.categoryId || !excludedCategories.has(t.categoryId)
+    );
 
     const byMonth = new Map<
       string,
@@ -125,9 +141,8 @@ export function useMonthlyPivotTable(
       }
     >();
 
-    for (const t of nonTransferTransactions) {
+    for (const t of reportableTransactions) {
       const month = t.date.substring(0, 7);
-
       let monthData = byMonth.get(month);
       if (!monthData) {
         monthData = {
