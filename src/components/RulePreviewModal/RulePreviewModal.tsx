@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Modal,
   Stack,
@@ -191,6 +191,13 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
   const [defaultAccountId, setDefaultAccountId] = useState<string>('');
 
   const defaultAccount = useMemo(() => accounts.find((a) => a.isDefault), [accounts]);
+
+  useEffect(() => {
+    console.log(accounts, opened, defaultAccount, defaultAccountId);
+    if (accounts && opened && defaultAccount && !defaultAccountId) {
+      setDefaultAccountId(defaultAccount.id);
+    }
+  }, [opened, defaultAccount, defaultAccountId]);
 
   const accountOptions = useMemo(
     () => accounts.map((a) => ({ value: a.id, label: a.name })),
