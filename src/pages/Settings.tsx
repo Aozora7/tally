@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Button, FileInput, Group, Modal, Paper, Stack, Text, Title } from '@mantine/core';
+import {
+  Button,
+  FileInput,
+  Group,
+  Modal,
+  Paper,
+  Stack,
+  Text,
+  Title,
+  TextInput,
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconUpload, IconTrash } from '@tabler/icons-react';
 import { exportFullState, downloadJson } from '@/db/export';
@@ -10,7 +20,14 @@ import type { ExportedState } from '@/db/export';
 const APP_VERSION = '1.0.0';
 
 export function Settings() {
-  const { reloadFromDb, clearAllData, clearTransactions, clearTriageTransactions } = useFinance();
+  const {
+    reloadFromDb,
+    clearAllData,
+    clearTransactions,
+    clearTriageTransactions,
+    settings,
+    setSetting,
+  } = useFinance();
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
   const [clearTransactionsModalOpen, setClearTransactionsModalOpen] = useState(false);
@@ -22,6 +39,7 @@ export function Settings() {
   const [isClearing, setIsClearing] = useState(false);
   const [isClearingTransactions, setIsClearingTransactions] = useState(false);
   const [isClearingTriage, setIsClearingTriage] = useState(false);
+  const [currencySymbol, setCurrencySymbolState] = useState(settings.get('currency') || '$');
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -153,6 +171,16 @@ export function Settings() {
     }
   };
 
+  const handleCurrencyChange = (value: string) => {
+    setSetting('currency', value);
+    setCurrencySymbolState(value);
+    notifications.show({
+      title: 'Currency Updated',
+      message: `Currency symbol set to "${value}"`,
+      color: 'brand',
+    });
+  };
+
   return (
     <Stack gap="md">
       <Title order={3}>Settings</Title>
@@ -205,6 +233,25 @@ export function Settings() {
           >
             Clear All Data
           </Button>
+        </Group>
+      </Paper>
+
+      <Paper p="md" withBorder>
+        <Title order={4} mb="xs">
+          Display Settings
+        </Title>
+        <Text size="sm" c="dimmed" mb="md">
+          Configure how currency values are displayed.
+        </Text>
+
+        <Group>
+          <TextInput
+            label="Currency Symbol"
+            placeholder="$"
+            value={currencySymbol}
+            onChange={(e) => handleCurrencyChange(e.currentTarget.value)}
+            w={100}
+          />
         </Group>
       </Paper>
 

@@ -9,7 +9,7 @@ import {
   IconChartBarOff,
 } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
-import { centsToDisplay } from '@/utils/currency';
+import { useCurrency } from '@/utils/currency';
 import {
   useTransactionSummary,
   useMonthlyTrend,
@@ -59,15 +59,22 @@ interface SummaryCardsProps {
   totalExpenses: number;
   net: number;
   transactionCount: number;
+  format: (cents: number) => string;
 }
 
-function SummaryCards({ totalIncome, totalExpenses, net, transactionCount }: SummaryCardsProps) {
+function SummaryCards({
+  totalIncome,
+  totalExpenses,
+  net,
+  transactionCount,
+  format,
+}: SummaryCardsProps) {
   return (
     <Grid>
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
         <SummaryCard
           label="Total Income"
-          value={centsToDisplay(totalIncome)}
+          value={format(totalIncome)}
           color="income.6"
           icon={IconArrowUpRight}
         />
@@ -75,7 +82,7 @@ function SummaryCards({ totalIncome, totalExpenses, net, transactionCount }: Sum
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
         <SummaryCard
           label="Total Expenses"
-          value={centsToDisplay(totalExpenses)}
+          value={format(totalExpenses)}
           color="expense.6"
           icon={IconArrowDownRight}
         />
@@ -83,7 +90,7 @@ function SummaryCards({ totalIncome, totalExpenses, net, transactionCount }: Sum
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
         <SummaryCard
           label="Net"
-          value={centsToDisplay(net)}
+          value={format(net)}
           color={net >= 0 ? 'income.6' : 'expense.6'}
           icon={IconScale}
         />
@@ -107,9 +114,10 @@ interface AccountBalancesListProps {
     balance: number;
     isDefault: boolean;
   }[];
+  format: (cents: number) => string;
 }
 
-function AccountBalancesList({ balances }: AccountBalancesListProps) {
+function AccountBalancesList({ balances, format }: AccountBalancesListProps) {
   return (
     <>
       <Title order={4} mt="md">
@@ -130,7 +138,7 @@ function AccountBalancesList({ balances }: AccountBalancesListProps) {
                   c={acc.balance >= 0 ? 'income.6' : 'expense.6'}
                   ff="monospace"
                 >
-                  {centsToDisplay(acc.balance)}
+                  {format(acc.balance)}
                 </Text>
               </Group>
             </Paper>
@@ -267,6 +275,7 @@ function DashboardFilters({
 
 export function Dashboard() {
   const { transactions, accounts, categories } = useFinance();
+  const { format } = useCurrency();
 
   const [dateRange, setDateRange] = useState<string>('all');
   const [accountFilter, setAccountFilter] = useState<string>('all');
@@ -392,9 +401,10 @@ export function Dashboard() {
         totalExpenses={summary.totalExpenses}
         net={summary.net}
         transactionCount={summary.transactionCount}
+        format={format}
       />
 
-      <AccountBalancesList balances={accountBalances} />
+      <AccountBalancesList balances={accountBalances} format={format} />
 
       <MonthlyTrendChart data={chartMonthlyTrend} />
 

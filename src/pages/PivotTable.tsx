@@ -8,7 +8,7 @@ import {
   type YearlyPivotRow,
   type MonthlyPivotRow,
 } from '@/utils/analytics/yearlyPivotTable';
-import { centsToDisplay } from '@/utils/currency';
+import { useCurrency } from '@/utils/currency';
 import type { TransactionCategory } from '@/types';
 import type { MantineSize } from '@mantine/core';
 
@@ -16,16 +16,19 @@ interface YearlyTableProps {
   data: YearlyPivotRow[];
   sortedCategories: TransactionCategory[];
   fontSize: MantineSize;
+  format: (cents: number) => string;
 }
 
 function YearlyTableRow({
   row,
   categoryIds,
   fontSize,
+  format,
 }: {
   row: YearlyPivotRow;
   categoryIds: string[];
   fontSize: MantineSize;
+  format: (cents: number) => string;
 }) {
   return (
     <Table.Tr key={row.year}>
@@ -48,7 +51,7 @@ function YearlyTableRow({
         return (
           <Table.Td key={catId}>
             <Text size={fontSize} c={color}>
-              {centsToDisplay(amount)}
+              {format(amount)}
             </Text>
           </Table.Td>
         );
@@ -63,14 +66,14 @@ function YearlyTableRow({
       </Table.Td>
       <Table.Td>
         <Text size={fontSize} c="expense.6">
-          {centsToDisplay(Math.round(row.monthlyAvgExpenses))}
+          {format(Math.round(row.monthlyAvgExpenses))}
         </Text>
       </Table.Td>
     </Table.Tr>
   );
 }
 
-function YearlyTable({ data, sortedCategories, fontSize }: YearlyTableProps) {
+function YearlyTable({ data, sortedCategories, fontSize, format }: YearlyTableProps) {
   const categoryIds = sortedCategories.map((c) => c.id);
 
   return (
@@ -102,6 +105,7 @@ function YearlyTable({ data, sortedCategories, fontSize }: YearlyTableProps) {
                 row={row}
                 categoryIds={categoryIds}
                 fontSize={fontSize}
+                format={format}
               />
             ))}
           </Table.Tbody>
@@ -123,16 +127,19 @@ interface MonthlyTableProps {
   data: MonthlyPivotRow[];
   sortedCategories: TransactionCategory[];
   fontSize: MantineSize;
+  format: (cents: number) => string;
 }
 
 function MonthlyTableRow({
   row,
   categoryIds,
   fontSize,
+  format,
 }: {
   row: MonthlyPivotRow;
   categoryIds: string[];
   fontSize: MantineSize;
+  format: (cents: number) => string;
 }) {
   return (
     <Table.Tr key={row.month}>
@@ -155,21 +162,21 @@ function MonthlyTableRow({
         return (
           <Table.Td key={catId}>
             <Text size={fontSize} c={color}>
-              {centsToDisplay(amount)}
+              {format(amount)}
             </Text>
           </Table.Td>
         );
       })}
       <Table.Td>
         <Text size={fontSize} c="expense.6" fw={600}>
-          {centsToDisplay(row.totalExpenses)}
+          {format(row.totalExpenses)}
         </Text>
       </Table.Td>
     </Table.Tr>
   );
 }
 
-function MonthlyTable({ data, sortedCategories, fontSize }: MonthlyTableProps) {
+function MonthlyTable({ data, sortedCategories, fontSize, format }: MonthlyTableProps) {
   const categoryIds = sortedCategories.map((c) => c.id);
 
   return (
@@ -195,6 +202,7 @@ function MonthlyTable({ data, sortedCategories, fontSize }: MonthlyTableProps) {
               row={row}
               categoryIds={categoryIds}
               fontSize={fontSize}
+              format={format}
             />
           ))}
         </Table.Tbody>
@@ -218,6 +226,7 @@ function EmptyState({ message }: { message: string }) {
 
 export function PivotTable() {
   const { transactions, categories } = useFinance();
+  const { format } = useCurrency();
   const yearlyData = useYearlyPivotTable(transactions, categories);
   const monthlyData = useMonthlyPivotTable(transactions, categories);
   const [fontSize, setFontSize] = useState<MantineSize>('sm');
@@ -245,7 +254,12 @@ export function PivotTable() {
         {yearlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the yearly summary." />
         ) : (
-          <YearlyTable data={yearlyData} sortedCategories={sortedCategories} fontSize={fontSize} />
+          <YearlyTable
+            data={yearlyData}
+            sortedCategories={sortedCategories}
+            fontSize={fontSize}
+            format={format}
+          />
         )}
       </Stack>
 
@@ -258,6 +272,7 @@ export function PivotTable() {
             data={monthlyData}
             sortedCategories={sortedCategories}
             fontSize={fontSize}
+            format={format}
           />
         )}
       </Stack>

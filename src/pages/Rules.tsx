@@ -19,7 +19,7 @@ import { useForm } from '@mantine/form';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
 import { IconPencil, IconTrash, IconPlus, IconRobotOff } from '@tabler/icons-react';
-import { centsToDisplay, displayToCents } from '@/utils/currency';
+import { useCurrency, displayToCents } from '@/utils/currency';
 import { validateRule } from '@/utils/rulesEngine';
 import type { CategorizationRule } from '@/types';
 import {
@@ -59,6 +59,7 @@ interface SortableRuleRowProps {
   onDelete: (id: string) => void;
   categories: { id: string; name: string }[];
   accounts: { id: string; name: string }[];
+  format: (cents: number) => string;
 }
 
 function SortableRuleRow({
@@ -68,6 +69,7 @@ function SortableRuleRow({
   onDelete,
   categories,
   accounts,
+  format,
 }: SortableRuleRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: rule.id,
@@ -84,8 +86,8 @@ function SortableRuleRow({
     const conditions: string[] = [];
     if (r.matchPattern) conditions.push(`Pattern: ${r.matchPattern}`);
     if (r.matchMinAmount !== undefined || r.matchMaxAmount !== undefined) {
-      const min = r.matchMinAmount !== undefined ? centsToDisplay(r.matchMinAmount) : '-∞';
-      const max = r.matchMaxAmount !== undefined ? centsToDisplay(r.matchMaxAmount) : '∞';
+      const min = r.matchMinAmount !== undefined ? format(r.matchMinAmount) : '-∞';
+      const max = r.matchMaxAmount !== undefined ? format(r.matchMaxAmount) : '∞';
       conditions.push(`Amount: ${min} to ${max}`);
     }
     if (r.matchMinDate || r.matchMaxDate) {
@@ -162,6 +164,7 @@ interface RuleFormModalProps {
   categories: { id: string; name: string }[];
   transferOptions: { value: string; label: string }[];
   onSubmit: (rule: CategorizationRule, index?: number) => void;
+  format: (cents: number) => string;
 }
 
 function RuleFormModal({
@@ -172,6 +175,7 @@ function RuleFormModal({
   categories,
   transferOptions,
   onSubmit,
+  format,
 }: RuleFormModalProps) {
   const categoryOptions = useMemo(
     () => categories.map((c) => ({ value: c.id, label: c.name })),
@@ -202,8 +206,8 @@ function RuleFormModal({
         form.setValues({
           name: r.name,
           matchPattern: r.matchPattern ?? '',
-          matchMinAmount: r.matchMinAmount !== undefined ? centsToDisplay(r.matchMinAmount) : '',
-          matchMaxAmount: r.matchMaxAmount !== undefined ? centsToDisplay(r.matchMaxAmount) : '',
+          matchMinAmount: r.matchMinAmount !== undefined ? format(r.matchMinAmount) : '',
+          matchMaxAmount: r.matchMaxAmount !== undefined ? format(r.matchMaxAmount) : '',
           matchMinDate: r.matchMinDate ?? '',
           matchMaxDate: r.matchMaxDate ?? '',
           actionCategoryId: r.actionCategoryId ?? '',
@@ -374,6 +378,7 @@ function RuleFormModal({
 export function Rules() {
   const { rules, categories, accounts, addRule, updateRule, deleteRule, reorderRules } =
     useFinance();
+  const { format } = useCurrency();
   const [modalOpened, setModalOpened] = useState(false);
   const [editingRule, setEditingRule] = useState<{
     rule: CategorizationRule;
@@ -476,6 +481,7 @@ export function Rules() {
                       onDelete={handleDeleteRule}
                       categories={categories}
                       accounts={accounts}
+                      format={format}
                     />
                   ))}
                 </Table.Tbody>
@@ -493,6 +499,7 @@ export function Rules() {
         categories={categories}
         transferOptions={transferOptions}
         onSubmit={handleSubmit}
+        format={format}
       />
     </Stack>
   );

@@ -15,7 +15,7 @@ import {
 import { IconUpload, IconDownload } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { parseCsvFile, applyMapping, type ParseResult } from '@/utils/csvParser';
-import { centsToDisplay } from '@/utils/currency';
+import { useCurrency } from '@/utils/currency';
 import { generateId } from '@/utils/uuid';
 import { filterDuplicateTransactions } from '@/utils/rulesEngine';
 import type { ColumnMapping, ImportableField, ParsedImportRow } from '@/types/import';
@@ -132,9 +132,17 @@ interface PreviewStepProps {
   totalRows: number;
   onBack: () => void;
   onImport: () => void;
+  format: (cents: number) => string;
 }
 
-function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport }: PreviewStepProps) {
+function PreviewStep({
+  validRows,
+  invalidRows,
+  totalRows,
+  onBack,
+  onImport,
+  format,
+}: PreviewStepProps) {
   const hasInvalid = invalidRows.length > 0;
 
   return (
@@ -155,7 +163,7 @@ function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport }: Pr
       </Group>
 
       {validRows.length > 0 && (
-        <PreviewTable title="Valid Rows" rows={validRows} fillSpace={!hasInvalid} />
+        <PreviewTable title="Valid Rows" rows={validRows} fillSpace={!hasInvalid} format={format} />
       )}
       {hasInvalid && (
         <PreviewTable
@@ -163,6 +171,7 @@ function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport }: Pr
           rows={invalidRows}
           isInvalid
           fillSpace
+          format={format}
         />
       )}
     </Stack>
@@ -174,9 +183,16 @@ interface PreviewTableProps {
   rows: ParsedImportRow[];
   isInvalid?: boolean;
   fillSpace?: boolean;
+  format: (cents: number) => string;
 }
 
-function PreviewTable({ title, rows, isInvalid = false, fillSpace = false }: PreviewTableProps) {
+function PreviewTable({
+  title,
+  rows,
+  isInvalid = false,
+  fillSpace = false,
+  format,
+}: PreviewTableProps) {
   return (
     <Stack
       gap="xs"
@@ -202,7 +218,7 @@ function PreviewTable({ title, rows, isInvalid = false, fillSpace = false }: Pre
             </Table.Thead>
             <Table.Tbody>
               {rows.map((row, index) => (
-                <PreviewRow key={index} row={row} isInvalid={isInvalid} />
+                <PreviewRow key={index} row={row} isInvalid={isInvalid} format={format} />
               ))}
             </Table.Tbody>
           </Table>
@@ -215,15 +231,16 @@ function PreviewTable({ title, rows, isInvalid = false, fillSpace = false }: Pre
 interface PreviewRowProps {
   row: ParsedImportRow;
   isInvalid: boolean;
+  format: (cents: number) => string;
 }
 
-function PreviewRow({ row, isInvalid }: PreviewRowProps) {
+function PreviewRow({ row, isInvalid, format }: PreviewRowProps) {
   if (isInvalid) {
     return (
       <Table.Tr>
         <Table.Td c={row.date ? 'dimmed' : 'danger.6'}>{row.date ?? '(missing)'}</Table.Td>
         <Table.Td c={row.amount !== null ? 'expense.6' : 'danger.6'}>
-          {row.amount !== null ? centsToDisplay(row.amount) : '(missing)'}
+          {row.amount !== null ? format(row.amount) : '(missing)'}
         </Table.Td>
         <Table.Td>
           <Text lineClamp={1}>{row.description}</Text>
@@ -235,9 +252,7 @@ function PreviewRow({ row, isInvalid }: PreviewRowProps) {
   return (
     <Table.Tr>
       <Table.Td>{row.date}</Table.Td>
-      <Table.Td c={row.amount! >= 0 ? 'income.6' : 'expense.6'}>
-        {centsToDisplay(row.amount!)}
-      </Table.Td>
+      <Table.Td c={row.amount! >= 0 ? 'income.6' : 'expense.6'}>{format(row.amount!)}</Table.Td>
       <Table.Td>
         <Text lineClamp={1}>{row.description}</Text>
       </Table.Td>
@@ -273,6 +288,7 @@ function CompleteStep({ importedCount, duplicateCount, onReset }: CompleteStepPr
 
 export function ImportWizard() {
   const { addTriageTransactions, triageTransactions, transactions } = useFinance();
+  const { format } = useCurrency();
   const [activeStep, setActiveStep] = useState<Step>('upload');
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping[]>([]);
@@ -387,6 +403,7 @@ export function ImportWizard() {
           totalRows={parsedRows.length}
           onBack={() => setActiveStep('mapping')}
           onImport={handleImport}
+          format={format}
         />
       )}
 

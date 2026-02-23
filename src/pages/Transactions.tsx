@@ -11,7 +11,7 @@ import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconPlaylistAdd } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
-import { centsToDisplay, displayToCents } from '@/utils/currency';
+import { useCurrency, displayToCents } from '@/utils/currency';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
 import type { Account, Transaction } from '@/types';
 import { useDisclosure } from '@mantine/hooks';
@@ -51,13 +51,19 @@ function dateValueParser(params: { newValue: string }): string {
   return value;
 }
 
-function currencyValueFormatter(params: { value: number | null | undefined }): string {
-  if (params.value === null || params.value === undefined) return '';
-  return centsToDisplay(params.value);
-}
-
 function currencyValueParser(params: { newValue: string }): number {
   return displayToCents(params.newValue);
+}
+
+function useCurrencyFormatter() {
+  const { format } = useCurrency();
+  return useCallback(
+    (params: { value: number | null | undefined }) => {
+      if (params.value === null || params.value === undefined) return '';
+      return format(params.value);
+    },
+    [format]
+  );
 }
 
 interface AddTransactionFormProps {
@@ -168,6 +174,7 @@ function useColumnDefs(
   categoryOptions: { value: string; label: string }[],
   deleteTransaction: (id: string) => void
 ) {
+  const currencyValueFormatter = useCurrencyFormatter();
   return useMemo<ColDef<Transaction>[]>(
     () => [
       {
@@ -282,7 +289,14 @@ function useColumnDefs(
         editable: false,
       },
     ],
-    [accounts, categories, accountOptions, categoryOptions, deleteTransaction]
+    [
+      accounts,
+      categories,
+      accountOptions,
+      categoryOptions,
+      deleteTransaction,
+      currencyValueFormatter,
+    ]
   );
 }
 

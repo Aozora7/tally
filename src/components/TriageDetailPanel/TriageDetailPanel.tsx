@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button, Group, Stack, Text, TextInput, Divider, ActionIcon, Paper } from '@mantine/core';
 import { useFinance } from '@/context/FinanceContext';
-import { centsToDisplay, displayToCents } from '@/utils/currency';
+import { useCurrency, displayToCents } from '@/utils/currency';
 import { generateId } from '@/utils/uuid';
 import { isDuplicateTransaction } from '@/utils/rulesEngine';
 import type { TriageTransaction, Transaction } from '@/types';
@@ -182,6 +182,7 @@ export function TriageDetailPanel({
 }: TriageDetailPanelProps) {
   const { accounts, categories, transactions, addTransactions, deleteTriageTransaction } =
     useFinance();
+  const { format } = useCurrency();
 
   const [accountId, setAccountId] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
@@ -224,7 +225,7 @@ export function TriageDetailPanel({
 
       const totalSplitAmount = splits.reduce((sum, s) => sum + displayToCents(s.amount), 0);
       if (totalSplitAmount !== selectedTransaction.amount) {
-        return `Split total (${centsToDisplay(totalSplitAmount)}) must equal transaction amount (${centsToDisplay(selectedTransaction.amount)})`;
+        return `Split total (${format(totalSplitAmount)}) must equal transaction amount (${format(selectedTransaction.amount)})`;
       }
 
       for (const split of splits) {
@@ -246,7 +247,7 @@ export function TriageDetailPanel({
     }
 
     return null;
-  }, [selectedTransaction, accountId, categoryId, transferAccountId, isSplit, splits]);
+  }, [selectedTransaction, accountId, categoryId, transferAccountId, isSplit, splits, format]);
 
   const canSave = selectedTransaction && !validationError;
 
@@ -278,7 +279,7 @@ export function TriageDetailPanel({
           const remainingAmount = selectedTransaction.amount - enteredAmount;
           newSplits[otherIndex] = {
             ...otherSplit,
-            amount: centsToDisplay(remainingAmount),
+            amount: format(remainingAmount),
           };
         }
       }
@@ -385,7 +386,7 @@ export function TriageDetailPanel({
             Edit Transaction
           </Text>
           <Text c={selectedTransaction.amount >= 0 ? 'income.6' : 'expense.6'} fw={600}>
-            {centsToDisplay(selectedTransaction.amount)}
+            {format(selectedTransaction.amount)}
           </Text>
         </Group>
 

@@ -14,7 +14,7 @@ import {
   Select,
 } from '@mantine/core';
 import { useFinance } from '@/context/FinanceContext';
-import { centsToDisplay } from '@/utils/currency';
+import { useCurrency } from '@/utils/currency';
 import { generateId } from '@/utils/uuid';
 import {
   previewSelectedRules,
@@ -79,65 +79,10 @@ interface PreviewTableProps {
     oldDisplay: string;
     newDisplay: string;
   };
+  format: (cents: number) => string;
 }
 
-function PreviewTableRow({
-  preview,
-  change,
-  changeIndex,
-  renderChangeValue,
-}: {
-  preview: RulePreview;
-  change: RulePreview['changes'][number];
-  changeIndex: number;
-  renderChangeValue: (change: RulePreview['changes'][number]) => {
-    oldDisplay: string;
-    newDisplay: string;
-  };
-}) {
-  const { oldDisplay, newDisplay } = renderChangeValue(change);
-  const fieldLabel =
-    change.field === 'clearCategory'
-      ? 'Category'
-      : change.field === 'clearTransfer'
-        ? 'Transfer'
-        : change.field === 'categoryId'
-          ? 'Category'
-          : change.field === 'transferAccountId'
-            ? 'Transfer'
-            : 'Delete';
-
-  return (
-    <Table.Tr>
-      <Table.Td>{changeIndex === 0 ? preview.transaction.date : ''}</Table.Td>
-      <Table.Td>{changeIndex === 0 ? preview.transaction.description : ''}</Table.Td>
-      <Table.Td>
-        {changeIndex === 0 ? (
-          <Text c={preview.transaction.amount >= 0 ? 'income.6' : 'expense.6'}>
-            {centsToDisplay(preview.transaction.amount)}
-          </Text>
-        ) : (
-          ''
-        )}
-      </Table.Td>
-      <Table.Td>
-        <Badge color={change.field === 'delete' ? 'danger' : 'accent'} variant="light">
-          {fieldLabel}
-        </Badge>
-      </Table.Td>
-      <Table.Td>
-        <Text c="dimmed">{oldDisplay}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Text fw={500} c="brand">
-          {newDisplay}
-        </Text>
-      </Table.Td>
-    </Table.Tr>
-  );
-}
-
-function PreviewTable({ previews, renderChangeValue }: PreviewTableProps) {
+function PreviewTable({ previews, renderChangeValue, format }: PreviewTableProps) {
   return (
     <ScrollArea.Autosize mah={300}>
       <Table striped highlightOnHover>
@@ -160,12 +105,71 @@ function PreviewTable({ previews, renderChangeValue }: PreviewTableProps) {
                 change={change}
                 changeIndex={changeIndex}
                 renderChangeValue={renderChangeValue}
+                format={format}
               />
             ))
           )}
         </Table.Tbody>
       </Table>
     </ScrollArea.Autosize>
+  );
+}
+
+function PreviewTableRow({
+  preview,
+  change,
+  changeIndex,
+  renderChangeValue,
+  format,
+}: {
+  preview: RulePreview;
+  change: RulePreview['changes'][number];
+  changeIndex: number;
+  renderChangeValue: (change: RulePreview['changes'][number]) => {
+    oldDisplay: string;
+    newDisplay: string;
+  };
+  format: (cents: number) => string;
+}) {
+  const { oldDisplay, newDisplay } = renderChangeValue(change);
+  const fieldLabel =
+    change.field === 'clearCategory'
+      ? 'Category'
+      : change.field === 'clearTransfer'
+        ? 'Transfer'
+        : change.field === 'categoryId'
+          ? 'Category'
+          : change.field === 'transferAccountId'
+            ? 'Transfer'
+            : 'Delete';
+
+  return (
+    <Table.Tr>
+      <Table.Td>{changeIndex === 0 ? preview.transaction.date : ''}</Table.Td>
+      <Table.Td>{changeIndex === 0 ? preview.transaction.description : ''}</Table.Td>
+      <Table.Td>
+        {changeIndex === 0 ? (
+          <Text c={preview.transaction.amount >= 0 ? 'income.6' : 'expense.6'}>
+            {format(preview.transaction.amount)}
+          </Text>
+        ) : (
+          ''
+        )}
+      </Table.Td>
+      <Table.Td>
+        <Badge color={change.field === 'delete' ? 'danger' : 'accent'} variant="light">
+          {fieldLabel}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text c="dimmed">{oldDisplay}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text fw={500} c="brand">
+          {newDisplay}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
   );
 }
 
@@ -181,6 +185,7 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
     deleteTriageTransaction,
     addTransactions,
   } = useFinance();
+  const { format } = useCurrency();
 
   const [selectedRuleIds, setSelectedRuleIds] = useState<Set<string>>(new Set());
   const [defaultAccountId, setDefaultAccountId] = useState<string>('');
@@ -384,6 +389,7 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
                 getCategoryName={getCategoryName}
                 getAccountName={getAccountName}
                 renderChangeValue={renderChangeValue}
+                format={format}
               />
             )}
 

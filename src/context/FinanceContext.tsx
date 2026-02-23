@@ -15,6 +15,7 @@ interface FinanceContextValue {
   triageTransactions: TriageTransaction[];
   transactions: Transaction[];
   rules: CategorizationRule[];
+  settings: Map<string, string>;
   addCategory: (category: TransactionCategory) => void;
   updateCategory: (category: TransactionCategory) => void;
   deleteCategory: (id: string) => void;
@@ -34,6 +35,7 @@ interface FinanceContextValue {
   updateRule: (rule: CategorizationRule, index: number) => void;
   deleteRule: (id: string) => void;
   reorderRules: (rules: CategorizationRule[]) => void;
+  setSetting: (key: string, value: string) => void;
   reloadFromDb: () => Promise<void>;
   clearAllData: () => Promise<void>;
   clearTransactions: () => Promise<void>;
@@ -49,21 +51,30 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [triageTransactions, setTriageTransactions] = useState<TriageTransaction[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [rules, setRules] = useState<CategorizationRule[]>([]);
+  const [settings, setSettings] = useState<Map<string, string>>(new Map());
 
   const reloadFromDb = useCallback(async () => {
-    const [loadedCategories, loadedAccounts, loadedTriage, loadedTransactions, loadedRules] =
-      await Promise.all([
-        db.categories.toArray(),
-        db.accounts.toArray(),
-        db.triageTransactions.toArray(),
-        db.transactions.toArray(),
-        db.rules.toArray(),
-      ]);
+    const [
+      loadedCategories,
+      loadedAccounts,
+      loadedTriage,
+      loadedTransactions,
+      loadedRules,
+      loadedSettings,
+    ] = await Promise.all([
+      db.categories.toArray(),
+      db.accounts.toArray(),
+      db.triageTransactions.toArray(),
+      db.transactions.toArray(),
+      db.rules.toArray(),
+      db.settings.toArray(),
+    ]);
     setCategories(loadedCategories.sort((a, b) => a.sortOrder - b.sortOrder));
     setAccounts(loadedAccounts);
     setTriageTransactions(loadedTriage);
     setTransactions(loadedTransactions);
     setRules(loadedRules.sort((a, b) => a.sortOrder - b.sortOrder));
+    setSettings(new Map(loadedSettings.map((s) => [s.key, s.value])));
     setIsLoaded(true);
   }, []);
 
@@ -76,7 +87,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState === 'hidden') {
         void db.transaction(
           'rw',
-          [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules],
+          [
+            db.categories,
+            db.accounts,
+            db.triageTransactions,
+            db.transactions,
+            db.rules,
+            db.settings,
+          ],
           async () => {
             await Promise.all([
               db.categories.bulkPut(categories),
@@ -239,6 +257,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setTriageTransactions([]);
   }, []);
 
+  const setSetting = useCallback((key: string, value: string) => {
+    setSettings((prev) => {
+      const next = new Map(prev);
+      next.set(key, value);
+      return next;
+    });
+    void db.settings.put({ key, value });
+  }, []);
+
   return (
     <FinanceContext.Provider
       value={{
@@ -271,6 +298,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         clearAllData,
         clearTransactions,
         clearTriageTransactions,
+        settings,
+        setSetting,
       }}
     >
       {children}

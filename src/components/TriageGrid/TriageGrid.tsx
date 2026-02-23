@@ -8,7 +8,7 @@ import {
 } from 'ag-grid-community';
 import { useFinance } from '@/context/FinanceContext';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
-import { centsToDisplay } from '@/utils/currency';
+import { useCurrency } from '@/utils/currency';
 import type { TriageTransaction } from '@/types';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -24,13 +24,17 @@ function dateValueFormatter(params: { value: string | null | undefined }): strin
   return `${month}/${day}/${year}`;
 }
 
-function currencyValueFormatter(params: { value: number | null | undefined }): string {
-  if (params.value === null || params.value === undefined) return '';
-  return centsToDisplay(params.value);
-}
-
 export function TriageGrid({ selectedId, onSelect }: TriageGridProps) {
   const { triageTransactions } = useFinance();
+  const { format } = useCurrency();
+
+  const currencyValueFormatter = useCallback(
+    (params: { value: number | null | undefined }) => {
+      if (params.value === null || params.value === undefined) return '';
+      return format(params.value);
+    },
+    [format]
+  );
 
   const columnDefs = useMemo<ColDef<TriageTransaction>[]>(
     () => [
@@ -62,7 +66,7 @@ export function TriageGrid({ selectedId, onSelect }: TriageGridProps) {
         minWidth: 200,
       },
     ],
-    []
+    [currencyValueFormatter]
   );
 
   const getRowStyle = useCallback(

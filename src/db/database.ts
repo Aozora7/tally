@@ -5,6 +5,7 @@ import type {
   TriageTransaction,
   Transaction,
   CategorizationRule,
+  Setting,
 } from '@/types';
 
 class FinanceDatabase extends Dexie {
@@ -13,15 +14,17 @@ class FinanceDatabase extends Dexie {
   triageTransactions!: Table<TriageTransaction>;
   transactions!: Table<Transaction>;
   rules!: Table<CategorizationRule>;
+  settings!: Table<Setting>;
 
   constructor() {
     super('ImpersonalFinance');
-    this.version(1).stores({
+    this.version(2).stores({
       categories: 'id',
       accounts: 'id',
       triageTransactions: 'id',
       transactions: 'id',
       rules: 'id',
+      settings: 'key',
     });
   }
 }

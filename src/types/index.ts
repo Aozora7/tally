@@ -1,5 +1,10 @@
 export type CategoryType = 'Income' | 'Fixed' | 'Cyclical' | 'Irregular';
 
+export interface Setting {
+  key: string;
+  value: string;
+}
+
 export interface TransactionCategory {
   id: string;
   name: string;
