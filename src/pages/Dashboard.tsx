@@ -8,6 +8,86 @@ import { useTransactionSummary, useCategorySummary } from '@/utils/analytics/tra
 import { useMonthlyPivotTable } from '@/utils/analytics/yearlyPivotTable';
 import type { ComponentType } from 'react';
 
+interface TooltipPayloadItem {
+  name?: string;
+  value?: number;
+  color?: string;
+  payload?: Record<string, unknown>;
+}
+
+function ChartTooltipContent({
+  label,
+  payload,
+  active,
+  seriesNames,
+  valueFormatter,
+}: {
+  label?: string | number;
+  payload?: readonly TooltipPayloadItem[];
+  active?: boolean;
+  seriesNames: Set<string>;
+  valueFormatter: (value: number) => string;
+}) {
+  if (!active || !payload?.length) return null;
+
+  const seen = new Set<string>();
+  const items = payload.filter((item) => {
+    const name = item.name ?? '';
+    if (!seriesNames.has(name) || seen.has(name)) return false;
+    seen.add(name);
+    return true;
+  });
+
+  if (items.length === 0) return null;
+
+  return (
+    <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
+      {label != null && (
+        <Text size="sm" fw={500} mb={4}>
+          {label}
+        </Text>
+      )}
+      {items.map((item) => (
+        <Group key={item.name} gap="xs" justify="space-between" wrap="nowrap">
+          <Group gap={6} wrap="nowrap">
+            <Box
+              w={10}
+              h={10}
+              style={{ borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }}
+            />
+            <Text size="xs" c="dimmed">
+              {item.name}
+            </Text>
+          </Group>
+          <Text size="xs" fw={500} ff="monospace">
+            {valueFormatter(item.value ?? 0)}
+          </Text>
+        </Group>
+      ))}
+    </Paper>
+  );
+}
+
+function barTooltipContent(
+  series: { name: string; color: string }[],
+  valueFormatter: (value: number) => string
+) {
+  const seriesNames = new Set(series.map((s) => s.name));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function BarTooltip(props: any) {
+    return (
+      <ChartTooltipContent
+        label={props.label}
+        payload={props.payload}
+        active={props.active}
+        seriesNames={seriesNames}
+        valueFormatter={valueFormatter}
+      />
+    );
+  }
+  return BarTooltip;
+}
+
 function SummaryCard({
   label,
   value,
@@ -84,6 +164,13 @@ interface MonthlyExpensesChartProps {
   data: { month: string; Fixed: number; Cyclical: number; Irregular: number }[];
 }
 
+const monthlyExpensesSeries = [
+  { name: 'Fixed', color: 'brand.6' },
+  { name: 'Cyclical', color: 'accent.6' },
+  { name: 'Irregular', color: 'warning.6' },
+];
+const monthlyExpensesFormatter = (value: number) => `$${value.toFixed(2)}`;
+
 function MonthlyExpensesChart({ data }: MonthlyExpensesChartProps) {
   if (data.length === 0) return null;
 
@@ -98,15 +185,14 @@ function MonthlyExpensesChart({ data }: MonthlyExpensesChartProps) {
             h={280}
             data={data}
             dataKey="month"
-            series={[
-              { name: 'Fixed', color: 'brand.6' },
-              { name: 'Cyclical', color: 'accent.6' },
-              { name: 'Irregular', color: 'warning.6' },
-            ]}
+            series={monthlyExpensesSeries}
             type="stacked"
             tickLine="y"
             gridAxis="xy"
-            valueFormatter={(value: number) => `$${value.toFixed(2)}`}
+            valueFormatter={monthlyExpensesFormatter}
+            tooltipProps={{
+              content: barTooltipContent(monthlyExpensesSeries, monthlyExpensesFormatter),
+            }}
           />
         </Box>
       </Paper>
@@ -117,6 +203,9 @@ function MonthlyExpensesChart({ data }: MonthlyExpensesChartProps) {
 interface SpendingByCategoryChartProps {
   data: { category: string; amount: number }[];
 }
+
+const categorySpendingSeries = [{ name: 'amount', color: 'brand.6' }];
+const categorySpendingFormatter = (value: number) => `$${value.toFixed(2)}`;
 
 function SpendingByCategoryChart({ data }: SpendingByCategoryChartProps) {
   if (data.length === 0) return null;
@@ -129,10 +218,13 @@ function SpendingByCategoryChart({ data }: SpendingByCategoryChartProps) {
           h={300}
           data={data}
           dataKey="category"
-          series={[{ name: 'amount', color: 'brand.6' }]}
+          series={categorySpendingSeries}
           tickLine="y"
           gridAxis="xy"
-          valueFormatter={(value) => `$${value.toFixed(2)}`}
+          valueFormatter={categorySpendingFormatter}
+          tooltipProps={{
+            content: barTooltipContent(categorySpendingSeries, categorySpendingFormatter),
+          }}
         />
       </Paper>
     </>
