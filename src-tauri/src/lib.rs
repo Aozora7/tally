@@ -1,3 +1,5 @@
+use tauri::{webview::WebviewWindowBuilder, WebviewUrl};
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -11,6 +13,20 @@ pub fn run() {
             if !data_dir.exists() {
                 std::fs::create_dir_all(&data_dir).ok();
             }
+
+            let webview_data_dir = data_dir.join("webview");
+            if !webview_data_dir.exists() {
+                std::fs::create_dir_all(&webview_data_dir).ok();
+            }
+
+            WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+                .title("Impersonal Finance")
+                .inner_size(1280.0, 800.0)
+                .min_inner_size(800.0, 600.0)
+                .resizable(true)
+                .center()
+                .data_directory(webview_data_dir)
+                .build()?;
 
             app.handle().plugin(
                 tauri_plugin_log::Builder::default()
