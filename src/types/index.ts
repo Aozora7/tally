@@ -1,11 +1,9 @@
-export type CategoryType = 'Income' | 'Essential' | 'Discretionary';
-export type CategoryFrequency = 'Regular' | 'Irregular';
+export type CategoryType = 'Income' | 'Fixed' | 'Cyclical' | 'Irregular';
 
 export interface TransactionCategory {
   id: string;
   name: string;
   type: CategoryType;
-  frequency: CategoryFrequency;
   sortOrder: number;
 }
 

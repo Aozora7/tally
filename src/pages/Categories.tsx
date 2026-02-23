@@ -16,7 +16,7 @@ import { useForm } from '@mantine/form';
 import { IconPencil, IconTrash, IconPlus, IconTags } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
-import type { TransactionCategory, CategoryType, CategoryFrequency } from '@/types';
+import type { TransactionCategory, CategoryType } from '@/types';
 import {
   DndContext,
   closestCenter,
@@ -35,13 +35,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const CATEGORY_TYPES: CategoryType[] = ['Income', 'Essential', 'Discretionary'];
-const CATEGORY_FREQUENCIES: CategoryFrequency[] = ['Regular', 'Irregular'];
+const CATEGORY_TYPES: CategoryType[] = ['Income', 'Fixed', 'Cyclical', 'Irregular'];
 
 interface CategoryFormData {
   name: string;
   type: CategoryType;
-  frequency: CategoryFrequency;
 }
 
 interface SortableCategoryRowProps {
@@ -66,7 +64,6 @@ function SortableCategoryRow({ category, onEdit, onDelete }: SortableCategoryRow
     <Table.Tr ref={setNodeRef} style={style} {...attributes}>
       <Table.Td {...listeners}>{category.name}</Table.Td>
       <Table.Td {...listeners}>{category.type}</Table.Td>
-      <Table.Td {...listeners}>{category.frequency}</Table.Td>
       <Table.Td>
         <Group gap={4}>
           <ActionIcon
@@ -113,8 +110,7 @@ function CategoryFormModal({
   const form = useForm<CategoryFormData>({
     initialValues: {
       name: '',
-      type: 'Essential',
-      frequency: 'Regular',
+      type: 'Fixed',
     },
     validate: {
       name: (value) => (value.trim().length > 0 ? null : 'Name is required'),
@@ -127,7 +123,6 @@ function CategoryFormModal({
         form.setValues({
           name: editingCategory.name,
           type: editingCategory.type,
-          frequency: editingCategory.frequency,
         });
       } else {
         form.reset();
@@ -142,14 +137,12 @@ function CategoryFormModal({
         ...editingCategory,
         name: values.name.trim(),
         type: values.type,
-        frequency: values.frequency,
       });
     } else {
       onSubmit({
         id: generateId(),
         name: values.name.trim(),
         type: values.type,
-        frequency: values.frequency,
         sortOrder: categoryCount,
       });
     }
@@ -170,11 +163,6 @@ function CategoryFormModal({
             {...form.getInputProps('name')}
           />
           <Select label="Type" data={CATEGORY_TYPES} {...form.getInputProps('type')} />
-          <Select
-            label="Frequency"
-            data={CATEGORY_FREQUENCIES}
-            {...form.getInputProps('frequency')}
-          />
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={onClose}>
               Cancel
@@ -298,7 +286,6 @@ export function Categories() {
                   <Table.Tr>
                     <Table.Th>Name</Table.Th>
                     <Table.Th>Type</Table.Th>
-                    <Table.Th>Frequency</Table.Th>
                     <Table.Th w={80}>Actions</Table.Th>
                   </Table.Tr>
                 </Table.Thead>

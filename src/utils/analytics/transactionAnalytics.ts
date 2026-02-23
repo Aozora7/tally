@@ -83,7 +83,7 @@ export function useCategorySummary(
   categories: TransactionCategory[],
   startDate?: string,
   endDate?: string,
-  categoryType?: 'Income' | 'Essential' | 'Discretionary'
+  categoryType?: CategoryType
 ): CategorySummary[] {
   return useMemo(() => {
     if (transactions.length === 0 || categories.length === 0) return [];

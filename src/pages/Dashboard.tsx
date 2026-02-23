@@ -359,7 +359,12 @@ export function Dashboard() {
         .map((c) => ({
           name: c.categoryName,
           value: c.total / 100,
-          color: c.categoryType === 'Essential' ? 'brand.6' : 'accent.6',
+          color:
+            c.categoryType === 'Fixed'
+              ? 'brand.6'
+              : c.categoryType === 'Cyclical'
+                ? 'accent.6'
+                : 'warning.6',
         })),
     [categorySummary]
   );
