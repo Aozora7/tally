@@ -40,9 +40,9 @@ export interface Transaction {
 export interface Security {
   id: string;
   ticker: string;
-  isin: string;
-  label: string;
-  exchange: string;
+  isin?: string;
+  label?: string;
+  exchange?: string;
 }
 
 export type SecurityTransactionType = 'Buy' | 'Sell';

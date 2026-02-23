@@ -12,6 +12,7 @@ import { IconPlus, IconTrash, IconDownload } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
+import { isTauri } from '@/utils/tauri';
 import type { Security } from '@/types';
 import { notifications } from '@mantine/notifications';
 
@@ -40,7 +41,6 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
     },
     validate: {
       ticker: (value) => (value.trim().length > 0 ? null : 'Ticker is required'),
-      label: (value) => (value.trim().length > 0 ? null : 'Label is required'),
     },
   });
 
@@ -48,10 +48,10 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
     const security: Security = {
       id: generateId(),
       ticker: values.ticker.trim(),
-      isin: values.isin.trim(),
-      label: values.label.trim(),
-      exchange: values.exchange.trim(),
     };
+    if (values.isin.trim()) security.isin = values.isin.trim();
+    if (values.label.trim()) security.label = values.label.trim();
+    if (values.exchange.trim()) security.exchange = values.exchange.trim();
     onAdd(security);
     onClose();
     form.reset();
@@ -61,16 +61,8 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
     <Modal opened={opened} onClose={onClose} title="Add Security">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
-          <TextInput
-            label="Ticker"
-            placeholder="AMS:IWDA"
-            {...form.getInputProps('ticker')}
-          />
-          <TextInput
-            label="ISIN"
-            placeholder="IE00B4L5Y983"
-            {...form.getInputProps('isin')}
-          />
+          <TextInput label="Ticker" placeholder="AMS:IWDA" {...form.getInputProps('ticker')} />
+          <TextInput label="ISIN" placeholder="IE00B4L5Y983" {...form.getInputProps('isin')} />
           <TextInput
             label="Label"
             placeholder="iShares Core MSCI World"
@@ -96,7 +88,8 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
 function useColumnDefs(
   deleteSecurity: (id: string) => void,
   onFetchPrices: (security: Security) => void,
-  fetchingIds: Set<string>
+  fetchingIds: Set<string>,
+  showPriceFetch: boolean
 ) {
   return useMemo<ColDef<Security>[]>(
     () => [
@@ -129,19 +122,21 @@ function useColumnDefs(
       },
       {
         headerName: 'Actions',
-        width: 220,
+        width: showPriceFetch ? 220 : 120,
         cellRenderer: (params: { data: Security }) => (
           <Group gap="xs" wrap="nowrap">
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconDownload size={14} />}
-              loading={fetchingIds.has(params.data.id)}
-              onClick={() => onFetchPrices(params.data)}
-              disabled={!params.data.ticker}
-            >
-              Prices
-            </Button>
+            {showPriceFetch && (
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconDownload size={14} />}
+                loading={fetchingIds.has(params.data.id)}
+                onClick={() => onFetchPrices(params.data)}
+                disabled={!params.data.ticker}
+              >
+                Prices
+              </Button>
+            )}
             <Button
               size="xs"
               variant="light"
@@ -156,12 +151,19 @@ function useColumnDefs(
         editable: false,
       },
     ],
-    [deleteSecurity, onFetchPrices, fetchingIds]
+    [deleteSecurity, onFetchPrices, fetchingIds, showPriceFetch]
   );
 }
 
 export function Securities() {
-  const { securities, securityTransactions, addSecurity, updateSecurity, deleteSecurity, fetchAndCachePrices } = useSecurities();
+  const {
+    securities,
+    securityTransactions,
+    addSecurity,
+    updateSecurity,
+    deleteSecurity,
+    fetchAndCachePrices,
+  } = useSecurities();
   const [modalOpened, setModalOpened] = useState(false);
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
 
@@ -169,7 +171,11 @@ export function Securities() {
     async (security: Security) => {
       const txns = securityTransactions.filter((t) => t.securityId === security.id);
       if (txns.length === 0) {
-        notifications.show({ title: 'No transactions', message: 'Add transactions before fetching prices.', color: 'yellow' });
+        notifications.show({
+          title: 'No transactions',
+          message: 'Add transactions before fetching prices.',
+          color: 'yellow',
+        });
         return;
       }
       const earliest = txns.reduce((min, t) => (t.date < min ? t.date : min), txns[0]!.date);
@@ -178,9 +184,17 @@ export function Securities() {
       setFetchingIds((prev) => new Set(prev).add(security.id));
       try {
         await fetchAndCachePrices(security.id, security.ticker, earliest, today);
-        notifications.show({ title: 'Prices fetched', message: `Updated prices for ${security.ticker}`, color: 'green' });
+        notifications.show({
+          title: 'Prices fetched',
+          message: `Updated prices for ${security.ticker}`,
+          color: 'green',
+        });
       } catch (err) {
-        notifications.show({ title: 'Fetch failed', message: err instanceof Error ? err.message : String(err), color: 'red' });
+        notifications.show({
+          title: 'Fetch failed',
+          message: err instanceof Error ? err.message : String(err),
+          color: 'red',
+        });
       } finally {
         setFetchingIds((prev) => {
           const next = new Set(prev);
@@ -192,7 +206,7 @@ export function Securities() {
     [securityTransactions, fetchAndCachePrices]
   );
 
-  const columnDefs = useColumnDefs(deleteSecurity, handleFetchPrices, fetchingIds);
+  const columnDefs = useColumnDefs(deleteSecurity, handleFetchPrices, fetchingIds, isTauri());
 
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<Security>) => {

@@ -9,13 +9,20 @@ interface SecuritiesContextValue {
   securityTransactions: SecurityTransaction[];
   securityPriceCache: SecurityPriceCache[];
   addSecurity: (security: Security) => void;
+  addSecurities: (securities: Security[]) => void;
   updateSecurity: (security: Security) => void;
   deleteSecurity: (id: string) => void;
   addSecurityTransaction: (transaction: SecurityTransaction) => void;
+  addSecurityTransactions: (transactions: SecurityTransaction[]) => void;
   updateSecurityTransaction: (transaction: SecurityTransaction) => void;
   deleteSecurityTransaction: (id: string) => void;
   setSecurityPriceEntries: (entries: SecurityPriceCache[]) => void;
-  fetchAndCachePrices: (securityId: string, ticker: string, startDate: string, endDate: string) => Promise<void>;
+  fetchAndCachePrices: (
+    securityId: string,
+    ticker: string,
+    startDate: string,
+    endDate: string
+  ) => Promise<void>;
   reloadFromDb: () => Promise<void>;
 }
 
@@ -68,6 +75,11 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
     void db.securities.add(security);
   }, []);
 
+  const addSecurities = useCallback((newSecurities: Security[]) => {
+    setSecurities((prev) => [...prev, ...newSecurities]);
+    void db.securities.bulkAdd(newSecurities);
+  }, []);
+
   const updateSecurity = useCallback((security: Security) => {
     setSecurities((prev) => prev.map((s) => (s.id === security.id ? security : s)));
     void db.securities.put(security);
@@ -83,10 +95,13 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
     void db.securityTransactions.add(transaction);
   }, []);
 
+  const addSecurityTransactions = useCallback((newTransactions: SecurityTransaction[]) => {
+    setSecurityTransactions((prev) => [...prev, ...newTransactions]);
+    void db.securityTransactions.bulkAdd(newTransactions);
+  }, []);
+
   const updateSecurityTransaction = useCallback((transaction: SecurityTransaction) => {
-    setSecurityTransactions((prev) =>
-      prev.map((t) => (t.id === transaction.id ? transaction : t))
-    );
+    setSecurityTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
     void db.securityTransactions.put(transaction);
   }, []);
 
@@ -128,9 +143,11 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
         securityTransactions,
         securityPriceCache,
         addSecurity,
+        addSecurities,
         updateSecurity,
         deleteSecurity,
         addSecurityTransaction,
+        addSecurityTransactions,
         updateSecurityTransaction,
         deleteSecurityTransaction,
         setSecurityPriceEntries,

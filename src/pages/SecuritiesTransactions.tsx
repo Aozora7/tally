@@ -8,12 +8,15 @@ import {
 } from 'ag-grid-community';
 import { Button, Group, Modal, Stack, TextInput, Select, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconUpload } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
 import { useCurrency, displayToCents } from '@/utils/currency';
 import { unitsToDisplay, displayToUnits, priceToDisplay, displayToPrice } from '@/utils/securities';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
+import { openFileDialog } from '@/utils/tauri';
+import { parseSecuritiesCsv } from '@/utils/securitiesImport';
+import { notifications } from '@mantine/notifications';
 import type { Security, SecurityTransaction, SecurityTransactionType } from '@/types';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -245,7 +248,9 @@ export function SecuritiesTransactions() {
   const {
     securities,
     securityTransactions,
+    addSecurities,
     addSecurityTransaction,
+    addSecurityTransactions,
     updateSecurityTransaction,
     deleteSecurityTransaction,
   } = useSecurities();
@@ -256,6 +261,41 @@ export function SecuritiesTransactions() {
     () => securities.map((s) => ({ value: s.id, label: s.ticker })),
     [securities]
   );
+
+  const handleImport = useCallback(async () => {
+    const result = await openFileDialog({
+      title: 'Import Securities Transactions',
+      filters: [{ name: 'CSV/TSV', extensions: ['csv', 'tsv', 'txt'] }],
+    });
+    if (!result) return;
+
+    try {
+      const importResult = parseSecuritiesCsv(result.content, securities);
+      if (importResult.errors.length > 0) {
+        notifications.show({
+          title: 'Import warnings',
+          message: importResult.errors.slice(0, 5).join('\n'),
+          color: 'warning',
+        });
+      }
+
+      if (importResult.securities.length > 0) {
+        addSecurities(importResult.securities);
+      }
+      if (importResult.transactions.length > 0) {
+        addSecurityTransactions(importResult.transactions);
+      }
+
+      const msg = `Imported ${importResult.transactions.length} transactions, ${importResult.securities.length} new securities`;
+      notifications.show({ title: 'Import complete', message: msg, color: 'brand' });
+    } catch (err) {
+      notifications.show({
+        title: 'Import failed',
+        message: err instanceof Error ? err.message : String(err),
+        color: 'danger',
+      });
+    }
+  }, [securities, addSecurities, addSecurityTransactions]);
 
   const columnDefs = useColumnDefs(
     securities,
@@ -277,9 +317,14 @@ export function SecuritiesTransactions() {
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Group justify="space-between">
         <Title order={3}>Trades</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setModalOpened(true)}>
-          Add Trade
-        </Button>
+        <Group gap="xs">
+          <Button variant="light" leftSection={<IconUpload size={16} />} onClick={handleImport}>
+            Import
+          </Button>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setModalOpened(true)}>
+            Add Trade
+          </Button>
+        </Group>
       </Group>
 
       <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
