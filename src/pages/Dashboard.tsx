@@ -1,20 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Stack, Group, Paper, Text, Title, Select, Grid, Box } from '@mantine/core';
-import { BarChart, LineChart, DonutChart } from '@mantine/charts';
-import {
-  IconArrowUpRight,
-  IconArrowDownRight,
-  IconScale,
-  IconReceipt,
-  IconChartBarOff,
-} from '@tabler/icons-react';
+import { BarChart, DonutChart } from '@mantine/charts';
+import { IconArrowUpRight, IconArrowDownRight, IconChartBarOff } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useCurrency } from '@/utils/currency';
-import {
-  useTransactionSummary,
-  useMonthlyTrend,
-  useCategorySummary,
-} from '@/utils/analytics/transactionAnalytics';
+import { useTransactionSummary, useCategorySummary } from '@/utils/analytics/transactionAnalytics';
+import { useMonthlyPivotTable } from '@/utils/analytics/yearlyPivotTable';
 import type { ComponentType } from 'react';
 
 function SummaryCard({
@@ -64,8 +55,7 @@ interface SummaryCardsProps {
 function SummaryCards({
   totalIncome,
   totalExpenses,
-  net,
-  transactionCount,
+
   format,
 }: SummaryCardsProps) {
   return (
@@ -86,52 +76,37 @@ function SummaryCards({
           icon={IconArrowDownRight}
         />
       </Grid.Col>
-      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-        <SummaryCard
-          label="Net"
-          value={format(net)}
-          color={net >= 0 ? 'income.6' : 'expense.6'}
-          icon={IconScale}
-        />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-        <SummaryCard
-          label="Transactions"
-          value={transactionCount.toString()}
-          color="accent.6"
-          icon={IconReceipt}
-        />
-      </Grid.Col>
     </Grid>
   );
 }
 
-interface MonthlyTrendChartProps {
-  data: { month: string; income: number; expenses: number }[];
+interface MonthlyExpensesChartProps {
+  data: { month: string; Fixed: number; Cyclical: number; Irregular: number }[];
 }
 
-function MonthlyTrendChart({ data }: MonthlyTrendChartProps) {
+function MonthlyExpensesChart({ data }: MonthlyExpensesChartProps) {
   if (data.length === 0) return null;
 
   return (
     <>
       <Title order={4} mt="md">
-        Monthly Trend
+        Monthly Expenses by Type
       </Title>
       <Paper p="md" withBorder>
         <Box h={300}>
-          <LineChart
+          <BarChart
             h={280}
             data={data}
             dataKey="month"
             series={[
-              { name: 'income', color: 'income.6' },
-              { name: 'expenses', color: 'expense.6' },
+              { name: 'Fixed', color: 'brand.6' },
+              { name: 'Cyclical', color: 'accent.6' },
+              { name: 'Irregular', color: 'warning.6' },
             ]}
-            curveType="monotone"
+            type="stacked"
             tickLine="y"
             gridAxis="xy"
-            valueFormatter={(value) => `$${value.toFixed(2)}`}
+            valueFormatter={(value: number) => `$${value.toFixed(2)}`}
           />
         </Box>
       </Paper>
@@ -291,7 +266,7 @@ export function Dashboard() {
   }, [transactions, accountFilter]);
 
   const summary = useTransactionSummary(filteredTransactions, categories, startDate, endDate);
-  const monthlyTrend = useMonthlyTrend(filteredTransactions, categories, startDate, endDate);
+  const monthlyPivot = useMonthlyPivotTable(filteredTransactions, categories);
   const categorySummary = useCategorySummary(filteredTransactions, categories, startDate, endDate);
 
   const expenseByCategory = useMemo(
@@ -306,14 +281,15 @@ export function Dashboard() {
     [categorySummary]
   );
 
-  const chartMonthlyTrend = useMemo(
+  const chartMonthlyExpenses = useMemo(
     () =>
-      monthlyTrend.map((m) => ({
+      monthlyPivot.map((m) => ({
         month: m.month,
-        income: m.income / 100,
-        expenses: m.expenses / 100,
+        Fixed: Math.abs(m.typeTotals.find((t) => t.type === 'Fixed')?.total ?? 0) / 100,
+        Cyclical: Math.abs(m.typeTotals.find((t) => t.type === 'Cyclical')?.total ?? 0) / 100,
+        Irregular: Math.abs(m.typeTotals.find((t) => t.type === 'Irregular')?.total ?? 0) / 100,
       })),
-    [monthlyTrend]
+    [monthlyPivot]
   );
 
   const donutData = useMemo(
@@ -360,7 +336,7 @@ export function Dashboard() {
         format={format}
       />
 
-      <MonthlyTrendChart data={chartMonthlyTrend} />
+      <MonthlyExpensesChart data={chartMonthlyExpenses} />
 
       <Grid mt="md">
         <Grid.Col span={{ base: 12, md: 8 }}>
