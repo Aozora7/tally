@@ -8,11 +8,12 @@ import {
 } from 'ag-grid-community';
 import { Button, Group, Modal, Stack, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconDownload } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
 import type { Security } from '@/types';
+import { notifications } from '@mantine/notifications';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -92,7 +93,11 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
   );
 }
 
-function useColumnDefs(deleteSecurity: (id: string) => void) {
+function useColumnDefs(
+  deleteSecurity: (id: string) => void,
+  onFetchPrices: (security: Security) => void,
+  fetchingIds: Set<string>
+) {
   return useMemo<ColDef<Security>[]>(
     () => [
       {
@@ -124,30 +129,70 @@ function useColumnDefs(deleteSecurity: (id: string) => void) {
       },
       {
         headerName: 'Actions',
-        width: 100,
+        width: 220,
         cellRenderer: (params: { data: Security }) => (
-          <Button
-            size="xs"
-            variant="light"
-            color="danger"
-            leftSection={<IconTrash size={14} />}
-            onClick={() => deleteSecurity(params.data.id)}
-          >
-            Delete
-          </Button>
+          <Group gap="xs" wrap="nowrap">
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconDownload size={14} />}
+              loading={fetchingIds.has(params.data.id)}
+              onClick={() => onFetchPrices(params.data)}
+              disabled={!params.data.ticker}
+            >
+              Prices
+            </Button>
+            <Button
+              size="xs"
+              variant="light"
+              color="danger"
+              leftSection={<IconTrash size={14} />}
+              onClick={() => deleteSecurity(params.data.id)}
+            >
+              Delete
+            </Button>
+          </Group>
         ),
         editable: false,
       },
     ],
-    [deleteSecurity]
+    [deleteSecurity, onFetchPrices, fetchingIds]
   );
 }
 
 export function Securities() {
-  const { securities, addSecurity, updateSecurity, deleteSecurity } = useSecurities();
+  const { securities, securityTransactions, addSecurity, updateSecurity, deleteSecurity, fetchAndCachePrices } = useSecurities();
   const [modalOpened, setModalOpened] = useState(false);
+  const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
 
-  const columnDefs = useColumnDefs(deleteSecurity);
+  const handleFetchPrices = useCallback(
+    async (security: Security) => {
+      const txns = securityTransactions.filter((t) => t.securityId === security.id);
+      if (txns.length === 0) {
+        notifications.show({ title: 'No transactions', message: 'Add transactions before fetching prices.', color: 'yellow' });
+        return;
+      }
+      const earliest = txns.reduce((min, t) => (t.date < min ? t.date : min), txns[0]!.date);
+      const today = new Date().toISOString().slice(0, 10);
+
+      setFetchingIds((prev) => new Set(prev).add(security.id));
+      try {
+        await fetchAndCachePrices(security.id, security.ticker, earliest, today);
+        notifications.show({ title: 'Prices fetched', message: `Updated prices for ${security.ticker}`, color: 'green' });
+      } catch (err) {
+        notifications.show({ title: 'Fetch failed', message: err instanceof Error ? err.message : String(err), color: 'red' });
+      } finally {
+        setFetchingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(security.id);
+          return next;
+        });
+      }
+    },
+    [securityTransactions, fetchAndCachePrices]
+  );
+
+  const columnDefs = useColumnDefs(deleteSecurity, handleFetchPrices, fetchingIds);
 
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<Security>) => {

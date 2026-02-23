@@ -15,7 +15,7 @@ export function displayToUnits(display: string): number {
 }
 
 // Prices: stored as integer * 10000 (4 decimal places, i.e. cents + 2 extra digits)
-export function priceToDisplay(price: number, currencySymbol: string = '$'): string {
+export function priceToDisplay(price: number, currencySymbol = '$'): string {
   const absPrice = Math.abs(price);
   const whole = Math.floor(absPrice / PRICE_MULTIPLIER);
   const frac = absPrice % PRICE_MULTIPLIER;
