@@ -4,7 +4,6 @@
   "description": "A local-first personal finance tracking SPA",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "prettier --list-different --write \"src/**/*.{ts,tsx,css}\" && eslint . && tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -13,8 +12,10 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "tauri": "tauri",
+    "dev": "vite",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "install:msi": "powershell -ExecutionPolicy Bypass -File install.msi.ps1"
   },
   "keywords": [
     "finance",

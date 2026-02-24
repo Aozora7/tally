@@ -176,7 +176,7 @@ export function GoogleDriveSettings() {
             />
           </Group>
 
-          <Group gap="sm">
+          <Group gap="sm" align="center">
             {!configured ? (
               <>
                 <Button

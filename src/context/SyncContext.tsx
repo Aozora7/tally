@@ -13,6 +13,7 @@ import { onDataMutated } from '@/sync/syncTrigger';
 import { getValidAccessToken, isOAuthConfigured } from '@/sync/oauthFlow';
 import { performSync, checkRemoteState, resetCachedFileId } from '@/sync/syncEngine';
 import { importFullState } from '@/db/import';
+import { db } from '@/db/database';
 import type { ExportedState } from '@/db/export';
 
 export type SyncStatus = 'not-configured' | 'idle' | 'syncing' | 'synced' | 'error';
@@ -163,6 +164,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
+    async function isLocalEmpty(): Promise<boolean> {
+      const [catCount, accCount, txCount, triageCount, ruleCount, secCount] = await Promise.all([
+        db.categories.count(),
+        db.accounts.count(),
+        db.transactions.count(),
+        db.triageTransactions.count(),
+        db.rules.count(),
+        db.securities.count(),
+      ]);
+      return catCount + accCount + txCount + triageCount + ruleCount + secCount === 0;
+    }
+
     async function checkStartup() {
       try {
         const accessToken = await getValidAccessToken(settingsRef.current, setSetting);
@@ -171,6 +184,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
 
         if (remote) {
+          const localEmpty = await isLocalEmpty();
+          if (localEmpty) {
+            // Fresh install with remote data available — auto-import silently
+            await importFullState(remote.data);
+            await reloadFinance();
+            await reloadSecurities();
+            setSetting('lastSyncedAt', remote.exportedAt);
+            setLastSyncedAt(remote.exportedAt);
+            setSyncStatus('idle');
+            return;
+          }
+
           const localSyncedAt = settingsRef.current.get('lastSyncedAt');
           if (localSyncedAt && remote.exportedAt > localSyncedAt) {
             setRemoteNewer(true);

@@ -11,12 +11,12 @@ import {
   TextInput,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconDownload, IconUpload, IconTrash } from '@tabler/icons-react';
+import { IconDownload, IconUpload, IconTrash, IconFolder } from '@tabler/icons-react';
 import { exportFullState, downloadJson } from '@/db/export';
 import { importFullState, parseImportFile } from '@/db/import';
 import { useFinance } from '@/context/FinanceContext';
 import type { ExportedState } from '@/db/export';
-import { isTauri, readJsonFile, writeJsonFile } from '@/utils/tauri';
+import { isTauri, readJsonFile, writeJsonFile, openDataDirectory } from '@/utils/tauri';
 import { GoogleDriveSettings } from '@/components/GoogleDriveSettings';
 
 const APP_VERSION = '1.0.0';
@@ -232,7 +232,7 @@ export function Settings() {
 
         <Group gap="sm">
           <Button
-            leftSection={<IconDownload size={16} />}
+            leftSection={<IconUpload size={16} />}
             variant="filled"
             onClick={handleExport}
             loading={isExporting}
@@ -240,7 +240,7 @@ export function Settings() {
             Export Full State
           </Button>
           <Button
-            leftSection={<IconUpload size={16} />}
+            leftSection={<IconDownload size={16} />}
             variant="light"
             onClick={() => {
               if (isTauri()) {
@@ -278,6 +278,24 @@ export function Settings() {
           </Button>
         </Group>
       </Paper>
+
+      {isTauri() && (
+        <Paper p="md" withBorder>
+          <Title order={4} mb="xs">
+            Storage
+          </Title>
+          <Text size="sm" c="dimmed" mb="md">
+            Open the folder where your data is stored.
+          </Text>
+          <Button
+            leftSection={<IconFolder size={16} />}
+            variant="light"
+            onClick={() => openDataDirectory()}
+          >
+            Open Data Directory
+          </Button>
+        </Paper>
+      )}
 
       <GoogleDriveSettings />
 

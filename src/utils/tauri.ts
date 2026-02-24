@@ -5,6 +5,7 @@ import {
   type SaveDialogOptions,
 } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { invoke } from '@tauri-apps/api/core';
 
 export function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI__' in window;
@@ -138,4 +139,14 @@ export async function writeJsonFile<T>(
 ): Promise<string | null> {
   const content = JSON.stringify(data, null, 2);
   return saveFileDialog(content, options);
+}
+
+export async function getDataDirectory(): Promise<string | null> {
+  if (!isTauri()) return null;
+  return invoke<string>('get_data_directory');
+}
+
+export async function openDataDirectory(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke('open_data_directory');
 }

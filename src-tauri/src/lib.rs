@@ -1,10 +1,16 @@
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{webview::WebviewWindowBuilder, WebviewUrl};
+use tauri::{webview::WebviewWindowBuilder, Manager, WebviewUrl};
+use tauri_plugin_opener::OpenerExt;
 
 struct OAuthState {
     listener: Mutex<Option<TcpListener>>,
+}
+
+struct DataDirState {
+    path: Mutex<PathBuf>,
 }
 
 #[tauri::command]
@@ -88,6 +94,35 @@ fn await_oauth_callback(state: tauri::State<'_, OAuthState>) -> Result<String, S
     Ok(code)
 }
 
+#[tauri::command]
+fn get_data_directory(state: tauri::State<'_, DataDirState>) -> Result<String, String> {
+    state
+        .path
+        .lock()
+        .map(|guard| guard.to_string_lossy().to_string())
+        .map_err(|e| format!("Lock error: {}", e))
+}
+
+#[tauri::command]
+async fn open_data_directory(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, DataDirState>,
+) -> Result<(), String> {
+    let path = state
+        .path
+        .lock()
+        .map(|guard| guard.clone())
+        .map_err(|e| format!("Lock error: {}", e))?;
+
+    if !path.exists() {
+        std::fs::create_dir_all(&path).map_err(|e| format!("Failed to create directory: {}", e))?;
+    }
+
+    app.opener()
+        .open_path(path.to_string_lossy().to_string(), None::<String>)
+        .map_err(|e| format!("Failed to open directory: {}", e))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -96,15 +131,25 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             start_oauth_listener,
-            await_oauth_callback
+            await_oauth_callback,
+            get_data_directory,
+            open_data_directory
         ])
         .setup(|app| {
-            let exe_dir = std::env::current_exe()
-                .ok()
-                .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-                .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+            let use_data_dir_near_exe = std::env::var("TALLY_DATA_DIR_NEAR_EXE")
+                .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+                .unwrap_or(false);
 
-            let data_dir = exe_dir.join("data");
+            let data_dir = if use_data_dir_near_exe {
+                let exe_dir = std::env::current_exe()
+                    .ok()
+                    .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                    .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+                exe_dir.join("data")
+            } else {
+                app.path().app_local_data_dir().unwrap_or_default()
+            };
+
             if !data_dir.exists() {
                 std::fs::create_dir_all(&data_dir).ok();
             }
@@ -113,6 +158,10 @@ pub fn run() {
             if !webview_data_dir.exists() {
                 std::fs::create_dir_all(&webview_data_dir).ok();
             }
+
+            app.manage(DataDirState {
+                path: Mutex::new(data_dir),
+            });
 
             WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("Tally")
@@ -135,6 +184,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_cors_fetch::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
