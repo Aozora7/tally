@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { db } from '@/db/database';
 import { notifyDataMutated } from '@/sync/syncTrigger';
 import type { Security, SecurityTransaction, SecurityPriceCache } from '@/types';
-import { fetchMonthlyPrices } from '@/utils/yahooFinance';
+import { fetchMonthlyPrices, fetchCurrentPrice } from '@/utils/yahooFinance';
 
 interface SecuritiesContextValue {
   isLoaded: boolean;
@@ -24,6 +24,7 @@ interface SecuritiesContextValue {
     startDate: string,
     endDate: string
   ) => Promise<void>;
+  fetchAndCacheCurrentPrice: (securityId: string, ticker: string) => Promise<void>;
   reloadFromDb: () => Promise<void>;
 }
 
@@ -145,6 +146,22 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
     [setSecurityPriceEntries]
   );
 
+  const fetchAndCacheCurrentPrice = useCallback(
+    async (securityId: string, ticker: string) => {
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const { price } = await fetchCurrentPrice(ticker);
+      const entry: SecurityPriceCache = {
+        id: `${securityId}_${yearMonth}`,
+        securityId,
+        yearMonth,
+        price,
+      };
+      setSecurityPriceEntries([entry]);
+    },
+    [setSecurityPriceEntries]
+  );
+
   return (
     <SecuritiesContext.Provider
       value={{
@@ -162,6 +179,7 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
         deleteSecurityTransaction,
         setSecurityPriceEntries,
         fetchAndCachePrices,
+        fetchAndCacheCurrentPrice,
         reloadFromDb,
       }}
     >

@@ -271,8 +271,6 @@ export function validateRule(rule: Partial<CategorizationRule>): string | null {
     }
   }
 
-  console.log('Validating amounts:', rule.matchMinAmount, rule.matchMaxAmount);
-
   if (rule.matchMinAmount !== undefined && rule.matchMaxAmount !== undefined) {
     if (rule.matchMinAmount > rule.matchMaxAmount) {
       return 'Minimum amount cannot be greater than maximum amount';

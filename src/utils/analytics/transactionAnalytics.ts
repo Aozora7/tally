@@ -236,3 +236,82 @@ export function useTransactionSummary(
     };
   }, [transactions, categories, startDate, endDate]);
 }
+
+export interface YearlyCategorySpending {
+  category: string;
+  categoryId: string;
+  years: { year: string; amount: number }[];
+  total: number;
+}
+
+export function useYearlyCategorySpending(
+  transactions: Transaction[],
+  categories: TransactionCategory[],
+  startDate?: string,
+  endDate?: string
+): YearlyCategorySpending[] {
+  return useMemo(() => {
+    const nonTransferTransactions = transactions.filter((t) => !t.transferAccountId);
+    if (nonTransferTransactions.length === 0 || categories.length === 0) return [];
+
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const excludedCategories = new Set<string>();
+    for (const cat of categories) {
+      if (cat.excludeFromReports || cat.type === 'Income') {
+        excludedCategories.add(cat.id);
+      }
+    }
+
+    let filtered = nonTransferTransactions.filter(
+      (t) => t.categoryId && !excludedCategories.has(t.categoryId)
+    );
+    if (startDate) {
+      filtered = filtered.filter((t) => t.date >= startDate);
+    }
+    if (endDate) {
+      filtered = filtered.filter((t) => t.date <= endDate);
+    }
+
+    if (filtered.length === 0) return [];
+
+    const byCategoryYear = new Map<string, Map<string, number>>();
+
+    for (const t of filtered) {
+      const year = t.date.substring(0, 4);
+      const catId = t.categoryId!;
+
+      let yearMap = byCategoryYear.get(catId);
+      if (!yearMap) {
+        yearMap = new Map();
+        byCategoryYear.set(catId, yearMap);
+      }
+
+      const existing = yearMap.get(year) ?? 0;
+      yearMap.set(year, existing - t.amount);
+    }
+
+    const results: YearlyCategorySpending[] = [];
+
+    for (const [categoryId, yearMap] of byCategoryYear) {
+      const category = categoryMap.get(categoryId);
+      if (!category) continue;
+
+      const years = Array.from(yearMap.entries())
+        .map(([year, amount]) => ({ year, amount }))
+        .sort((a, b) => a.year.localeCompare(b.year));
+
+      const total = years.reduce((sum, y) => sum + y.amount, 0);
+
+      results.push({
+        category: category.name,
+        categoryId,
+        years,
+        total,
+      });
+    }
+
+    results.sort((a, b) => b.total - a.total);
+
+    return results;
+  }, [transactions, categories, startDate, endDate]);
+}

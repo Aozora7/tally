@@ -53,6 +53,11 @@ function YearlyTableRow({
           </Table.Td>
         );
       })}
+      <Table.Td>
+        <Text size={fontSize} c="expense.6">
+          {format(row.totalExpenses)}
+        </Text>
+      </Table.Td>
 
       <Table.Td>
         <Text size={fontSize} c="expense.6">
@@ -85,6 +90,7 @@ function YearlyTable({ data, fontSize, format }: YearlyTableProps) {
               {CATEGORY_TYPES.map((type) => (
                 <Table.Th key={type}>{type}</Table.Th>
               ))}
+              <Table.Th>Total</Table.Th>
               <Table.Th>Expenses/m</Table.Th>
               <Table.Th>SR</Table.Th>
             </Table.Tr>

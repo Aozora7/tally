@@ -88,6 +88,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   label={item.label}
                   leftSection={<item.icon size={18} stroke={1.5} />}
                   onClick={() => opened && toggle()}
+                  mb={3}
                 />
               ))}
             </div>

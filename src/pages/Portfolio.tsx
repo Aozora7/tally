@@ -30,12 +30,23 @@ function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) 
       <Paper p="md" withBorder mt="xs">
         <Box h={300}>
           <BarChart
-            h={280}
+            h={320}
             data={chartData}
             dataKey="month"
             series={portfolioSeries}
             tickLine="y"
             gridAxis="xy"
+            yAxisProps={{ width: 90 }}
+            xAxisProps={{
+              angle: -45,
+              textAnchor: 'end',
+              height: 80,
+              interval: 1,
+              tickLine: false,
+              dy: 15,
+              dx: -18,
+            }}
+            gridProps={{ opacity: 0.1 }}
             valueFormatter={(value) => format(value * 100)}
             tooltipProps={{
               content: (props: {
@@ -99,7 +110,7 @@ function CurrentHoldingsTable({ checkpoint, format }: CurrentHoldingsTableProps)
     <>
       <Title order={4}>Current Holdings ({checkpoint.yearMonth})</Title>
       <Paper p="md" withBorder mt="xs">
-        <Table striped highlightOnHover>
+        <Table highlightOnHover>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Security</Table.Th>
@@ -108,17 +119,17 @@ function CurrentHoldingsTable({ checkpoint, format }: CurrentHoldingsTableProps)
               <Table.Th ta="right">Value</Table.Th>
             </Table.Tr>
           </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
-          <Table.Tfoot>
+          <Table.Tbody>
+            {rows}
             <Table.Tr>
               <Table.Td fw={700} colSpan={3}>
                 Total
               </Table.Td>
-              <Table.Td ta="right" fw={700} ff="monospace" c="income.6">
+              <Table.Td ta="right" fw={700} c="income.6">
                 {format(checkpoint.totalValue)}
               </Table.Td>
             </Table.Tr>
-          </Table.Tfoot>
+          </Table.Tbody>
         </Table>
       </Paper>
     </>
@@ -167,8 +178,13 @@ function getMonthsForPositions(
 }
 
 export function Portfolio() {
-  const { securities, securityTransactions, securityPriceCache, fetchAndCachePrices } =
-    useSecurities();
+  const {
+    securities,
+    securityTransactions,
+    securityPriceCache,
+    fetchAndCachePrices,
+    fetchAndCacheCurrentPrice,
+  } = useSecurities();
   const { format } = useCurrency();
   const [isFetching, setIsFetching] = useState(false);
 
@@ -181,10 +197,21 @@ export function Portfolio() {
 
   const handleFetchCurrentPrices = useCallback(async () => {
     const now = new Date();
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const today = now.toISOString().slice(0, 10);
 
     const securityMonths = getMonthsForPositions(securityTransactions);
+
+    const unitsBySecurity = new Map<string, number>();
+    for (const txn of securityTransactions) {
+      const current = unitsBySecurity.get(txn.securityId) ?? 0;
+      const delta = txn.type === 'Buy' ? txn.units : -txn.units;
+      unitsBySecurity.set(txn.securityId, current + delta);
+    }
+    const nonZeroPositions = new Set<string>();
+    for (const [securityId, units] of unitsBySecurity) {
+      if (units > 0) nonZeroPositions.add(securityId);
+    }
+
     const cachedBySecurity = new Map<string, Set<string>>();
     for (const cache of securityPriceCache) {
       if (!cachedBySecurity.has(cache.securityId)) {
@@ -195,20 +222,20 @@ export function Portfolio() {
 
     const fetchTasks: Promise<void>[] = [];
 
-    for (const [securityId, monthsNeeded] of securityMonths) {
+    for (const securityId of nonZeroPositions) {
       const security = securities.find((s) => s.id === securityId);
       if (!security) continue;
 
+      const monthsNeeded = securityMonths.get(securityId) ?? new Set();
       const cached = cachedBySecurity.get(securityId) ?? new Set();
-      const missingMonths = Array.from(monthsNeeded).filter((m) => !cached.has(m));
-      missingMonths.push(currentYearMonth);
+      const missingPastMonths = Array.from(monthsNeeded).filter((m) => !cached.has(m));
 
-      if (missingMonths.length === 0) continue;
-
-      const earliestMissing = missingMonths.sort()[0]!;
-      const startDate = `${earliestMissing}-01`;
-
-      fetchTasks.push(fetchAndCachePrices(securityId, security.ticker, startDate, today));
+      if (missingPastMonths.length > 0) {
+        const earliestMissing = missingPastMonths.sort()[0]!;
+        const startDate = `${earliestMissing}-01`;
+        fetchTasks.push(fetchAndCachePrices(securityId, security.ticker, startDate, today));
+      }
+      fetchTasks.push(fetchAndCacheCurrentPrice(securityId, security.ticker));
     }
 
     if (fetchTasks.length === 0) {
@@ -237,7 +264,13 @@ export function Portfolio() {
     } finally {
       setIsFetching(false);
     }
-  }, [securities, securityTransactions, securityPriceCache, fetchAndCachePrices]);
+  }, [
+    securities,
+    securityTransactions,
+    securityPriceCache,
+    fetchAndCachePrices,
+    fetchAndCacheCurrentPrice,
+  ]);
 
   if (securityTransactions.length === 0) {
     return (
@@ -271,12 +304,14 @@ export function Portfolio() {
       </Group>
 
       <Grid>
-        <Grid.Col span={{ base: 12, md: 5 }}>
+        <Grid.Col>
           {latestCheckpoint && (
             <CurrentHoldingsTable checkpoint={latestCheckpoint} format={format} />
           )}
         </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 7 }}>
+      </Grid>
+      <Grid>
+        <Grid.Col>
           <PortfolioValueChart checkpoints={checkpoints} format={format} />
         </Grid.Col>
       </Grid>

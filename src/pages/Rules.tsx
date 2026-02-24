@@ -433,9 +433,7 @@ export function Rules() {
   };
 
   const handleDeleteRule = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this rule?')) {
-      deleteRule(id);
-    }
+    deleteRule(id);
   };
 
   return (
