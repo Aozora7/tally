@@ -1,12 +1,13 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import {
   AllCommunityModule,
   ModuleRegistry,
   type ColDef,
   type CellValueChangedEvent,
+  type IRowNode,
 } from 'ag-grid-community';
-import { Button, Group, Modal, Stack, TextInput, Select, Title } from '@mantine/core';
+import { Button, Group, Modal, Stack, TextInput, Select, Title, ActionIcon } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconPlaylistAdd } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
@@ -16,6 +17,10 @@ import { agGridDarkTheme } from '@/utils/agGridTheme';
 import type { Account, Transaction } from '@/types';
 import { useDisclosure } from '@mantine/hooks';
 import { RulePreviewModal } from '../components/RulePreviewModal/RulePreviewModal';
+import {
+  TransactionFilterBar,
+  type TransactionFilterState,
+} from '../components/TransactionFilterBar/TransactionFilterBar';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -288,26 +293,19 @@ function useColumnDefs(
         },
       },
       {
-        field: 'groupId',
-        headerName: 'Group',
-        width: 100,
-        editable: false,
-      },
-      {
         headerName: 'Actions',
-        width: 100,
+        width: 80,
         cellRenderer: (params: { data: Transaction }) => (
-          <Button
-            size="xs"
-            variant="light"
+          <ActionIcon
             color="danger"
-            leftSection={<IconTrash size={14} />}
             onClick={() => deleteTransaction(params.data.id)}
+            aria-label="Delete"
           >
-            Delete
-          </Button>
+            <IconTrash size={16} stroke={1.5} />
+          </ActionIcon>
         ),
         editable: false,
+        cellStyle: { display: 'flex', alignItems: 'center' },
       },
     ],
     [accounts, categories, accountOptions, categoryOptions, deleteTransaction, currencyValueGetter]
@@ -326,6 +324,14 @@ export function Transactions() {
   } = useFinance();
   const [rulesModalOpened, rulesModalHandlers] = useDisclosure(false);
   const [modalOpened, setModalOpened] = useState(false);
+  const [filter, setFilter] = useState<TransactionFilterState>({
+    searchText: '',
+    dateFrom: '',
+    dateTo: '',
+    categoryType: null,
+    categoryId: null,
+  });
+  const gridRef = useRef<AgGridReact<Transaction>>(null);
 
   const accountOptions = useMemo(
     () => accounts.map((a) => ({ value: a.id, label: a.name })),
@@ -361,6 +367,71 @@ export function Transactions() {
     [updateTransaction]
   );
 
+  const { format: formatCurrency } = useCurrency();
+
+  const isExternalFilterPresent = useCallback((): boolean => {
+    return (
+      filter.searchText !== '' ||
+      filter.dateFrom !== '' ||
+      filter.dateTo !== '' ||
+      filter.categoryType !== null ||
+      filter.categoryId !== null
+    );
+  }, [filter]);
+
+  const doesExternalFilterPass = useCallback(
+    (node: IRowNode<Transaction>): boolean => {
+      const t = node.data;
+      if (!t) return false;
+
+      if (filter.searchText) {
+        const searchLower = filter.searchText.toLowerCase();
+        const accountName = accounts.find((a) => a.id === t.accountId)?.name ?? '';
+        const categoryName = t.categoryId
+          ? (categories.find((c) => c.id === t.categoryId)?.name ?? '')
+          : '';
+        const transferName = t.transferAccountId
+          ? (accounts.find((a) => a.id === t.transferAccountId)?.name ?? '')
+          : '';
+        const formattedAmount = formatCurrency(t.amount).toLowerCase();
+
+        const matches =
+          t.date.includes(searchLower) ||
+          formattedAmount.includes(searchLower) ||
+          t.description.toLowerCase().includes(searchLower) ||
+          accountName.toLowerCase().includes(searchLower) ||
+          categoryName.toLowerCase().includes(searchLower) ||
+          transferName.toLowerCase().includes(searchLower);
+
+        if (!matches) return false;
+      }
+
+      if (
+        filter.dateFrom &&
+        /^\d{4}-\d{2}-\d{2}$/.test(filter.dateFrom) &&
+        t.date < filter.dateFrom
+      )
+        return false;
+      if (filter.dateTo && /^\d{4}-\d{2}-\d{2}$/.test(filter.dateTo) && t.date > filter.dateTo)
+        return false;
+
+      if (filter.categoryType) {
+        const cat = categories.find((c) => c.id === t.categoryId);
+        if (!cat || cat.type !== filter.categoryType) return false;
+      }
+
+      if (filter.categoryId && t.categoryId !== filter.categoryId) return false;
+
+      return true;
+    },
+    [filter, accounts, categories, formatCurrency]
+  );
+
+  const handleFilterChange = useCallback((newFilter: TransactionFilterState) => {
+    setFilter(newFilter);
+    gridRef.current?.api?.onFilterChanged();
+  }, []);
+
   return (
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <RulePreviewModal
@@ -386,11 +457,21 @@ export function Transactions() {
         </Group>
       </Group>
 
+      <TransactionFilterBar
+        filter={filter}
+        onFilterChange={handleFilterChange}
+        categories={categories}
+      />
+
       <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
         <AgGridReact<Transaction>
+          ref={gridRef}
           rowData={transactions}
           columnDefs={columnDefs}
+          getRowId={(params) => params.data.id}
           onCellValueChanged={onCellValueChanged}
+          isExternalFilterPresent={isExternalFilterPresent}
+          doesExternalFilterPass={doesExternalFilterPass}
           animateRows={false}
           domLayout="normal"
           theme={agGridDarkTheme}

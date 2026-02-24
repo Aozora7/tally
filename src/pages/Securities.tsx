@@ -34,7 +34,6 @@ interface SecurityFormData {
   ticker: string;
   isin: string;
   label: string;
-  exchange: string;
 }
 
 interface AddSecurityFormProps {
@@ -49,7 +48,6 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
       ticker: '',
       isin: '',
       label: '',
-      exchange: '',
     },
     validate: {
       ticker: (value) => (value.trim().length > 0 ? null : 'Ticker is required'),
@@ -63,7 +61,7 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
     };
     if (values.isin.trim()) security.isin = values.isin.trim();
     if (values.label.trim()) security.label = values.label.trim();
-    if (values.exchange.trim()) security.exchange = values.exchange.trim();
+
     onAdd(security);
     onClose();
     form.reset();
@@ -73,18 +71,14 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
     <Modal opened={opened} onClose={onClose} title="Add Security">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
-          <TextInput label="Ticker" placeholder="AMS:IWDA" {...form.getInputProps('ticker')} />
+          <TextInput label="Ticker" placeholder="IWDA.AS" {...form.getInputProps('ticker')} />
           <TextInput label="ISIN" placeholder="IE00B4L5Y983" {...form.getInputProps('isin')} />
           <TextInput
             label="Label"
             placeholder="iShares Core MSCI World"
             {...form.getInputProps('label')}
           />
-          <TextInput
-            label="Exchange"
-            placeholder="Euronext Amsterdam"
-            {...form.getInputProps('exchange')}
-          />
+
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={onClose}>
               Cancel
@@ -177,13 +171,6 @@ function useColumnDefs(
         headerName: 'Label',
         flex: 1,
         minWidth: 200,
-        editable: true,
-        filter: true,
-      },
-      {
-        field: 'exchange',
-        headerName: 'Exchange',
-        width: 200,
         editable: true,
         filter: true,
       },

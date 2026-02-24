@@ -42,7 +42,6 @@ export interface Security {
   ticker: string;
   isin?: string;
   label?: string;
-  exchange?: string;
 }
 
 export type SecurityTransactionType = 'Buy' | 'Sell';

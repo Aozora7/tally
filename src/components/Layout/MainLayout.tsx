@@ -1,4 +1,4 @@
-import { AppShell, Divider, Group, NavLink, ScrollArea, Text } from '@mantine/core';
+import { AppShell, NavLink, ScrollArea, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 import {
@@ -10,7 +10,6 @@ import {
   IconTags,
   IconRobot,
   IconSettings,
-  IconWallet,
   IconChartLine,
   IconArrowsExchange,
   IconDownload,
@@ -74,15 +73,6 @@ export function MainLayout({ children }: MainLayoutProps) {
       padding="md"
     >
       <AppShell.Navbar p="md">
-        <AppShell.Section>
-          <Group gap="xs" mb="md" px="xs">
-            <IconWallet size={24} stroke={1.5} color="var(--mantine-color-brand-6)" />
-            <Text fw={700} size="lg">
-              Finance
-            </Text>
-          </Group>
-          <Divider mb="sm" />
-        </AppShell.Section>
         <AppShell.Section grow component={ScrollArea}>
           {navSections.map((section) => (
             <div key={section.label}>

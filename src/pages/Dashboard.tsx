@@ -165,9 +165,9 @@ interface MonthlyExpensesChartProps {
 }
 
 const monthlyExpensesSeries = [
-  { name: 'Fixed', color: 'brand.6' },
-  { name: 'Cyclical', color: 'accent.6' },
-  { name: 'Irregular', color: 'warning.6' },
+  { name: 'Fixed', color: 'danger.6' },
+  { name: 'Cyclical', color: 'brand.6' },
+  { name: 'Irregular', color: 'accent.6' },
 ];
 const monthlyExpensesFormatter = (value: number) => `$${value.toFixed(2)}`;
 

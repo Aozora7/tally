@@ -243,7 +243,7 @@ function useColumnDefs(
   );
 }
 
-export function SecuritiesTransactions() {
+export function Trades() {
   const {
     securities,
     securityTransactions,
@@ -330,6 +330,7 @@ export function SecuritiesTransactions() {
         <AgGridReact<SecurityTransaction>
           rowData={securityTransactions}
           columnDefs={columnDefs}
+          getRowId={(params) => params.data.id}
           onCellValueChanged={onCellValueChanged}
           animateRows={false}
           domLayout="normal"

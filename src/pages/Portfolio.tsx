@@ -114,7 +114,7 @@ function CurrentHoldingsTable({ checkpoint, format }: CurrentHoldingsTableProps)
               <Table.Td fw={700} colSpan={3}>
                 Total
               </Table.Td>
-              <Table.Td ta="right" fw={700} ff="monospace" c="brand.6">
+              <Table.Td ta="right" fw={700} ff="monospace" c="income.6">
                 {format(checkpoint.totalValue)}
               </Table.Td>
             </Table.Tr>

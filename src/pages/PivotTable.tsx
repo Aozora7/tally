@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Stack, Title, Table, Text, Paper, Group, Badge, SegmentedControl } from '@mantine/core';
+import { Stack, Title, Table, Text, Paper, Group, SegmentedControl } from '@mantine/core';
 import { IconTableOff } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import {
@@ -53,18 +53,14 @@ function YearlyTableRow({
           </Table.Td>
         );
       })}
-      <Table.Td>
-        <Badge
-          size={fontSize === 'xs' ? 'xs' : 'sm'}
-          color={row.savingsRate >= 50 ? 'brand' : row.savingsRate >= 0 ? 'warning' : 'danger'}
-        >
-          {row.savingsRate.toFixed(1)}%
-        </Badge>
-      </Table.Td>
+
       <Table.Td>
         <Text size={fontSize} c="expense.6">
           {format(Math.round(row.monthlyAvgExpenses))}
         </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size={fontSize}>{row.savingsRate.toFixed(1)}%</Text>
       </Table.Td>
     </Table.Tr>
   );
@@ -89,8 +85,8 @@ function YearlyTable({ data, fontSize, format }: YearlyTableProps) {
               {CATEGORY_TYPES.map((type) => (
                 <Table.Th key={type}>{type}</Table.Th>
               ))}
-              <Table.Th>SR</Table.Th>
               <Table.Th>Expenses/m</Table.Th>
+              <Table.Th>SR</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -100,14 +96,6 @@ function YearlyTable({ data, fontSize, format }: YearlyTableProps) {
           </Table.Tbody>
         </Table>
       </Paper>
-      <Group gap="xl">
-        <Text size="sm" c="dimmed">
-          SR = Savings Rate = (Income - Expenses) / Income
-        </Text>
-        <Text size="sm" c="dimmed">
-          Expenses/m = Average monthly expenses (based on months with transactions)
-        </Text>
-      </Group>
     </>
   );
 }

@@ -125,10 +125,10 @@ function SortableRuleRow({
           {getRuleSummary(rule)}
         </Text>
       </Table.Td>
-      <Table.Td {...listeners}>
+      <Table.Td {...listeners} w={400}>
         <Badge color={action.color}>{action.label}</Badge>
       </Table.Td>
-      <Table.Td>
+      <Table.Td w={150}>
         <Group gap={4}>
           <ActionIcon
             color="accent"
