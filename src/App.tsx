@@ -13,6 +13,7 @@ import { Settings } from '@/pages/Settings';
 import { ImportWizard } from './components/ImportWizard/ImportWizard';
 import { Securities } from '@/pages/Securities';
 import { SecuritiesTransactions } from '@/pages/SecuritiesTransactions';
+import { Portfolio } from '@/pages/Portfolio';
 
 export default function App() {
   return (
@@ -31,7 +32,8 @@ export default function App() {
               <Route path="/pivot" element={<PivotTable />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/securities" element={<Securities />} />
-              <Route path="/securities/transactions" element={<SecuritiesTransactions />} />
+              <Route path="/trades" element={<SecuritiesTransactions />} />
+              <Route path="/portfolio" element={<Portfolio />} />
             </Routes>
           </MainLayout>
         </HashRouter>

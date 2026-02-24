@@ -24,15 +24,7 @@ class FinanceDatabase extends Dexie {
 
   constructor() {
     super('ImpersonalFinance');
-    this.version(2).stores({
-      categories: 'id',
-      accounts: 'id',
-      triageTransactions: 'id',
-      transactions: 'id',
-      rules: 'id',
-      settings: 'key',
-    });
-    this.version(3).stores({
+    this.version(1).stores({
       categories: 'id',
       accounts: 'id',
       triageTransactions: 'id',

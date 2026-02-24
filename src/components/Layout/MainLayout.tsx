@@ -6,7 +6,6 @@ import {
   IconTable,
   IconReceipt,
   IconChecklist,
-  IconUpload,
   IconBuildingBank,
   IconTags,
   IconRobot,
@@ -14,6 +13,8 @@ import {
   IconWallet,
   IconChartLine,
   IconArrowsExchange,
+  IconDownload,
+  IconBriefcase,
 } from '@tabler/icons-react';
 import type { ReactNode, ComponentType } from 'react';
 
@@ -39,14 +40,15 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Transactions', path: '/transactions', icon: IconReceipt },
       { label: 'Triage', path: '/triage', icon: IconChecklist },
-      { label: 'Import', path: '/import', icon: IconUpload },
+      { label: 'Import', path: '/import', icon: IconDownload },
     ],
   },
   {
     label: 'PORTFOLIO',
     items: [
+      { label: 'Portfolio', path: '/portfolio', icon: IconBriefcase },
       { label: 'Securities', path: '/securities', icon: IconChartLine },
-      { label: 'Trades', path: '/securities/transactions', icon: IconArrowsExchange },
+      { label: 'Trades', path: '/trades', icon: IconArrowsExchange },
     ],
   },
   {

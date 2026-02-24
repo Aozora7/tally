@@ -6,14 +6,26 @@ import {
   type ColDef,
   type CellValueChangedEvent,
 } from 'ag-grid-community';
-import { Button, Group, Modal, Stack, TextInput, Title } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Group,
+  Modal,
+  Stack,
+  TextInput,
+  Title,
+  Table,
+  ScrollArea,
+  Text,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconTrash, IconDownload } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconDownload, IconDatabase } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
 import { isTauri } from '@/utils/tauri';
-import type { Security } from '@/types';
+import { priceToDisplay } from '@/utils/securities';
+import type { Security, SecurityPriceCache } from '@/types';
 import { notifications } from '@mantine/notifications';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -85,9 +97,64 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
   );
 }
 
+interface PriceCacheModalProps {
+  opened: boolean;
+  onClose: () => void;
+  securityId: string | null;
+  ticker: string;
+  priceCache: SecurityPriceCache[];
+}
+
+function PriceCacheModal({
+  opened,
+  onClose,
+  securityId,
+  ticker,
+  priceCache,
+}: PriceCacheModalProps) {
+  const cachedPrices = useMemo(() => {
+    if (!securityId) return [];
+    return priceCache
+      .filter((c) => c.securityId === securityId)
+      .sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
+  }, [securityId, priceCache]);
+
+  return (
+    <Modal opened={opened} onClose={onClose} title={`Price Cache: ${ticker}`} size="sm">
+      {cachedPrices.length === 0 ? (
+        <Text c="dimmed" ta="center" py="md">
+          No cached prices
+        </Text>
+      ) : (
+        <ScrollArea.Autosize mah={400}>
+          <Table striped highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Month</Table.Th>
+                <Table.Th ta="right">Price</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {cachedPrices.map((cp) => (
+                <Table.Tr key={cp.id}>
+                  <Table.Td>{cp.yearMonth}</Table.Td>
+                  <Table.Td ta="right" ff="monospace">
+                    {priceToDisplay(cp.price)}
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </ScrollArea.Autosize>
+      )}
+    </Modal>
+  );
+}
+
 function useColumnDefs(
   deleteSecurity: (id: string) => void,
   onFetchPrices: (security: Security) => void,
+  onViewCache: (security: Security) => void,
   fetchingIds: Set<string>,
   showPriceFetch: boolean
 ) {
@@ -122,36 +189,41 @@ function useColumnDefs(
       },
       {
         headerName: 'Actions',
-        width: showPriceFetch ? 220 : 120,
+        width: showPriceFetch ? 120 : 80,
+        cellStyle: { display: 'flex', alignItems: 'center' },
         cellRenderer: (params: { data: Security }) => (
-          <Group gap="xs" wrap="nowrap">
+          <Group gap={4} wrap="nowrap">
             {showPriceFetch && (
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconDownload size={14} />}
-                loading={fetchingIds.has(params.data.id)}
+              <ActionIcon
+                color="brand"
                 onClick={() => onFetchPrices(params.data)}
                 disabled={!params.data.ticker}
+                loading={fetchingIds.has(params.data.id)}
+                aria-label="Fetch prices"
               >
-                Prices
-              </Button>
+                <IconDownload size={16} stroke={1.5} />
+              </ActionIcon>
             )}
-            <Button
-              size="xs"
-              variant="light"
-              color="danger"
-              leftSection={<IconTrash size={14} />}
-              onClick={() => deleteSecurity(params.data.id)}
+            <ActionIcon
+              color="accent"
+              onClick={() => onViewCache(params.data)}
+              aria-label="View cache"
             >
-              Delete
-            </Button>
+              <IconDatabase size={16} stroke={1.5} />
+            </ActionIcon>
+            <ActionIcon
+              color="danger"
+              onClick={() => deleteSecurity(params.data.id)}
+              aria-label="Delete"
+            >
+              <IconTrash size={16} stroke={1.5} />
+            </ActionIcon>
           </Group>
         ),
         editable: false,
       },
     ],
-    [deleteSecurity, onFetchPrices, fetchingIds, showPriceFetch]
+    [deleteSecurity, onFetchPrices, onViewCache, fetchingIds, showPriceFetch]
   );
 }
 
@@ -159,6 +231,7 @@ export function Securities() {
   const {
     securities,
     securityTransactions,
+    securityPriceCache,
     addSecurity,
     updateSecurity,
     deleteSecurity,
@@ -166,6 +239,15 @@ export function Securities() {
   } = useSecurities();
   const [modalOpened, setModalOpened] = useState(false);
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
+  const [cacheModal, setCacheModal] = useState<{
+    opened: boolean;
+    securityId: string | null;
+    ticker: string;
+  }>({
+    opened: false,
+    securityId: null,
+    ticker: '',
+  });
 
   const handleFetchPrices = useCallback(
     async (security: Security) => {
@@ -206,7 +288,17 @@ export function Securities() {
     [securityTransactions, fetchAndCachePrices]
   );
 
-  const columnDefs = useColumnDefs(deleteSecurity, handleFetchPrices, fetchingIds, isTauri());
+  const handleViewCache = useCallback((security: Security) => {
+    setCacheModal({ opened: true, securityId: security.id, ticker: security.ticker });
+  }, []);
+
+  const columnDefs = useColumnDefs(
+    deleteSecurity,
+    handleFetchPrices,
+    handleViewCache,
+    fetchingIds,
+    isTauri()
+  );
 
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<Security>) => {
@@ -241,6 +333,14 @@ export function Securities() {
         opened={modalOpened}
         onClose={() => setModalOpened(false)}
         onAdd={addSecurity}
+      />
+
+      <PriceCacheModal
+        opened={cacheModal.opened}
+        onClose={() => setCacheModal({ opened: false, securityId: null, ticker: '' })}
+        securityId={cacheModal.securityId}
+        ticker={cacheModal.ticker}
+        priceCache={securityPriceCache}
       />
     </Stack>
   );

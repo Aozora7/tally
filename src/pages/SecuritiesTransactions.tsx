@@ -6,7 +6,7 @@ import {
   type ColDef,
   type CellValueChangedEvent,
 } from 'ag-grid-community';
-import { Button, Group, Modal, Stack, TextInput, Select, Title } from '@mantine/core';
+import { ActionIcon, Button, Group, Modal, Stack, TextInput, Select, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconUpload } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
@@ -32,8 +32,7 @@ interface TradeFormData {
 
 function dateValueFormatter(params: { value: string | null | undefined }): string {
   if (!params.value) return '';
-  const [year, month, day] = params.value.split('-');
-  return `${month}/${day}/${year}`;
+  return params.value;
 }
 
 function dateValueParser(params: { newValue: string }): string {
@@ -148,6 +147,7 @@ function useColumnDefs(
         valueFormatter: dateValueFormatter,
         valueParser: dateValueParser,
         editable: true,
+        sort: 'desc',
       },
       {
         field: 'type',
@@ -225,19 +225,18 @@ function useColumnDefs(
       },
       {
         headerName: 'Actions',
-        width: 100,
+        width: 80,
         cellRenderer: (params: { data: SecurityTransaction }) => (
-          <Button
-            size="xs"
-            variant="light"
+          <ActionIcon
             color="danger"
-            leftSection={<IconTrash size={14} />}
             onClick={() => deleteSecurityTransaction(params.data.id)}
+            aria-label="Delete"
           >
-            Delete
-          </Button>
+            <IconTrash size={16} stroke={1.5} />
+          </ActionIcon>
         ),
         editable: false,
+        cellStyle: { display: 'flex', alignItems: 'center' },
       },
     ],
     [securities, securityOptions, currencySymbol, deleteSecurityTransaction]

@@ -30,8 +30,7 @@ interface TransactionFormData {
 
 function dateValueFormatter(params: { value: string | null | undefined }): string {
   if (!params.value) return '';
-  const [year, month, day] = params.value.split('-');
-  return `${month}/${day}/${year}`;
+  return params.value;
 }
 
 function dateValueParser(params: { newValue: string }): string {
@@ -184,6 +183,7 @@ function useColumnDefs(
         valueFormatter: dateValueFormatter,
         valueParser: dateValueParser,
         editable: true,
+        sort: 'desc',
       },
       {
         field: 'amount',
