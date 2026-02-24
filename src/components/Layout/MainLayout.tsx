@@ -16,6 +16,7 @@ import {
   IconBriefcase,
 } from '@tabler/icons-react';
 import type { ReactNode, ComponentType } from 'react';
+import { SyncIndicator } from '@/components/SyncIndicator';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -91,6 +92,9 @@ export function MainLayout({ children }: MainLayoutProps) {
               ))}
             </div>
           ))}
+        </AppShell.Section>
+        <AppShell.Section>
+          <SyncIndicator />
         </AppShell.Section>
       </AppShell.Navbar>
       <AppShell.Main

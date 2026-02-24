@@ -23,7 +23,7 @@ class FinanceDatabase extends Dexie {
   securityPriceCache!: Table<SecurityPriceCache>;
 
   constructor() {
-    super('ImpersonalFinance');
+    super('TallyDatabase');
     this.version(1).stores({
       categories: 'id',
       accounts: 'id',

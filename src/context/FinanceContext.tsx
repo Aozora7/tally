@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { db } from '@/db/database';
+import { notifyDataMutated } from '@/sync/syncTrigger';
 import type {
   TransactionCategory,
   Account,
@@ -120,6 +121,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       };
       setCategories((prev) => [...prev, categoryWithDefaults]);
       void db.categories.add(categoryWithDefaults);
+      notifyDataMutated();
     },
     [categories.length]
   );
@@ -127,11 +129,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const updateCategory = useCallback((category: TransactionCategory) => {
     setCategories((prev) => prev.map((c) => (c.id === category.id ? category : c)));
     void db.categories.put(category);
+    notifyDataMutated();
   }, []);
 
   const deleteCategory = useCallback((id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
     void db.categories.delete(id);
+    notifyDataMutated();
   }, []);
 
   const reorderCategories = useCallback((newCategories: TransactionCategory[]) => {
@@ -141,61 +145,73 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }));
     setCategories(categoriesWithSortOrder);
     void db.categories.clear().then(() => db.categories.bulkAdd(categoriesWithSortOrder));
+    notifyDataMutated();
   }, []);
 
   const addAccount = useCallback((account: Account) => {
     setAccounts((prev) => [...prev, account]);
     void db.accounts.add(account);
+    notifyDataMutated();
   }, []);
 
   const updateAccount = useCallback((account: Account) => {
     setAccounts((prev) => prev.map((a) => (a.id === account.id ? account : a)));
     void db.accounts.put(account);
+    notifyDataMutated();
   }, []);
 
   const deleteAccount = useCallback((id: string) => {
     setAccounts((prev) => prev.filter((a) => a.id !== id));
     void db.accounts.delete(id);
+    notifyDataMutated();
   }, []);
 
   const addTriageTransaction = useCallback((transaction: TriageTransaction) => {
     setTriageTransactions((prev) => [...prev, transaction]);
     void db.triageTransactions.add(transaction);
+    notifyDataMutated();
   }, []);
 
   const addTriageTransactions = useCallback((newTransactions: TriageTransaction[]) => {
     setTriageTransactions((prev) => [...prev, ...newTransactions]);
     void db.triageTransactions.bulkAdd(newTransactions);
+    notifyDataMutated();
   }, []);
 
   const updateTriageTransaction = useCallback((transaction: TriageTransaction) => {
     setTriageTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
     void db.triageTransactions.put(transaction);
+    notifyDataMutated();
   }, []);
 
   const deleteTriageTransaction = useCallback((id: string) => {
     setTriageTransactions((prev) => prev.filter((t) => t.id !== id));
     void db.triageTransactions.delete(id);
+    notifyDataMutated();
   }, []);
 
   const addTransaction = useCallback((transaction: Transaction) => {
     setTransactions((prev) => [...prev, transaction]);
     void db.transactions.add(transaction);
+    notifyDataMutated();
   }, []);
 
   const addTransactions = useCallback((newTransactions: Transaction[]) => {
     setTransactions((prev) => [...prev, ...newTransactions]);
     void db.transactions.bulkAdd(newTransactions);
+    notifyDataMutated();
   }, []);
 
   const updateTransaction = useCallback((transaction: Transaction) => {
     setTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
     void db.transactions.put(transaction);
+    notifyDataMutated();
   }, []);
 
   const deleteTransaction = useCallback((id: string) => {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
     void db.transactions.delete(id);
+    notifyDataMutated();
   }, []);
 
   const addRule = useCallback(
@@ -203,6 +219,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const ruleWithSortOrder = { ...rule, sortOrder: rules.length };
       setRules((prev) => [...prev, ruleWithSortOrder]);
       void db.rules.add(ruleWithSortOrder);
+      notifyDataMutated();
     },
     [rules.length]
   );
@@ -214,11 +231,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       return updated;
     });
     void db.rules.put(rule);
+    notifyDataMutated();
   }, []);
 
   const deleteRule = useCallback((id: string) => {
     setRules((prev) => prev.filter((r) => r.id !== id));
     void db.rules.delete(id);
+    notifyDataMutated();
   }, []);
 
   const reorderRules = useCallback((newRules: CategorizationRule[]) => {
@@ -228,6 +247,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }));
     setRules(rulesWithSortOrder);
     void db.rules.clear().then(() => db.rules.bulkAdd(rulesWithSortOrder));
+    notifyDataMutated();
   }, []);
 
   const clearAllData = useCallback(async () => {
@@ -249,16 +269,19 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setTriageTransactions([]);
     setTransactions([]);
     setRules([]);
+    notifyDataMutated();
   }, []);
 
   const clearTransactions = useCallback(async () => {
     await db.transactions.clear();
     setTransactions([]);
+    notifyDataMutated();
   }, []);
 
   const clearTriageTransactions = useCallback(async () => {
     await db.triageTransactions.clear();
     setTriageTransactions([]);
+    notifyDataMutated();
   }, []);
 
   const setSetting = useCallback((key: string, value: string) => {

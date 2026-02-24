@@ -17,6 +17,7 @@ import { importFullState, parseImportFile } from '@/db/import';
 import { useFinance } from '@/context/FinanceContext';
 import type { ExportedState } from '@/db/export';
 import { isTauri, readJsonFile, writeJsonFile } from '@/utils/tauri';
+import { GoogleDriveSettings } from '@/components/GoogleDriveSettings';
 
 const APP_VERSION = '1.0.0';
 
@@ -277,6 +278,8 @@ export function Settings() {
           </Button>
         </Group>
       </Paper>
+
+      <GoogleDriveSettings />
 
       <Paper p="md" withBorder>
         <Title order={4} mb="xs">

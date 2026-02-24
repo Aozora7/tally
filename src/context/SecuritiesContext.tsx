@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { db } from '@/db/database';
+import { notifyDataMutated } from '@/sync/syncTrigger';
 import type { Security, SecurityTransaction, SecurityPriceCache } from '@/types';
 import { fetchMonthlyPrices } from '@/utils/yahooFinance';
 
@@ -73,41 +74,49 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
   const addSecurity = useCallback((security: Security) => {
     setSecurities((prev) => [...prev, security]);
     void db.securities.add(security);
+    notifyDataMutated();
   }, []);
 
   const addSecurities = useCallback((newSecurities: Security[]) => {
     setSecurities((prev) => [...prev, ...newSecurities]);
     void db.securities.bulkAdd(newSecurities);
+    notifyDataMutated();
   }, []);
 
   const updateSecurity = useCallback((security: Security) => {
     setSecurities((prev) => prev.map((s) => (s.id === security.id ? security : s)));
     void db.securities.put(security);
+    notifyDataMutated();
   }, []);
 
   const deleteSecurity = useCallback((id: string) => {
     setSecurities((prev) => prev.filter((s) => s.id !== id));
     void db.securities.delete(id);
+    notifyDataMutated();
   }, []);
 
   const addSecurityTransaction = useCallback((transaction: SecurityTransaction) => {
     setSecurityTransactions((prev) => [...prev, transaction]);
     void db.securityTransactions.add(transaction);
+    notifyDataMutated();
   }, []);
 
   const addSecurityTransactions = useCallback((newTransactions: SecurityTransaction[]) => {
     setSecurityTransactions((prev) => [...prev, ...newTransactions]);
     void db.securityTransactions.bulkAdd(newTransactions);
+    notifyDataMutated();
   }, []);
 
   const updateSecurityTransaction = useCallback((transaction: SecurityTransaction) => {
     setSecurityTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
     void db.securityTransactions.put(transaction);
+    notifyDataMutated();
   }, []);
 
   const deleteSecurityTransaction = useCallback((id: string) => {
     setSecurityTransactions((prev) => prev.filter((t) => t.id !== id));
     void db.securityTransactions.delete(id);
+    notifyDataMutated();
   }, []);
 
   const setSecurityPriceEntries = useCallback((entries: SecurityPriceCache[]) => {
@@ -119,6 +128,7 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
       return Array.from(map.values());
     });
     void db.securityPriceCache.bulkPut(entries);
+    notifyDataMutated();
   }, []);
 
   const fetchAndCachePrices = useCallback(

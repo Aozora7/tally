@@ -1,8 +1,8 @@
 [package]
-name = "impersonal-finance"
+name = "tally"
 version = "1.0.0"
 description = "A local-first personal finance tracking application"
-authors = ["Impersonal Finance"]
+authors = ["Aozora.one"]
 license = "ISC"
 repository = ""
 edition = "2021"
@@ -24,3 +24,4 @@ tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-cors-fetch = "5"
+tauri-plugin-shell = "2"

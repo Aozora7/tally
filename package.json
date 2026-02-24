@@ -1,5 +1,5 @@
 {
-  "name": "impersonal-finance",
+  "name": "tally",
   "version": "1.0.0",
   "description": "A local-first personal finance tracking SPA",
   "type": "module",
@@ -38,6 +38,7 @@
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
+    "@tauri-apps/plugin-shell": "^2.3.5",
     "@vitejs/plugin-react": "^5.1.4",
     "ag-grid-community": "^35.1.0",
     "ag-grid-react": "^35.1.0",
