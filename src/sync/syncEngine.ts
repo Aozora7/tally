@@ -4,12 +4,30 @@ import { manageBackups } from './backupManager';
 
 let cachedCurrentFileId: string | null = null;
 
+function isStateEmpty(state: ExportedState): boolean {
+  return (
+    state.categories.length === 0 &&
+    state.accounts.length === 0 &&
+    state.transactions.length === 0 &&
+    state.triageTransactions.length === 0 &&
+    state.rules.length === 0 &&
+    (state.securities?.length ?? 0) === 0 &&
+    (state.securityTransactions?.length ?? 0) === 0
+  );
+}
+
 export async function performSync(
   accessToken: string,
   settings: Map<string, string>,
   setSetting: (key: string, value: string) => void
 ): Promise<void> {
   const state = await exportFullState();
+
+  // Never overwrite Drive with empty state
+  if (isStateEmpty(state)) {
+    return;
+  }
+
   const stateJson = JSON.stringify(state);
 
   // Find or use cached current.json file ID

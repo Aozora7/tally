@@ -197,11 +197,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           }
 
           const localSyncedAt = settingsRef.current.get('lastSyncedAt');
-          if (localSyncedAt && remote.exportedAt > localSyncedAt) {
+          if (!localSyncedAt || remote.exportedAt > localSyncedAt) {
+            // Remote is newer, or this client has never synced (e.g. second client
+            // that already has local data but no sync history) — prompt user
             setRemoteNewer(true);
             setRemoteData(remote.data);
           } else {
-            setLastSyncedAt(localSyncedAt || null);
+            setLastSyncedAt(localSyncedAt);
           }
           setSyncStatus('idle');
         } else {
@@ -220,7 +222,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [configured, setSetting]);
+  }, [configured, setSetting, reloadFinance, reloadSecurities]);
 
   // Update lastSyncedAt from settings on load
   useEffect(() => {
