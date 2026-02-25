@@ -124,7 +124,14 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
     setSecurityPriceCache((prev) => {
       const map = new Map(prev.map((e) => [e.id, e]));
       for (const entry of entries) {
-        map.set(entry.id, entry);
+        const existing = map.get(entry.id);
+        if (entry.final) {
+          map.set(entry.id, entry);
+        } else if (!existing) {
+          map.set(entry.id, entry);
+        } else if (!existing.final) {
+          map.set(entry.id, entry);
+        }
       }
       return Array.from(map.values());
     });
@@ -140,6 +147,7 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
         securityId,
         yearMonth: mp.yearMonth,
         price: mp.price,
+        final: true,
       }));
       setSecurityPriceEntries(entries);
     },
@@ -156,6 +164,7 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
         securityId,
         yearMonth,
         price,
+        final: false,
       };
       setSecurityPriceEntries([entry]);
     },

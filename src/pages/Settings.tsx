@@ -313,23 +313,24 @@ export function Settings() {
         <Text size="sm" c="dimmed" mb="md">
           Configure how currency values are displayed.
         </Text>
-
+        <Group>
+          <Switch
+            label="Privacy Mode"
+            description="Hide currency amounts and securities units"
+            checked={privacyMode}
+            onChange={(e) => handlePrivacyModeChange(e.currentTarget.checked)}
+            mt="sm"
+          />
+        </Group>
         <Group>
           <TextInput
-            label="Currency Symbol"
+            label="Currency"
             placeholder="$"
             value={currencySymbol}
             onChange={(e) => handleCurrencyChange(e.currentTarget.value)}
             w={100}
           />
         </Group>
-        <Switch
-          label="Privacy Mode"
-          description="Hide actual values on dashboard and portfolio"
-          checked={privacyMode}
-          onChange={(e) => handlePrivacyModeChange(e.currentTarget.checked)}
-          mt="sm"
-        />
       </Paper>
 
       <Paper p="md" withBorder>

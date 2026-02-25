@@ -61,6 +61,7 @@ export interface SecurityPriceCache {
   securityId: string;
   yearMonth: string;
   price: number;
+  final: boolean;
 }
 
 export interface CategorizationRule {
