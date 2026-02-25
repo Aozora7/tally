@@ -165,7 +165,7 @@ pub fn run() {
 
             WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("Tally")
-                .inner_size(1280.0, 800.0)
+                .inner_size(1280.0, 1024.0)
                 .min_inner_size(800.0, 600.0)
                 .resizable(true)
                 .center()

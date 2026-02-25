@@ -1,7 +1,17 @@
 import { useState, useMemo } from 'react';
 import { Stack, Group, Paper, Text, Title, Select, Grid, Box } from '@mantine/core';
 import { BarChart, DonutChart } from '@mantine/charts';
-import { Legend } from 'recharts';
+import {
+  Legend,
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceArea,
+  ResponsiveContainer,
+} from 'recharts';
 import { IconArrowUpRight, IconArrowDownRight, IconChartBarOff } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useCurrency } from '@/utils/currency';
@@ -205,16 +215,73 @@ interface MonthlyExpensesChartProps {
   currencySymbol: string;
 }
 
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
 const monthlyExpensesSeries = [
   { name: 'Fixed', color: 'danger.6' },
   { name: 'Cyclical', color: 'brand.6' },
   { name: 'Irregular', color: 'accent.6' },
 ];
 
-function MonthlyExpensesChart({ data, currencySymbol }: MonthlyExpensesChartProps) {
-  if (data.length === 0) return null;
+// Resolved hex values for theme colors used in the Recharts Bar fill attribute
+const MONTHLY_SERIES_FILLS: Record<string, string> = {
+  Fixed: '#B33030',
+  Cyclical: '#1791E8',
+  Irregular: '#2D8E50',
+};
 
+function MonthlyExpensesChart({ data, currencySymbol }: MonthlyExpensesChartProps) {
   const valueFormatter = (value: number) => `${currencySymbol}${value.toFixed(2)}`;
+
+  const yearGroups = useMemo(() => {
+    if (data.length === 0) return [] as { year: string; startIndex: number; endIndex: number }[];
+    const groups: { year: string; startIndex: number; endIndex: number }[] = [];
+    let currentYear = '';
+    data.forEach((item, idx) => {
+      const year = item.month.substring(0, 4);
+      if (year !== currentYear) {
+        groups.push({ year, startIndex: idx, endIndex: idx });
+        currentYear = year;
+      } else if (groups.length > 0) {
+        groups[groups.length - 1]!.endIndex = idx;
+      }
+    });
+    return groups;
+  }, [data]);
+
+  // Pick a step that divides into 12 so months always align to calendar boundaries
+  // (Jan always visible). Target ≤ ~24 visible labels.
+  const monthTicks = useMemo(() => {
+    const n = data.length;
+    const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
+    return data
+      .filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0)
+      .map((d) => d.month);
+  }, [data]);
+
+  // One tick per year, positioned at the midpoint month of each year's range
+  const yearTicks = useMemo(
+    () =>
+      yearGroups
+        .map((g) => data[Math.floor((g.startIndex + g.endIndex) / 2)]?.month)
+        .filter((m): m is string => !!m),
+    [yearGroups, data]
+  );
+
+  if (data.length === 0) return null;
 
   return (
     <>
@@ -223,32 +290,74 @@ function MonthlyExpensesChart({ data, currencySymbol }: MonthlyExpensesChartProp
       </Title>
       <Paper p="md" withBorder>
         <Box h={300}>
-          <BarChart
-            h={320}
-            data={data}
-            dataKey="month"
-            series={monthlyExpensesSeries}
-            type="stacked"
-            tickLine="y"
-            gridAxis="xy"
-            xAxisProps={{
-              angle: -45,
-              textAnchor: 'end',
-              height: 80,
-              interval: 1,
-              tickLine: false,
-              dy: 15,
-              dx: -18,
-            }}
-            gridProps={{ opacity: 0.2 }}
-            yAxisProps={{
-              width: 75,
-            }}
-            valueFormatter={valueFormatter}
-            tooltipProps={{
-              content: barTooltipContent(monthlyExpensesSeries, valueFormatter),
-            }}
-          />
+          <ResponsiveContainer width="100%" height="100%">
+            <RechartsBarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
+
+              {/* Alternating year background bands */}
+              {yearGroups.map((group, idx) =>
+                idx % 2 === 1 ? (
+                  <ReferenceArea
+                    key={group.year}
+                    xAxisId={0}
+                    x1={data[group.startIndex]!.month}
+                    x2={data[group.endIndex]!.month}
+                    fill="rgba(128,128,128,0.08)"
+                    stroke="none"
+                  />
+                ) : null
+              )}
+
+              {/* Month axis */}
+              <XAxis
+                xAxisId={0}
+                dataKey="month"
+                ticks={monthTicks}
+                tickFormatter={(v: string) =>
+                  MONTH_NAMES[parseInt(v.substring(5, 7), 10) - 1] ?? ''
+                }
+                angle={-45}
+                textAnchor="end"
+                height={35}
+                interval={0}
+                tickLine={false}
+                dy={5}
+                dx={-10}
+                tick={{ fontSize: 12 }}
+              />
+
+              {/* Year axis — rendered below the month axis */}
+              <XAxis
+                xAxisId={1}
+                dataKey="month"
+                ticks={yearTicks}
+                tickFormatter={(v: string) => v.substring(0, 4)}
+                tickLine={false}
+                axisLine={false}
+                height={22}
+                tick={{ fontSize: 12, fontWeight: 600 }}
+                orientation="top"
+              />
+
+              <YAxis width={75} tickFormatter={valueFormatter} tick={{ fontSize: 11 }} />
+
+              <Tooltip content={barTooltipContent(monthlyExpensesSeries, valueFormatter)} />
+
+              <Bar xAxisId={0} dataKey="Fixed" stackId="a" fill={MONTHLY_SERIES_FILLS.Fixed} />
+              <Bar
+                xAxisId={0}
+                dataKey="Cyclical"
+                stackId="a"
+                fill={MONTHLY_SERIES_FILLS.Cyclical}
+              />
+              <Bar
+                xAxisId={0}
+                dataKey="Irregular"
+                stackId="a"
+                fill={MONTHLY_SERIES_FILLS.Irregular}
+              />
+            </RechartsBarChart>
+          </ResponsiveContainer>
         </Box>
       </Paper>
     </>

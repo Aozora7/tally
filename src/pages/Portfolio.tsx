@@ -1,6 +1,15 @@
 import { useMemo, useState, useCallback } from 'react';
 import { Stack, Title, Paper, Table, Text, Box, Grid, Button, Group } from '@mantine/core';
-import { BarChart } from '@mantine/charts';
+import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceArea,
+  ResponsiveContainer,
+} from 'recharts';
 import { IconChartBarOff, IconRefresh } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useSecurities } from '@/context/SecuritiesContext';
@@ -14,61 +23,142 @@ interface PortfolioValueChartProps {
   format: (cents: number) => string;
 }
 
-const portfolioSeries = [{ name: 'value', color: 'brand.6' }];
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
 
 function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) {
-  if (checkpoints.length === 0) return null;
+  const chartData = useMemo(
+    () => checkpoints.map((cp) => ({ month: cp.yearMonth, value: cp.totalValue / 100 })),
+    [checkpoints]
+  );
 
-  const chartData = checkpoints.map((cp) => ({
-    month: cp.yearMonth,
-    value: cp.totalValue / 100,
-  }));
+  const yearGroups = useMemo(() => {
+    if (chartData.length === 0)
+      return [] as { year: string; startIndex: number; endIndex: number }[];
+    const groups: { year: string; startIndex: number; endIndex: number }[] = [];
+    let currentYear = '';
+    chartData.forEach((item, idx) => {
+      const year = item.month.substring(0, 4);
+      if (year !== currentYear) {
+        groups.push({ year, startIndex: idx, endIndex: idx });
+        currentYear = year;
+      } else if (groups.length > 0) {
+        groups[groups.length - 1]!.endIndex = idx;
+      }
+    });
+    return groups;
+  }, [chartData]);
+
+  const monthTicks = useMemo(() => {
+    const n = chartData.length;
+    const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
+    return chartData
+      .filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0)
+      .map((d) => d.month);
+  }, [chartData]);
+
+  const yearTicks = useMemo(
+    () =>
+      yearGroups
+        .map((g) => chartData[Math.floor((g.startIndex + g.endIndex) / 2)]?.month)
+        .filter((m): m is string => !!m),
+    [yearGroups, chartData]
+  );
+
+  if (checkpoints.length === 0) return null;
 
   return (
     <>
       <Title order={4}>Portfolio Value Over Time</Title>
       <Paper p="md" withBorder mt="xs">
         <Box h={300}>
-          <BarChart
-            h={320}
-            data={chartData}
-            dataKey="month"
-            series={portfolioSeries}
-            tickLine="y"
-            gridAxis="xy"
-            yAxisProps={{ width: 90 }}
-            xAxisProps={{
-              angle: -45,
-              textAnchor: 'end',
-              height: 80,
-              interval: 1,
-              tickLine: false,
-              dy: 15,
-              dx: -18,
-            }}
-            gridProps={{ opacity: 0.1 }}
-            valueFormatter={(value) => format(value * 100)}
-            tooltipProps={{
-              content: (props: {
-                label?: string | number;
-                payload?: readonly { value?: number }[];
-                active?: boolean;
-              }) => {
-                if (!props.active || !props.payload?.length) return null;
-                const value = props.payload[0]?.value ?? 0;
-                return (
-                  <Paper px="sm" py="xs" withBorder shadow="md">
-                    <Text size="sm" fw={500}>
-                      {props.label}
-                    </Text>
-                    <Text size="xs" c="brand.6" fw={600}>
-                      {format(value * 100)}
-                    </Text>
-                  </Paper>
-                );
-              },
-            }}
-          />
+          <ResponsiveContainer width="100%" height="100%">
+            <RechartsBarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
+
+              {/* Alternating year background bands */}
+              {yearGroups.map((group, idx) =>
+                idx % 2 === 1 ? (
+                  <ReferenceArea
+                    key={group.year}
+                    xAxisId={0}
+                    x1={chartData[group.startIndex]!.month}
+                    x2={chartData[group.endIndex]!.month}
+                    fill="rgba(128,128,128,0.08)"
+                    stroke="none"
+                  />
+                ) : null
+              )}
+
+              {/* Month axis */}
+              <XAxis
+                xAxisId={0}
+                dataKey="month"
+                ticks={monthTicks}
+                tickFormatter={(v: string) =>
+                  MONTH_NAMES[parseInt(v.substring(5, 7), 10) - 1] ?? ''
+                }
+                angle={-45}
+                textAnchor="end"
+                height={35}
+                interval={0}
+                tickLine={false}
+                dy={5}
+                dx={-10}
+                tick={{ fontSize: 12 }}
+              />
+
+              {/* Year axis */}
+              <XAxis
+                xAxisId={1}
+                dataKey="month"
+                ticks={yearTicks}
+                tickFormatter={(v: string) => v.substring(0, 4)}
+                tickLine={false}
+                axisLine={false}
+                height={22}
+                tick={{ fontSize: 12, fontWeight: 600 }}
+                orientation="top"
+              />
+
+              <YAxis
+                width={75}
+                tickFormatter={(v: number) => format(v * 100)}
+                tick={{ fontSize: 11 }}
+              />
+
+              <Tooltip
+                content={(props) => {
+                  if (!props.active || !props.payload?.length) return null;
+                  const value = (props.payload[0]?.value ?? 0) as number;
+                  return (
+                    <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
+                      <Text size="sm" fw={500}>
+                        {props.label}
+                      </Text>
+                      <Text size="xs" c="brand.6" fw={600}>
+                        {format(value * 100)}
+                      </Text>
+                    </Paper>
+                  );
+                }}
+              />
+
+              <Bar xAxisId={0} dataKey="value" fill="#1791E8" />
+            </RechartsBarChart>
+          </ResponsiveContainer>
         </Box>
       </Paper>
     </>
