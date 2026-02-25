@@ -97,20 +97,28 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       await importFullState(remoteData);
       await reloadFinance();
       await reloadSecurities();
+      setSetting('lastSyncedAt', remoteData.exportedAt);
+      setLastSyncedAt(remoteData.exportedAt);
       setRemoteNewer(false);
       setRemoteData(null);
       setSyncStatus('idle');
-      setLastSyncedAt(remoteData.exportedAt);
     } catch (err) {
       setLastError(err instanceof Error ? err.message : 'Failed to import remote data');
       setSyncStatus('error');
     }
-  }, [remoteData, reloadFinance, reloadSecurities]);
+  }, [remoteData, reloadFinance, reloadSecurities, setSetting]);
 
   const dismissRemote = useCallback(() => {
+    // Mark as synced at the remote's timestamp so we don't prompt again,
+    // then immediately push local state to overwrite remote.
+    if (remoteData) {
+      setSetting('lastSyncedAt', remoteData.exportedAt);
+      setLastSyncedAt(remoteData.exportedAt);
+    }
     setRemoteNewer(false);
     setRemoteData(null);
-  }, []);
+    void doSync();
+  }, [remoteData, setSetting, doSync]);
 
   // Subscribe to mutation notifications
   useEffect(() => {

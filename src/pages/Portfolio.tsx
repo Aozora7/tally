@@ -140,13 +140,13 @@ function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) 
               />
 
               <Tooltip
-                content={(props) => {
-                  if (!props.active || !props.payload?.length) return null;
-                  const value = (props.payload[0]?.value ?? 0) as number;
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const value = (payload[0]?.value ?? 0) as number;
                   return (
                     <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
                       <Text size="sm" fw={500}>
-                        {props.label}
+                        {label}
                       </Text>
                       <Text size="xs" c="brand.6" fw={600}>
                         {format(value * 100)}

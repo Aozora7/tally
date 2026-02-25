@@ -11,6 +11,7 @@ import {
   Modal,
   Table,
   Badge,
+  Loader,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconBrandGoogleDrive, IconLink, IconLinkOff, IconRefresh } from '@tabler/icons-react';
@@ -195,14 +196,17 @@ export function GoogleDriveSettings() {
                 <Badge color="teal" variant="light" size="lg">
                   Connected
                 </Badge>
-                <Button
-                  variant="light"
-                  leftSection={<IconRefresh size={16} />}
-                  onClick={() => void syncNow()}
-                  loading={syncStatus === 'syncing'}
-                >
-                  Sync Now
-                </Button>
+                {syncStatus === 'syncing' ? (
+                  <Loader size="sm" />
+                ) : (
+                  <Button
+                    variant="light"
+                    leftSection={<IconRefresh size={16} />}
+                    onClick={() => void syncNow()}
+                  >
+                    Sync Now
+                  </Button>
+                )}
                 <Button
                   variant="light"
                   color="red"
