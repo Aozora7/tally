@@ -172,7 +172,12 @@ interface CurrentHoldingsTableProps {
   privacyMode: boolean;
 }
 
-function CurrentHoldingsTable({ checkpoint, format, currencySymbol, privacyMode }: CurrentHoldingsTableProps) {
+function CurrentHoldingsTable({
+  checkpoint,
+  format,
+  currencySymbol,
+  privacyMode,
+}: CurrentHoldingsTableProps) {
   if (checkpoint.holdings.length === 0) {
     return (
       <Paper p="md" withBorder>
@@ -398,7 +403,12 @@ export function Portfolio() {
       <Grid>
         <Grid.Col>
           {latestCheckpoint && (
-            <CurrentHoldingsTable checkpoint={latestCheckpoint} format={format} currencySymbol={currencySymbol} privacyMode={privacyMode} />
+            <CurrentHoldingsTable
+              checkpoint={latestCheckpoint}
+              format={format}
+              currencySymbol={currencySymbol}
+              privacyMode={privacyMode}
+            />
           )}
         </Grid.Col>
       </Grid>

@@ -43,7 +43,6 @@
     "@vitejs/plugin-react": "^5.1.4",
     "ag-grid-community": "^35.1.0",
     "ag-grid-react": "^35.1.0",
-    "arquero": "^8.0.3",
     "dayjs": "^1.11.19",
     "dexie": "^4.3.0",
     "papaparse": "^5.5.3",

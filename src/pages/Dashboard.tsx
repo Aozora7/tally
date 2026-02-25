@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Stack, Group, Paper, Text, Title, Select, Grid, Box } from '@mantine/core';
+import { useMemo } from 'react';
+import { Stack, Group, Paper, Text, Title, Grid, Box } from '@mantine/core';
 import { BarChart, DonutChart } from '@mantine/charts';
 import {
   Legend,
@@ -480,116 +480,13 @@ function CategoryBreakdownChart({
   );
 }
 
-interface DashboardFiltersProps {
-  dateRange: string;
-  onDateRangeChange: (value: string) => void;
-  accountFilter: string;
-  onAccountFilterChange: (value: string) => void;
-  accountOptions: { value: string; label: string }[];
-}
-
-function DashboardFilters({
-  dateRange,
-  onDateRangeChange,
-  accountFilter,
-  onAccountFilterChange,
-  accountOptions,
-}: DashboardFiltersProps) {
-  return (
-    <Group justify="space-between">
-      <Title order={3}>Dashboard</Title>
-      <Group gap="sm">
-        <Select
-          value={dateRange}
-          onChange={(v) => onDateRangeChange(v ?? 'all')}
-          data={[
-            { value: 'all', label: 'All Time' },
-            { value: 'this-month', label: 'This Month' },
-            { value: 'last-month', label: 'Last Month' },
-            { value: 'this-year', label: 'This Year' },
-            { value: 'last-year', label: 'Last Year' },
-          ]}
-          w={140}
-        />
-        <Select
-          value={accountFilter}
-          onChange={(v) => onAccountFilterChange(v ?? 'all')}
-          data={accountOptions}
-          w={160}
-        />
-      </Group>
-    </Group>
-  );
-}
-
 export function Dashboard() {
-  const { transactions, accounts, categories } = useFinance();
+  const { transactions, categories } = useFinance();
   const { format, currencySymbol, privacyMode } = useCurrency();
 
-  const [dateRange, setDateRange] = useState<string>('all');
-  const [accountFilter, setAccountFilter] = useState<string>('all');
-
-  const { startDate, endDate } = useMemo(() => {
-    if (dateRange === 'all') return { startDate: undefined, endDate: undefined };
-
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    switch (dateRange) {
-      case 'this-month': {
-        const start = new Date(currentYear, currentMonth, 1);
-        const end = new Date(currentYear, currentMonth + 1, 0);
-        return {
-          startDate: start.toISOString().split('T')[0],
-          endDate: end.toISOString().split('T')[0],
-        };
-      }
-      case 'last-month': {
-        const start = new Date(currentYear, currentMonth - 1, 1);
-        const end = new Date(currentYear, currentMonth, 0);
-        return {
-          startDate: start.toISOString().split('T')[0],
-          endDate: end.toISOString().split('T')[0],
-        };
-      }
-      case 'this-year': {
-        const start = new Date(currentYear, 0, 1);
-        const end = new Date(currentYear, 11, 31);
-        return {
-          startDate: start.toISOString().split('T')[0],
-          endDate: end.toISOString().split('T')[0],
-        };
-      }
-      case 'last-year': {
-        const start = new Date(currentYear - 1, 0, 1);
-        const end = new Date(currentYear - 1, 11, 31);
-        return {
-          startDate: start.toISOString().split('T')[0],
-          endDate: end.toISOString().split('T')[0],
-        };
-      }
-      default:
-        return { startDate: undefined, endDate: undefined };
-    }
-  }, [dateRange]);
-
-  const filteredTransactions = useMemo(() => {
-    let filtered = transactions;
-    if (accountFilter !== 'all') {
-      filtered = filtered.filter((t) => t.accountId === accountFilter);
-    }
-    return filtered;
-  }, [transactions, accountFilter]);
-
-  const summary = useTransactionSummary(filteredTransactions, categories, startDate, endDate);
-  const monthlyPivot = useMonthlyPivotTable(filteredTransactions, categories);
-  const yearlyCategorySpending = useYearlyCategorySpending(
-    filteredTransactions,
-    categories,
-    startDate,
-    endDate
-  );
+  const summary = useTransactionSummary(transactions, categories);
+  const monthlyPivot = useMonthlyPivotTable(transactions, categories);
+  const yearlyCategorySpending = useYearlyCategorySpending(transactions, categories);
 
   const topCategories = useMemo(() => yearlyCategorySpending.slice(0, 8), [yearlyCategorySpending]);
 
@@ -658,24 +555,8 @@ export function Dashboard() {
     [topCategories, categoryColorMap, totalExpenses]
   );
 
-  const accountOptions = useMemo(
-    () => [
-      { value: 'all', label: 'All Accounts' },
-      ...accounts.map((a) => ({ value: a.id, label: a.name })),
-    ],
-    [accounts]
-  );
-
   return (
     <Stack gap="md">
-      <DashboardFilters
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        accountFilter={accountFilter}
-        onAccountFilterChange={setAccountFilter}
-        accountOptions={accountOptions}
-      />
-
       <SummaryCards
         totalIncome={summary.totalIncome}
         totalExpenses={summary.totalExpenses}
