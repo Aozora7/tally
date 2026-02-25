@@ -23,12 +23,15 @@ export function displayToCents(display: string): number {
 export function useCurrency() {
   const { settings } = useFinance();
   const currencySymbol = settings.get('currency') || DEFAULT_CURRENCY;
+  const privacyMode = settings.get('privacyMode') === 'true';
 
   return useMemo(
     () => ({
       currencySymbol,
-      format: (cents: number) => centsToDisplay(cents, currencySymbol),
+      privacyMode,
+      format: (cents: number) =>
+        privacyMode ? `${currencySymbol}XXXX.XX` : centsToDisplay(cents, currencySymbol),
     }),
-    [currencySymbol]
+    [currencySymbol, privacyMode]
   );
 }

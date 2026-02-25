@@ -168,9 +168,11 @@ function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) 
 interface CurrentHoldingsTableProps {
   checkpoint: PortfolioCheckpoint;
   format: (cents: number) => string;
+  currencySymbol: string;
+  privacyMode: boolean;
 }
 
-function CurrentHoldingsTable({ checkpoint, format }: CurrentHoldingsTableProps) {
+function CurrentHoldingsTable({ checkpoint, format, currencySymbol, privacyMode }: CurrentHoldingsTableProps) {
   if (checkpoint.holdings.length === 0) {
     return (
       <Paper p="md" withBorder>
@@ -185,10 +187,10 @@ function CurrentHoldingsTable({ checkpoint, format }: CurrentHoldingsTableProps)
     <Table.Tr key={h.securityId}>
       <Table.Td>{h.ticker}</Table.Td>
       <Table.Td ta="right" ff="monospace">
-        {unitsToDisplay(h.units)}
+        {privacyMode ? 'XXXX' : unitsToDisplay(h.units)}
       </Table.Td>
       <Table.Td ta="right" ff="monospace">
-        {priceToDisplay(h.price)}
+        {priceToDisplay(h.price, currencySymbol)}
       </Table.Td>
       <Table.Td ta="right" ff="monospace" fw={600}>
         {format(h.value)}
@@ -275,7 +277,7 @@ export function Portfolio() {
     fetchAndCachePrices,
     fetchAndCacheCurrentPrice,
   } = useSecurities();
-  const { format } = useCurrency();
+  const { format, currencySymbol, privacyMode } = useCurrency();
   const [isFetching, setIsFetching] = useState(false);
 
   const checkpoints = usePortfolioCheckpoints(securities, securityTransactions, securityPriceCache);
@@ -396,7 +398,7 @@ export function Portfolio() {
       <Grid>
         <Grid.Col>
           {latestCheckpoint && (
-            <CurrentHoldingsTable checkpoint={latestCheckpoint} format={format} />
+            <CurrentHoldingsTable checkpoint={latestCheckpoint} format={format} currencySymbol={currencySymbol} privacyMode={privacyMode} />
           )}
         </Grid.Col>
       </Grid>

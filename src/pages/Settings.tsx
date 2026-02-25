@@ -6,6 +6,7 @@ import {
   Modal,
   Paper,
   Stack,
+  Switch,
   Text,
   Title,
   TextInput,
@@ -42,6 +43,7 @@ export function Settings() {
   const [isClearingTransactions, setIsClearingTransactions] = useState(false);
   const [isClearingTriage, setIsClearingTriage] = useState(false);
   const [currencySymbol, setCurrencySymbolState] = useState(settings.get('currency') || '$');
+  const [privacyMode, setPrivacyModeState] = useState(settings.get('privacyMode') === 'true');
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -218,6 +220,11 @@ export function Settings() {
     });
   };
 
+  const handlePrivacyModeChange = (checked: boolean) => {
+    setSetting('privacyMode', checked ? 'true' : 'false');
+    setPrivacyModeState(checked);
+  };
+
   return (
     <Stack gap="md">
       <Title order={3}>Settings</Title>
@@ -316,6 +323,13 @@ export function Settings() {
             w={100}
           />
         </Group>
+        <Switch
+          label="Privacy Mode"
+          description="Hide actual values on dashboard and portfolio"
+          checked={privacyMode}
+          onChange={(e) => handlePrivacyModeChange(e.currentTarget.checked)}
+          mt="sm"
+        />
       </Paper>
 
       <Paper p="md" withBorder>

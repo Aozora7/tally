@@ -2,6 +2,8 @@
 
 A local-first personal finance tracking desktop application built with Tauri, React, and TypeScript. Transactions live in your browser's IndexedDB and can optionally sync to Google Drive.
 
+![screenshot](https://github.com/Aozora7/tally/raw/master/images/screenshot.png)
+
 ---
 
 ## DISCLAIMER

@@ -136,6 +136,7 @@ function useColumnDefs(
   securities: Security[],
   securityOptions: { value: string; label: string }[],
   currencySymbol: string,
+  privacyMode: boolean,
   deleteSecurityTransaction: (id: string) => void
 ) {
   return useMemo<ColDef<SecurityTransaction>[]>(
@@ -182,6 +183,7 @@ function useColumnDefs(
         width: 120,
         valueGetter: (params) => {
           if (params.data?.units === null || params.data?.units === undefined) return '';
+          if (privacyMode) return 'XXXX';
           return unitsToDisplay(params.data.units);
         },
         valueParser: (params) => displayToUnits(params.newValue),
@@ -215,6 +217,7 @@ function useColumnDefs(
         width: 140,
         valueGetter: (params) => {
           if (!params.data) return '';
+          if (privacyMode) return `${currencySymbol}XXXX.XX`;
           const units = params.data.units / 10000;
           const price = params.data.pricePerUnit / 10000;
           const fees = params.data.fees / 100;
@@ -239,7 +242,7 @@ function useColumnDefs(
         cellStyle: { display: 'flex', alignItems: 'center' },
       },
     ],
-    [securities, securityOptions, currencySymbol, deleteSecurityTransaction]
+    [securities, securityOptions, currencySymbol, privacyMode, deleteSecurityTransaction]
   );
 }
 
@@ -253,7 +256,7 @@ export function Trades() {
     updateSecurityTransaction,
     deleteSecurityTransaction,
   } = useSecurities();
-  const { currencySymbol } = useCurrency();
+  const { currencySymbol, privacyMode } = useCurrency();
   const [modalOpened, setModalOpened] = useState(false);
 
   const securityOptions = useMemo(
@@ -300,6 +303,7 @@ export function Trades() {
     securities,
     securityOptions,
     currencySymbol,
+    privacyMode,
     deleteSecurityTransaction
   );
 

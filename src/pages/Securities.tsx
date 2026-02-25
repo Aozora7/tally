@@ -22,6 +22,7 @@ import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconDownload, IconDatabase } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
+import { useCurrency } from '@/utils/currency';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
 import { isTauri } from '@/utils/tauri';
 import { priceToDisplay } from '@/utils/securities';
@@ -97,6 +98,7 @@ interface PriceCacheModalProps {
   securityId: string | null;
   ticker: string;
   priceCache: SecurityPriceCache[];
+  currencySymbol: string;
 }
 
 function PriceCacheModal({
@@ -105,6 +107,7 @@ function PriceCacheModal({
   securityId,
   ticker,
   priceCache,
+  currencySymbol,
 }: PriceCacheModalProps) {
   const cachedPrices = useMemo(() => {
     if (!securityId) return [];
@@ -133,7 +136,7 @@ function PriceCacheModal({
                 <Table.Tr key={cp.id}>
                   <Table.Td>{cp.yearMonth}</Table.Td>
                   <Table.Td ta="right" ff="monospace">
-                    {priceToDisplay(cp.price)}
+                    {priceToDisplay(cp.price, currencySymbol)}
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -224,6 +227,7 @@ export function Securities() {
     deleteSecurity,
     fetchAndCachePrices,
   } = useSecurities();
+  const { currencySymbol } = useCurrency();
   const [modalOpened, setModalOpened] = useState(false);
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [cacheModal, setCacheModal] = useState<{
@@ -328,6 +332,7 @@ export function Securities() {
         securityId={cacheModal.securityId}
         ticker={cacheModal.ticker}
         priceCache={securityPriceCache}
+        currencySymbol={currencySymbol}
       />
     </Stack>
   );

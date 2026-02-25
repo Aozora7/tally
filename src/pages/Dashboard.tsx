@@ -213,6 +213,7 @@ function SummaryCards({
 interface MonthlyExpensesChartProps {
   data: { month: string; Fixed: number; Cyclical: number; Irregular: number }[];
   currencySymbol: string;
+  privacyMode: boolean;
 }
 
 const MONTH_NAMES = [
@@ -243,8 +244,10 @@ const MONTHLY_SERIES_FILLS: Record<string, string> = {
   Irregular: '#2D8E50',
 };
 
-function MonthlyExpensesChart({ data, currencySymbol }: MonthlyExpensesChartProps) {
-  const valueFormatter = (value: number) => `${currencySymbol}${value.toFixed(2)}`;
+function MonthlyExpensesChart({ data, currencySymbol, privacyMode }: MonthlyExpensesChartProps) {
+  const valueFormatter = privacyMode
+    ? () => `${currencySymbol}XXXX.XX`
+    : (value: number) => `${currencySymbol}${value.toFixed(2)}`;
 
   const yearGroups = useMemo(() => {
     if (data.length === 0) return [] as { year: string; startIndex: number; endIndex: number }[];
@@ -368,12 +371,20 @@ interface SpendingByCategoryChartProps {
   data: { year: string; [category: string]: string | number }[];
   series: { name: string; color: string }[];
   currencySymbol: string;
+  privacyMode: boolean;
 }
 
-function SpendingByCategoryChart({ data, series, currencySymbol }: SpendingByCategoryChartProps) {
+function SpendingByCategoryChart({
+  data,
+  series,
+  currencySymbol,
+  privacyMode,
+}: SpendingByCategoryChartProps) {
   if (data.length === 0 || series.length === 0) return null;
 
-  const valueFormatter = (value: number) => `${currencySymbol}${value.toFixed(2)}`;
+  const valueFormatter = privacyMode
+    ? () => `${currencySymbol}XXXX.XX`
+    : (value: number) => `${currencySymbol}${value.toFixed(2)}`;
 
   return (
     <>
@@ -387,7 +398,8 @@ function SpendingByCategoryChart({ data, series, currencySymbol }: SpendingByCat
           type="stacked"
           tickLine="y"
           gridAxis="xy"
-          yAxisProps={{ width: 75 }}
+          yAxisProps={{ width: 80, opacity: 0.3, fontSize: 11 }}
+          xAxisProps={{ opacity: 0.6, fontSize: 11 }}
           gridProps={{ opacity: 0.2 }}
           valueFormatter={valueFormatter}
           tooltipProps={{
@@ -402,13 +414,19 @@ function SpendingByCategoryChart({ data, series, currencySymbol }: SpendingByCat
 interface CategoryBreakdownChartProps {
   data: { name: string; value: number; color: string; percentage: number }[];
   currencySymbol: string;
+  privacyMode: boolean;
 }
 
-function CategoryBreakdownChart({ data, currencySymbol }: CategoryBreakdownChartProps) {
+function CategoryBreakdownChart({
+  data,
+  currencySymbol,
+  privacyMode,
+}: CategoryBreakdownChartProps) {
   if (data.length === 0) return null;
 
   const seriesNames = new Set(data.map((d) => d.name));
   const valueFormatter = (value: number, name?: string) => {
+    if (privacyMode) return `${currencySymbol}XXXX.XX`;
     const item = data.find((d) => d.name === name);
     if (item) {
       return `${item.percentage.toFixed(1)}% (${currencySymbol}${value.toFixed(2)})`;
@@ -442,7 +460,9 @@ function CategoryBreakdownChart({ data, currencySymbol }: CategoryBreakdownChart
           withLabelsLine
           labelsType="percent"
           tooltipDataSource="segment"
-          valueFormatter={(value) => `${currencySymbol}${value.toFixed(2)}`}
+          valueFormatter={(value) =>
+            privacyMode ? `${currencySymbol}XXXX.XX` : `${currencySymbol}${value.toFixed(2)}`
+          }
           tooltipProps={{ content: DonutTooltip }}
         >
           <Legend
@@ -504,7 +524,7 @@ function DashboardFilters({
 
 export function Dashboard() {
   const { transactions, accounts, categories } = useFinance();
-  const { format, currencySymbol } = useCurrency();
+  const { format, currencySymbol, privacyMode } = useCurrency();
 
   const [dateRange, setDateRange] = useState<string>('all');
   const [accountFilter, setAccountFilter] = useState<string>('all');
@@ -664,7 +684,11 @@ export function Dashboard() {
         format={format}
       />
 
-      <MonthlyExpensesChart data={chartMonthlyExpenses} currencySymbol={currencySymbol} />
+      <MonthlyExpensesChart
+        data={chartMonthlyExpenses}
+        currencySymbol={currencySymbol}
+        privacyMode={privacyMode}
+      />
 
       <Grid mt="md">
         <Grid.Col span={{ base: 12, md: 8 }}>
@@ -672,10 +696,15 @@ export function Dashboard() {
             data={yearlyCategoryChartData}
             series={yearlyCategorySeries}
             currencySymbol={currencySymbol}
+            privacyMode={privacyMode}
           />
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 4 }}>
-          <CategoryBreakdownChart data={donutData} currencySymbol={currencySymbol} />
+          <CategoryBreakdownChart
+            data={donutData}
+            currencySymbol={currencySymbol}
+            privacyMode={privacyMode}
+          />
         </Grid.Col>
       </Grid>
 
