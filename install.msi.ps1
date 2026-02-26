@@ -39,4 +39,3 @@ if ($process.ExitCode -eq 0) {
     Write-Host "Check log file for details: $logPath"
 }
 
-Read-Host "Press Enter to exit"

@@ -13,7 +13,7 @@ import { PivotTable } from '@/pages/PivotTable';
 import { Settings } from '@/pages/Settings';
 import { ImportWizard } from './components/ImportWizard/ImportWizard';
 import { Securities } from '@/pages/Securities';
-import { Trades } from '@/pages/SecuritiesTransactions';
+import { Trades } from '@/pages/Trades';
 import { Portfolio } from '@/pages/Portfolio';
 
 export default function App() {

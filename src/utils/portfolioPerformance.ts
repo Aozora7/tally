@@ -12,11 +12,11 @@ export interface PortfolioPerformance {
 }
 
 function txnCostCents(txn: SecurityTransaction): number {
-  return Math.round((txn.units * txn.pricePerUnit) / 1_000_000) + txn.fees;
+  return Math.round((txn.units * txn.pricePerUnit + txn.fees) / 1_000_000);
 }
 
 function txnProceedsCents(txn: SecurityTransaction): number {
-  return Math.round((txn.units * txn.pricePerUnit) / 1_000_000) - txn.fees;
+  return Math.round((txn.units * txn.pricePerUnit - txn.fees) / 1_000_000);
 }
 
 export function usePortfolioPerformance(

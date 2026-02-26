@@ -11,7 +11,7 @@ import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconUpload } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
-import { useCurrency, displayToCents } from '@/utils/currency';
+import { useCurrency } from '@/utils/currency';
 import { unitsToDisplay, displayToUnits, priceToDisplay, displayToPrice } from '@/utils/securities';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
 import { openFileDialog } from '@/utils/tauri';
@@ -87,7 +87,7 @@ function AddTradeForm({ opened, onClose, securities, onAdd }: AddTradeFormProps)
       securityId: values.securityId,
       units: displayToUnits(values.units),
       pricePerUnit: displayToPrice(values.pricePerUnit),
-      fees: displayToCents(values.fees || '0'),
+      fees: displayToPrice(values.fees || '0'),
     };
     onAdd(transaction);
     onClose();
@@ -209,7 +209,7 @@ function useColumnDefs(
           if (params.data?.fees === null || params.data?.fees === undefined) return '';
           return priceToDisplay(params.data.fees, currencySymbol);
         },
-        valueParser: (params) => displayToCents(params.newValue),
+        valueParser: (params) => displayToPrice(params.newValue),
         editable: true,
       },
       {
@@ -220,7 +220,7 @@ function useColumnDefs(
           if (privacyMode) return `${currencySymbol}XXXX.XX`;
           const units = params.data.units / 10000;
           const price = params.data.pricePerUnit / 10000;
-          const fees = params.data.fees / 100;
+          const fees = params.data.fees / 10000;
           const total = units * price + fees;
           return `${currencySymbol}${total.toFixed(2)}`;
         },
