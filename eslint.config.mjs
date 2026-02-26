@@ -3,6 +3,7 @@ import tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import localRules from "eslint-plugin-local-rules";
 
 export default tseslint.config(
   ...tseslint.configs.recommended,
@@ -24,6 +25,7 @@ export default tseslint.config(
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
+      "local-rules": localRules,
     },
     settings: {
       react: {
@@ -40,6 +42,8 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
+      "react/jsx-max-depth": ["warn", { "max": 5 }],
+      "local-rules/limit-jsx-render-length": ["warn", { max: 60 }],
     },
   },
   eslintConfigPrettier

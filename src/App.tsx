@@ -17,6 +17,7 @@ import { Securities } from '@/pages/Securities';
 import { Trades } from '@/pages/Trades';
 import { Portfolio } from '@/pages/Portfolio';
 
+/* eslint-disable react/jsx-max-depth */
 export default function App() {
   return (
     <ErrorBoundary>
@@ -47,3 +48,4 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+/* eslint-enable react/jsx-max-depth */
