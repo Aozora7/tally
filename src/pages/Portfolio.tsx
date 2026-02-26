@@ -1,8 +1,10 @@
 import { useMemo, useState, useCallback } from 'react';
-import { Stack, Title, Paper, Table, Text, Box, Grid, Button, Group } from '@mantine/core';
+import { Stack, Title, Paper, Table, Text, Box, Button, Group, SimpleGrid } from '@mantine/core';
 import {
   BarChart as RechartsBarChart,
+  LineChart as RechartsLineChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -14,9 +16,232 @@ import { IconChartBarOff, IconRefresh } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { usePortfolioCheckpoints, type PortfolioCheckpoint } from '@/utils/usePortfolioCheckpoints';
+import { usePortfolioPerformance, type PortfolioPerformance } from '@/utils/portfolioPerformance';
 import { useCurrency } from '@/utils/currency';
 import { unitsToDisplay, priceToDisplay } from '@/utils/securities';
 import { isTauri } from '@/utils/tauri';
+
+// ── Performance stat card ────────────────────────────────────────────────────
+
+interface PerfStatCardProps {
+  label: string;
+  value: string;
+  subValue?: string;
+  valueColor?: string;
+}
+
+function PerfStatCard({ label, value, subValue, valueColor = 'inherit' }: PerfStatCardProps) {
+  return (
+    <Paper p="md" withBorder>
+      <Stack gap={4}>
+        <Text size="xs" c="dimmed" tt="uppercase" fw={500} style={{ letterSpacing: '0.05em' }}>
+          {label}
+        </Text>
+        <Text size="lg" fw={700} c={valueColor} ff="monospace">
+          {value}
+        </Text>
+        {subValue && (
+          <Text size="xs" c="dimmed" ff="monospace">
+            {subValue}
+          </Text>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+// ── Performance metrics row ───────────────────────────────────────────────────
+
+interface PerformanceMetricsRowProps {
+  performance: PortfolioPerformance;
+  format: (cents: number) => string;
+}
+
+function formatPct(value: number | null, digits = 2): string {
+  if (value === null) return '—';
+  return `${(value * 100).toFixed(digits)}%`;
+}
+
+function gainColor(value: number | null): string {
+  if (value === null) return 'dimmed';
+  return value >= 0 ? 'income.6' : 'expense.6';
+}
+
+function PerformanceMetricsRow({ performance, format }: PerformanceMetricsRowProps) {
+  const {
+    totalInvestedCents,
+    totalGainLossCents,
+    totalGainLossPct,
+    annualizedTWR,
+    maxDrawdownPct,
+  } = performance;
+
+  return (
+    <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+      <PerfStatCard label="Net Invested" value={format(totalInvestedCents)} />
+      <PerfStatCard
+        label="Total Gain / Loss"
+        value={totalGainLossCents !== null ? format(totalGainLossCents) : '—'}
+        {...(totalGainLossPct !== null ? { subValue: formatPct(totalGainLossPct) } : {})}
+        valueColor={gainColor(totalGainLossCents)}
+      />
+      <PerfStatCard
+        label="Ann. Return (TWR)"
+        value={formatPct(annualizedTWR)}
+        valueColor={gainColor(annualizedTWR)}
+      />
+      <PerfStatCard
+        label="Max Drawdown"
+        value={formatPct(maxDrawdownPct)}
+        valueColor={maxDrawdownPct !== null && maxDrawdownPct < 0 ? 'expense.6' : 'dimmed'}
+      />
+    </SimpleGrid>
+  );
+}
+
+// ── TWR over time line chart ──────────────────────────────────────────────────
+
+interface TWRChartProps {
+  performance: PortfolioPerformance;
+}
+
+function TWRChart({ performance }: TWRChartProps) {
+  const chartData = useMemo(
+    () =>
+      performance.twrOverTime.map((pt) => ({
+        month: pt.yearMonth,
+        twr: pt.twr * 100,
+      })),
+    [performance.twrOverTime]
+  );
+
+  const yearGroups = useMemo(() => {
+    if (chartData.length === 0)
+      return [] as { year: string; startIndex: number; endIndex: number }[];
+    const groups: { year: string; startIndex: number; endIndex: number }[] = [];
+    let currentYear = '';
+    chartData.forEach((item, idx) => {
+      const year = item.month.substring(0, 4);
+      if (year !== currentYear) {
+        groups.push({ year, startIndex: idx, endIndex: idx });
+        currentYear = year;
+      } else if (groups.length > 0) {
+        groups[groups.length - 1]!.endIndex = idx;
+      }
+    });
+    return groups;
+  }, [chartData]);
+
+  const monthTicks = useMemo(() => {
+    const n = chartData.length;
+    const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
+    return chartData
+      .filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0)
+      .map((d) => d.month);
+  }, [chartData]);
+
+  const yearTicks = useMemo(
+    () =>
+      yearGroups
+        .map((g) => chartData[Math.floor((g.startIndex + g.endIndex) / 2)]?.month)
+        .filter((m): m is string => !!m),
+    [yearGroups, chartData]
+  );
+
+  if (chartData.length < 2) return null;
+
+  return (
+    <>
+      <Title order={4}>Time-Weighted Return (TWR) Over Time</Title>
+      <Paper p="md" withBorder mt="xs">
+        <Box h={250}>
+          <ResponsiveContainer width="100%" height="100%">
+            <RechartsLineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
+
+              {yearGroups.map((group, idx) =>
+                idx % 2 === 1 ? (
+                  <ReferenceArea
+                    key={group.year}
+                    xAxisId={0}
+                    x1={chartData[group.startIndex]!.month}
+                    x2={chartData[group.endIndex]!.month}
+                    fill="rgba(128,128,128,0.08)"
+                    stroke="none"
+                  />
+                ) : null
+              )}
+
+              <XAxis
+                xAxisId={0}
+                dataKey="month"
+                ticks={monthTicks}
+                tickFormatter={(v: string) =>
+                  MONTH_NAMES[parseInt(v.substring(5, 7), 10) - 1] ?? ''
+                }
+                angle={-45}
+                textAnchor="end"
+                height={35}
+                interval={0}
+                tickLine={false}
+                dy={5}
+                dx={-10}
+                tick={{ fontSize: 12 }}
+              />
+
+              <XAxis
+                xAxisId={1}
+                dataKey="month"
+                ticks={yearTicks}
+                tickFormatter={(v: string) => v.substring(0, 4)}
+                tickLine={false}
+                axisLine={false}
+                height={22}
+                tick={{ fontSize: 12, fontWeight: 600 }}
+                orientation="top"
+              />
+
+              <YAxis
+                width={60}
+                tickFormatter={(v: number) => `${v.toFixed(1)}%`}
+                tick={{ fontSize: 11 }}
+              />
+
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const value = payload[0]?.value as number;
+                  return (
+                    <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
+                      <Text size="sm" fw={500}>
+                        {label}
+                      </Text>
+                      <Text size="xs" c={value >= 0 ? 'income.6' : 'expense.6'} fw={600}>
+                        {`${value.toFixed(2)}%`}
+                      </Text>
+                    </Paper>
+                  );
+                }}
+              />
+
+              <Line
+                xAxisId={0}
+                type="monotone"
+                dataKey="twr"
+                stroke="#2D8E50"
+                strokeWidth={2}
+                dot={false}
+                connectNulls={false}
+              />
+            </RechartsLineChart>
+          </ResponsiveContainer>
+        </Box>
+      </Paper>
+    </>
+  );
+}
+
+// ── Portfolio value bar chart ─────────────────────────────────────────────────
 
 interface PortfolioValueChartProps {
   checkpoints: PortfolioCheckpoint[];
@@ -286,6 +511,7 @@ export function Portfolio() {
   const [isFetching, setIsFetching] = useState(false);
 
   const checkpoints = usePortfolioCheckpoints(securities, securityTransactions, securityPriceCache);
+  const performance = usePortfolioPerformance(checkpoints, securityTransactions);
 
   const latestCheckpoint = useMemo(() => {
     if (checkpoints.length === 0) return null;
@@ -400,23 +626,22 @@ export function Portfolio() {
         )}
       </Group>
 
-      <Grid>
-        <Grid.Col>
-          {latestCheckpoint && (
-            <CurrentHoldingsTable
-              checkpoint={latestCheckpoint}
-              format={format}
-              currencySymbol={currencySymbol}
-              privacyMode={privacyMode}
-            />
-          )}
-        </Grid.Col>
-      </Grid>
-      <Grid>
-        <Grid.Col>
-          <PortfolioValueChart checkpoints={checkpoints} format={format} />
-        </Grid.Col>
-      </Grid>
+      {checkpoints.length > 0 && (
+        <PerformanceMetricsRow performance={performance} format={format} />
+      )}
+
+      <TWRChart performance={performance} />
+
+      <PortfolioValueChart checkpoints={checkpoints} format={format} />
+
+      {latestCheckpoint && (
+        <CurrentHoldingsTable
+          checkpoint={latestCheckpoint}
+          format={format}
+          currencySymbol={currencySymbol}
+          privacyMode={privacyMode}
+        />
+      )}
     </Stack>
   );
 }
