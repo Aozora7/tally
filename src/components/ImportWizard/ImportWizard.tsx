@@ -1,17 +1,5 @@
 import { useState, useMemo } from 'react';
-import {
-  Button,
-  Group,
-  Stack,
-  Text,
-  FileInput,
-  Select,
-  Table,
-  Alert,
-  Stepper,
-  Paper,
-  ScrollArea,
-} from '@mantine/core';
+import { Button, Group, Stack, Text, FileInput, Select, Table, Alert, Stepper, Paper, ScrollArea } from '@mantine/core';
 import { IconUpload, IconDownload } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { parseCsvFile, applyMapping, type ParseResult } from '@/utils/csvParser';
@@ -52,14 +40,7 @@ interface MappingStepProps {
   onContinue: () => void;
 }
 
-function MappingStep({
-  parseResult,
-  mapping,
-  canProceed,
-  onMappingChange,
-  onCancel,
-  onContinue,
-}: MappingStepProps) {
+function MappingStep({ parseResult, mapping, canProceed, onMappingChange, onCancel, onContinue }: MappingStepProps) {
   return (
     <Stack gap="md">
       <Text>Map the CSV columns to transaction fields. Date and Amount are required.</Text>
@@ -112,9 +93,7 @@ function MappingRow({ mapping, sampleValues, onChange }: MappingRowProps) {
         <Select
           data={FIELD_OPTIONS}
           value={mapping.targetField ?? 'none'}
-          onChange={(value) =>
-            onChange(mapping.csvColumn, (value ?? 'none') as ImportableField | 'none')
-          }
+          onChange={(value) => onChange(mapping.csvColumn, (value ?? 'none') as ImportableField | 'none')}
         />
       </Table.Td>
       <Table.Td>
@@ -135,22 +114,14 @@ interface PreviewStepProps {
   format: (cents: number) => string;
 }
 
-function PreviewStep({
-  validRows,
-  invalidRows,
-  totalRows,
-  onBack,
-  onImport,
-  format,
-}: PreviewStepProps) {
+function PreviewStep({ validRows, invalidRows, totalRows, onBack, onImport, format }: PreviewStepProps) {
   const hasInvalid = invalidRows.length > 0;
 
   return (
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Group justify="space-between">
         <Text>
-          Found <strong>{validRows.length}</strong> valid transactions out of{' '}
-          <strong>{totalRows}</strong> total rows.
+          Found <strong>{validRows.length}</strong> valid transactions out of <strong>{totalRows}</strong> total rows.
         </Text>
         <Group>
           <Button variant="subtle" onClick={onBack}>
@@ -162,9 +133,7 @@ function PreviewStep({
         </Group>
       </Group>
 
-      {validRows.length > 0 && (
-        <PreviewTable title="Valid Rows" rows={validRows} fillSpace format={format} />
-      )}
+      {validRows.length > 0 && <PreviewTable title="Valid Rows" rows={validRows} fillSpace format={format} />}
       {hasInvalid && (
         <PreviewTable
           title={`Invalid Rows (${invalidRows.length} - missing date or amount)`}
@@ -186,36 +155,16 @@ interface PreviewTableProps {
   format: (cents: number) => string;
 }
 
-function PreviewTable({
-  title,
-  rows,
-  isInvalid = false,
-  fillSpace = false,
-  format,
-}: PreviewTableProps) {
+function PreviewTable({ title, rows, isInvalid = false, fillSpace = false, format }: PreviewTableProps) {
   return (
-    <Stack
-      gap="xs"
-      flex={fillSpace ? 1 : undefined}
-      style={fillSpace ? { minHeight: 0 } : undefined}
-    >
+    <Stack gap="xs" flex={fillSpace ? 1 : undefined} style={fillSpace ? { minHeight: 0 } : undefined}>
       <Text fw={500} c={isInvalid ? 'warning.6' : 'dimmed'}>
         {title}
       </Text>
-      <Paper
-        withBorder
-        flex={fillSpace ? 1 : undefined}
-        style={fillSpace ? { minHeight: 0 } : undefined}
-      >
+      <Paper withBorder flex={fillSpace ? 1 : undefined} style={fillSpace ? { minHeight: 0 } : undefined}>
         <ScrollArea h={fillSpace ? '100%' : undefined} offsetScrollbars={!fillSpace}>
           <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Date</Table.Th>
-                <Table.Th>Amount</Table.Th>
-                <Table.Th>Description</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
+            <PreviewTableHead />
             <Table.Tbody>
               {rows.map((row, index) => (
                 <PreviewRow key={index} row={row} isInvalid={isInvalid} format={format} />
@@ -225,6 +174,18 @@ function PreviewTable({
         </ScrollArea>
       </Paper>
     </Stack>
+  );
+}
+
+function PreviewTableHead() {
+  return (
+    <Table.Thead>
+      <Table.Tr>
+        <Table.Th>Date</Table.Th>
+        <Table.Th>Amount</Table.Th>
+        <Table.Th>Description</Table.Th>
+      </Table.Tr>
+    </Table.Thead>
   );
 }
 
@@ -311,11 +272,7 @@ export function ImportWizard() {
 
   const handleMappingChange = (csvColumn: string, targetField: ImportableField | 'none') => {
     setMapping((prev) =>
-      prev.map((m) =>
-        m.csvColumn === csvColumn
-          ? { ...m, targetField: targetField === 'none' ? null : targetField }
-          : m
-      )
+      prev.map((m) => (m.csvColumn === csvColumn ? { ...m, targetField: targetField === 'none' ? null : targetField } : m))
     );
   };
 
@@ -365,8 +322,7 @@ export function ImportWizard() {
     setDuplicateCount(0);
   };
 
-  const stepIndex =
-    activeStep === 'upload' ? 0 : activeStep === 'mapping' ? 1 : activeStep === 'preview' ? 2 : 3;
+  const stepIndex = activeStep === 'upload' ? 0 : activeStep === 'mapping' ? 1 : activeStep === 'preview' ? 2 : 3;
 
   return (
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
@@ -408,11 +364,7 @@ export function ImportWizard() {
       )}
 
       {activeStep === 'complete' && (
-        <CompleteStep
-          importedCount={importedCount}
-          duplicateCount={duplicateCount}
-          onReset={handleReset}
-        />
+        <CompleteStep importedCount={importedCount} duplicateCount={duplicateCount} onReset={handleReset} />
       )}
     </Stack>
   );

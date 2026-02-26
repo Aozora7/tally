@@ -1,17 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import {
-  ActionIcon,
-  Button,
-  Checkbox,
-  Group,
-  Modal,
-  Paper,
-  Stack,
-  Table,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core';
+import { ActionIcon, Button, Checkbox, Group, Modal, Paper, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPencil, IconTrash, IconPlus, IconBuildingBank } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
@@ -81,18 +69,10 @@ function AccountFormModal({ opened, onClose, editingAccount, onSubmit }: Account
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={editingAccount ? 'Edit Account' : 'Add Account'}
-    >
+    <Modal opened={opened} onClose={onClose} title={editingAccount ? 'Edit Account' : 'Add Account'}>
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
-          <TextInput
-            label="Name"
-            placeholder="Enter account name"
-            {...form.getInputProps('name')}
-          />
+          <TextInput label="Name" placeholder="Enter account name" {...form.getInputProps('name')} />
           <Checkbox
             label="Set as default account"
             description="The default account is used for CSV imports"
@@ -118,23 +98,14 @@ interface DeleteAccountModalProps {
   onConfirm: () => void;
 }
 
-function DeleteAccountModal({
-  opened,
-  onClose,
-  deletingAccount,
-  deleteError,
-  onConfirm,
-}: DeleteAccountModalProps) {
+function DeleteAccountModal({ opened, onClose, deletingAccount, deleteError, onConfirm }: DeleteAccountModalProps) {
   return (
     <Modal opened={opened} onClose={onClose} title="Delete Account">
       <Stack gap="md">
         {deleteError ? (
           <Text c="danger.6">{deleteError}</Text>
         ) : (
-          <Text>
-            Are you sure you want to delete &quot;{deletingAccount?.name}&quot;? This action cannot
-            be undone.
-          </Text>
+          <Text>Are you sure you want to delete &quot;{deletingAccount?.name}&quot;? This action cannot be undone.</Text>
         )}
         <Group justify="flex-end">
           <Button variant="subtle" onClick={onClose}>
@@ -239,10 +210,7 @@ export function Accounts() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const defaultAccount = useMemo(() => accounts.find((a) => a.isDefault), [accounts]);
-  const balancesMap = useMemo(
-    () => new Map(accountBalances.map((b) => [b.accountId, b.balance])),
-    [accountBalances]
-  );
+  const balancesMap = useMemo(() => new Map(accountBalances.map((b) => [b.accountId, b.balance])), [accountBalances]);
 
   const openCreateModal = () => {
     setEditingAccount(null);
@@ -255,9 +223,7 @@ export function Accounts() {
   };
 
   const openDeleteModal = (account: Account) => {
-    const hasTransactions = transactions.some(
-      (t) => t.accountId === account.id || t.transferAccountId === account.id
-    );
+    const hasTransactions = transactions.some((t) => t.accountId === account.id || t.transferAccountId === account.id);
     if (hasTransactions) {
       setDeleteError('Cannot delete account with associated transactions.');
     } else {

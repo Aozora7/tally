@@ -29,8 +29,7 @@ export function useCurrency() {
     () => ({
       currencySymbol,
       privacyMode,
-      format: (cents: number) =>
-        privacyMode ? `${currencySymbol}XXXX.XX` : centsToDisplay(cents, currencySymbol),
+      format: (cents: number) => (privacyMode ? `${currencySymbol}XXXX.XX` : centsToDisplay(cents, currencySymbol)),
     }),
     [currencySymbol, privacyMode]
   );

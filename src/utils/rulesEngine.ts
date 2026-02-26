@@ -93,11 +93,9 @@ export function getRuleAction(rule: CategorizationRule): {
   transferAccountId?: string;
   delete?: boolean;
 } | null {
-  const actionCount = [
-    rule.actionCategoryId,
-    rule.actionTransferAccountId,
-    rule.actionDelete,
-  ].filter((v) => v !== undefined && v !== false).length;
+  const actionCount = [rule.actionCategoryId, rule.actionTransferAccountId, rule.actionDelete].filter(
+    (v) => v !== undefined && v !== false
+  ).length;
 
   if (actionCount !== 1) return null;
 
@@ -197,13 +195,7 @@ export function previewRulesOnTransactions(
     for (const t of transactions) {
       if (matchedTransactionIds.has(t.id)) continue;
 
-      const preview = previewRuleOnTransaction(
-        rule,
-        { ...t, id: t.id },
-        'transaction',
-        t.categoryId,
-        t.transferAccountId
-      );
+      const preview = previewRuleOnTransaction(rule, { ...t, id: t.id }, 'transaction', t.categoryId, t.transferAccountId);
       if (preview) {
         previews.push(preview);
         matchedTransactionIds.add(t.id);
@@ -224,10 +216,7 @@ export function previewSelectedRules(
   return previewRulesOnTransactions(selectedRules, triageTransactions, transactions);
 }
 
-export function applyPreviewToTransaction(
-  preview: RulePreview,
-  transaction: Transaction
-): Transaction {
+export function applyPreviewToTransaction(preview: RulePreview, transaction: Transaction): Transaction {
   const updated: Transaction = { ...transaction };
 
   for (const change of preview.changes) {
@@ -283,11 +272,9 @@ export function validateRule(rule: Partial<CategorizationRule>): string | null {
     }
   }
 
-  const actionCount = [
-    rule.actionCategoryId,
-    rule.actionTransferAccountId,
-    rule.actionDelete,
-  ].filter((v) => v !== undefined && v !== false).length;
+  const actionCount = [rule.actionCategoryId, rule.actionTransferAccountId, rule.actionDelete].filter(
+    (v) => v !== undefined && v !== false
+  ).length;
 
   if (actionCount === 0) {
     return 'Exactly one action is required';
@@ -310,10 +297,7 @@ export function getTransactionKey(tx: TransactionKey): string {
   return `${tx.date}|${tx.amount}|${tx.description.trim().toLowerCase()}`;
 }
 
-export function isDuplicateTransaction(
-  tx: TransactionKey,
-  existingTransactions: TransactionKey[]
-): boolean {
+export function isDuplicateTransaction(tx: TransactionKey, existingTransactions: TransactionKey[]): boolean {
   const key = getTransactionKey(tx);
   return existingTransactions.some((existing) => getTransactionKey(existing) === key);
 }

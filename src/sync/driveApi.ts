@@ -36,17 +36,14 @@ export async function uploadAppDataFile(
 ): Promise<DriveFile> {
   if (existingFileId) {
     // Update existing file
-    const resp = await fetch(
-      `${DRIVE_UPLOAD_API}/${existingFileId}?uploadType=media&fields=id,name,modifiedTime`,
-      {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: content,
-      }
-    );
+    const resp = await fetch(`${DRIVE_UPLOAD_API}/${existingFileId}?uploadType=media&fields=id,name,modifiedTime`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: content,
+    });
 
     if (!resp.ok) {
       throw new Error(`Failed to update file: ${resp.status} ${resp.statusText}`);

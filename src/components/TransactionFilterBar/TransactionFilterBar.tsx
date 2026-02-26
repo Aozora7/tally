@@ -18,11 +18,7 @@ interface TransactionFilterBarProps {
 
 const CATEGORY_TYPES: CategoryType[] = ['Income', 'Fixed', 'Cyclical', 'Irregular'];
 
-export function TransactionFilterBar({
-  filter,
-  onFilterChange,
-  categories,
-}: TransactionFilterBarProps) {
+export function TransactionFilterBar({ filter, onFilterChange, categories }: TransactionFilterBarProps) {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({ ...filter, searchText: e.target.value });
   };
@@ -60,18 +56,8 @@ export function TransactionFilterBar({
         onChange={handleSearchChange}
         style={{ minWidth: 200 }}
       />
-      <TextInput
-        placeholder="Date From"
-        value={filter.dateFrom}
-        onChange={handleDateFromChange}
-        style={{ minWidth: 120 }}
-      />
-      <TextInput
-        placeholder="Date To"
-        value={filter.dateTo}
-        onChange={handleDateToChange}
-        style={{ minWidth: 120 }}
-      />
+      <TextInput placeholder="Date From" value={filter.dateFrom} onChange={handleDateFromChange} style={{ minWidth: 120 }} />
+      <TextInput placeholder="Date To" value={filter.dateTo} onChange={handleDateToChange} style={{ minWidth: 120 }} />
       <Button.Group>
         {CATEGORY_TYPES.map((type) => (
           <Button

@@ -26,16 +26,11 @@ export function useChartTicks(data: { month: string }[]) {
   const monthTicks = useMemo(() => {
     const n = data.length;
     const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
-    return data
-      .filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0)
-      .map((d) => d.month);
+    return data.filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0).map((d) => d.month);
   }, [data]);
 
   const yearTicks = useMemo(
-    () =>
-      yearGroups
-        .map((g) => data[Math.floor((g.startIndex + g.endIndex) / 2)]?.month)
-        .filter((m): m is string => !!m),
+    () => yearGroups.map((g) => data[Math.floor((g.startIndex + g.endIndex) / 2)]?.month).filter((m): m is string => !!m),
     [yearGroups, data]
   );
 

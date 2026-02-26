@@ -19,13 +19,7 @@ interface RestoreBackupModalProps {
   setSetting: (key: string, value: string) => void;
 }
 
-export function RestoreBackupModal({
-  opened,
-  onClose,
-  onRestore,
-  settings,
-  setSetting,
-}: RestoreBackupModalProps) {
+export function RestoreBackupModal({ opened, onClose, onRestore, settings, setSetting }: RestoreBackupModalProps) {
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupInfo | null>(null);
@@ -126,12 +120,7 @@ export function RestoreBackupModal({
           <Button variant="subtle" onClick={handleClose}>
             Cancel
           </Button>
-          <Button
-            color="brand"
-            disabled={!selectedBackup}
-            loading={isRestoring}
-            onClick={() => void handleRestore()}
-          >
+          <Button color="brand" disabled={!selectedBackup} loading={isRestoring} onClick={() => void handleRestore()}>
             Restore Selected Backup
           </Button>
         </Group>

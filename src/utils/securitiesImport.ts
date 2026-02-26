@@ -37,10 +37,7 @@ function parseTransactionType(value: string): SecurityTransactionType | null {
   return null;
 }
 
-export function parseSecuritiesCsv(
-  content: string,
-  existingSecurities: Security[]
-): SecuritiesImportResult {
+export function parseSecuritiesCsv(content: string, existingSecurities: Security[]): SecuritiesImportResult {
   const result: SecuritiesImportResult = {
     securities: [],
     transactions: [],

@@ -19,10 +19,7 @@ export interface MonthlyPivotRow {
 
 const CATEGORY_TYPES: CategoryType[] = ['Income', 'Fixed', 'Cyclical', 'Irregular'];
 
-export function useYearlyPivotTable(
-  transactions: Transaction[],
-  categories: TransactionCategory[]
-): YearlyPivotRow[] {
+export function useYearlyPivotTable(transactions: Transaction[], categories: TransactionCategory[]): YearlyPivotRow[] {
   return useMemo(() => {
     const nonTransferTransactions = transactions.filter((t) => !t.transferAccountId);
     if (nonTransferTransactions.length === 0 || categories.length === 0) return [];
@@ -112,10 +109,7 @@ export function useYearlyPivotTable(
   }, [transactions, categories]);
 }
 
-export function useMonthlyPivotTable(
-  transactions: Transaction[],
-  categories: TransactionCategory[]
-): MonthlyPivotRow[] {
+export function useMonthlyPivotTable(transactions: Transaction[], categories: TransactionCategory[]): MonthlyPivotRow[] {
   return useMemo(() => {
     const nonTransferTransactions = transactions.filter((t) => !t.transferAccountId);
     if (nonTransferTransactions.length === 0 || categories.length === 0) return [];

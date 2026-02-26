@@ -19,12 +19,7 @@ interface SecuritiesContextValue {
   updateSecurityTransaction: (transaction: SecurityTransaction) => void;
   deleteSecurityTransaction: (id: string) => void;
   setSecurityPriceEntries: (entries: SecurityPriceCache[]) => void;
-  fetchAndCachePrices: (
-    securityId: string,
-    ticker: string,
-    startDate: string,
-    endDate: string
-  ) => Promise<void>;
+  fetchAndCachePrices: (securityId: string, ticker: string, startDate: string, endDate: string) => Promise<void>;
   fetchAndCacheCurrentPrice: (securityId: string, ticker: string) => Promise<void>;
   reloadFromDb: () => Promise<void>;
 }
@@ -57,17 +52,13 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         fireAndForget(
-          db.transaction(
-            'rw',
-            [db.securities, db.securityTransactions, db.securityPriceCache],
-            async () => {
-              await Promise.all([
-                db.securities.bulkPut(securities),
-                db.securityTransactions.bulkPut(securityTransactions),
-                db.securityPriceCache.bulkPut(securityPriceCache),
-              ]);
-            }
-          ),
+          db.transaction('rw', [db.securities, db.securityTransactions, db.securityPriceCache], async () => {
+            await Promise.all([
+              db.securities.bulkPut(securities),
+              db.securityTransactions.bulkPut(securityTransactions),
+              db.securityPriceCache.bulkPut(securityPriceCache),
+            ]);
+          }),
           'visibility-change securities bulk persist'
         );
       }
@@ -108,10 +99,7 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
 
   const addSecurityTransactions = useCallback((newTransactions: SecurityTransaction[]) => {
     setSecurityTransactions((prev) => [...prev, ...newTransactions]);
-    fireAndForget(
-      db.securityTransactions.bulkAdd(newTransactions),
-      'bulk add security transactions'
-    );
+    fireAndForget(db.securityTransactions.bulkAdd(newTransactions), 'bulk add security transactions');
     notifyDataMutated();
   }, []);
 

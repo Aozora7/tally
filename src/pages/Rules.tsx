@@ -62,15 +62,7 @@ interface SortableRuleRowProps {
   format: (cents: number) => string;
 }
 
-function SortableRuleRow({
-  rule,
-  index,
-  onEdit,
-  onDelete,
-  categories,
-  accounts,
-  format,
-}: SortableRuleRowProps) {
+function SortableRuleRow({ rule, index, onEdit, onDelete, categories, accounts, format }: SortableRuleRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: rule.id,
   });
@@ -177,10 +169,7 @@ function RuleFormModal({
   onSubmit,
   format,
 }: RuleFormModalProps) {
-  const categoryOptions = useMemo(
-    () => categories.map((c) => ({ value: c.id, label: c.name })),
-    [categories]
-  );
+  const categoryOptions = useMemo(() => categories.map((c) => ({ value: c.id, label: c.name })), [categories]);
 
   const form = useForm<RuleFormData>({
     initialValues: {
@@ -263,121 +252,144 @@ function RuleFormModal({
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={editingRule ? 'Edit Rule' : 'Add Rule'}
-      size="lg"
-    >
+    <Modal opened={opened} onClose={onClose} title={editingRule ? 'Edit Rule' : 'Add Rule'} size="lg">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
-          <TextInput
-            label="Rule Name"
-            placeholder="Enter rule name"
-            required
-            {...form.getInputProps('name')}
-          />
-
-          <Text fw={500} mt="sm">
-            Conditions (at least one required)
-          </Text>
-
-          <TextInput
-            label="Match Pattern (Regex)"
-            placeholder="e.g., amazon|AMZN"
-            description="Regular expression to match against transaction description"
-            {...form.getInputProps('matchPattern')}
-          />
-
-          <Group grow>
-            <NumberInput
-              label="Min Amount"
-              placeholder="No limit"
-              decimalScale={2}
-              fixedDecimalScale
-              {...form.getInputProps('matchMinAmount')}
-            />
-            <NumberInput
-              label="Max Amount"
-              placeholder="No limit"
-              decimalScale={2}
-              fixedDecimalScale
-              {...form.getInputProps('matchMaxAmount')}
-            />
-          </Group>
-
-          <Group grow>
-            <TextInput
-              label="Min Date"
-              placeholder="YYYY-MM-DD"
-              {...form.getInputProps('matchMinDate')}
-            />
-            <TextInput
-              label="Max Date"
-              placeholder="YYYY-MM-DD"
-              {...form.getInputProps('matchMaxDate')}
-            />
-          </Group>
-
-          <Text fw={500} mt="sm">
-            Action (exactly one required)
-          </Text>
-
-          <Select
-            label="Assign Category"
-            data={[{ value: '', label: 'None' }, ...categoryOptions]}
-            {...form.getInputProps('actionCategoryId')}
-            onChange={(value) => {
-              form.setFieldValue('actionCategoryId', value ?? '');
-              if (value) {
-                form.setFieldValue('actionTransferAccountId', '');
-                form.setFieldValue('actionDelete', false);
-              }
-            }}
-          />
-
-          {transferOptions.length > 0 && (
-            <Select
-              label="Transfer To Account"
-              data={[{ value: '', label: 'None' }, ...transferOptions]}
-              {...form.getInputProps('actionTransferAccountId')}
-              onChange={(value) => {
-                form.setFieldValue('actionTransferAccountId', value ?? '');
-                if (value) {
-                  form.setFieldValue('actionCategoryId', '');
-                  form.setFieldValue('actionDelete', false);
-                }
-              }}
-            />
-          )}
-
-          <Checkbox
-            label="Delete matching transactions"
-            {...form.getInputProps('actionDelete', { type: 'checkbox' })}
-            onChange={(e) => {
-              form.setFieldValue('actionDelete', e.currentTarget.checked);
-              if (e.currentTarget.checked) {
-                form.setFieldValue('actionCategoryId', '');
-                form.setFieldValue('actionTransferAccountId', '');
-              }
-            }}
-          />
-
-          <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">{editingRule ? 'Update' : 'Add'}</Button>
-          </Group>
+          <RuleNameInput form={form} />
+          <RuleConditions form={form} />
+          <RuleActions form={form} categoryOptions={categoryOptions} transferOptions={transferOptions} />
+          <RuleFormActions onClose={onClose} editingRule={editingRule} />
         </Stack>
       </form>
     </Modal>
   );
 }
 
+interface RuleNameInputProps {
+  form: ReturnType<typeof useForm<RuleFormData>>;
+}
+
+function RuleNameInput({ form }: RuleNameInputProps) {
+  return <TextInput label="Rule Name" placeholder="Enter rule name" required {...form.getInputProps('name')} />;
+}
+
+interface RuleConditionsProps {
+  form: ReturnType<typeof useForm<RuleFormData>>;
+}
+
+function RuleConditions({ form }: RuleConditionsProps) {
+  return (
+    <>
+      <Text fw={500} mt="sm">
+        Conditions (at least one required)
+      </Text>
+
+      <TextInput
+        label="Match Pattern (Regex)"
+        placeholder="e.g., amazon|AMZN"
+        description="Regular expression to match against transaction description"
+        {...form.getInputProps('matchPattern')}
+      />
+
+      <Group grow>
+        <NumberInput
+          label="Min Amount"
+          placeholder="No limit"
+          decimalScale={2}
+          fixedDecimalScale
+          {...form.getInputProps('matchMinAmount')}
+        />
+        <NumberInput
+          label="Max Amount"
+          placeholder="No limit"
+          decimalScale={2}
+          fixedDecimalScale
+          {...form.getInputProps('matchMaxAmount')}
+        />
+      </Group>
+
+      <Group grow>
+        <TextInput label="Min Date" placeholder="YYYY-MM-DD" {...form.getInputProps('matchMinDate')} />
+        <TextInput label="Max Date" placeholder="YYYY-MM-DD" {...form.getInputProps('matchMaxDate')} />
+      </Group>
+    </>
+  );
+}
+
+interface RuleActionsProps {
+  form: ReturnType<typeof useForm<RuleFormData>>;
+  categoryOptions: { value: string; label: string }[];
+  transferOptions: { value: string; label: string }[];
+}
+
+function RuleActions({ form, categoryOptions, transferOptions }: RuleActionsProps) {
+  return (
+    <>
+      <Text fw={500} mt="sm">
+        Action (exactly one required)
+      </Text>
+
+      <Select
+        label="Assign Category"
+        data={[{ value: '', label: 'None' }, ...categoryOptions]}
+        {...form.getInputProps('actionCategoryId')}
+        onChange={(value) => {
+          form.setFieldValue('actionCategoryId', value ?? '');
+          if (value) {
+            form.setFieldValue('actionTransferAccountId', '');
+            form.setFieldValue('actionDelete', false);
+          }
+        }}
+      />
+
+      {transferOptions.length > 0 && (
+        <Select
+          label="Transfer To Account"
+          data={[{ value: '', label: 'None' }, ...transferOptions]}
+          {...form.getInputProps('actionTransferAccountId')}
+          onChange={(value) => {
+            form.setFieldValue('actionTransferAccountId', value ?? '');
+            if (value) {
+              form.setFieldValue('actionCategoryId', '');
+              form.setFieldValue('actionDelete', false);
+            }
+          }}
+        />
+      )}
+
+      <Checkbox
+        label="Delete matching transactions"
+        {...form.getInputProps('actionDelete', { type: 'checkbox' })}
+        onChange={(e) => {
+          form.setFieldValue('actionDelete', e.currentTarget.checked);
+          if (e.currentTarget.checked) {
+            form.setFieldValue('actionCategoryId', '');
+            form.setFieldValue('actionTransferAccountId', '');
+          }
+        }}
+      />
+    </>
+  );
+}
+
+interface RuleFormActionsProps {
+  onClose: () => void;
+  editingRule: { rule: CategorizationRule; index: number } | null;
+}
+
+function RuleFormActions({ onClose, editingRule }: RuleFormActionsProps) {
+  return (
+    <Group justify="flex-end" mt="md">
+      <Button variant="subtle" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button type="submit">{editingRule ? 'Update' : 'Add'}</Button>
+    </Group>
+  );
+}
+
 export function Rules() {
-  const { rules, categories, accounts, addRule, updateRule, deleteRule, reorderRules } =
-    useFinance();
+  const { rules, categories, accounts, addRule, updateRule, deleteRule, reorderRules } = useFinance();
   const { format } = useCurrency();
   const [modalOpened, setModalOpened] = useState(false);
   const [editingRule, setEditingRule] = useState<{
@@ -392,10 +404,7 @@ export function Rules() {
     })
   );
 
-  const transferOptions = useMemo(
-    () => accounts.map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
-  );
+  const transferOptions = useMemo(() => accounts.map((a) => ({ value: a.id, label: a.name })), [accounts]);
 
   const openAddModal = () => {
     setEditingRule(null);
@@ -438,54 +447,22 @@ export function Rules() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={3}>Rules</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={openAddModal}>
-          Add Rule
-        </Button>
-      </Group>
+      <RulesHeader onAddRule={openAddModal} />
 
       <Paper p="md" withBorder>
         {rules.length === 0 ? (
-          <Stack align="center" gap="sm" py="xl">
-            <IconRobotOff size={48} stroke={1} color="var(--mantine-color-dimmed)" />
-            <Text c="dimmed" ta="center">
-              No rules defined. Create rules to automatically categorize transactions.
-            </Text>
-          </Stack>
+          <EmptyRulesState />
         ) : (
-          <DndContext
+          <RulesTable
+            rules={rules}
+            onEdit={openEditModal}
+            onDelete={handleDeleteRule}
+            categories={categories}
+            accounts={accounts}
+            format={format}
             sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={rules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-              <Table highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Name</Table.Th>
-                    <Table.Th>Conditions</Table.Th>
-                    <Table.Th>Action</Table.Th>
-                    <Table.Th w={100}>Actions</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {rules.map((rule, index) => (
-                    <SortableRuleRow
-                      key={rule.id}
-                      rule={rule}
-                      index={index}
-                      onEdit={openEditModal}
-                      onDelete={handleDeleteRule}
-                      categories={categories}
-                      accounts={accounts}
-                      format={format}
-                    />
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </SortableContext>
-          </DndContext>
+            handleDragEnd={handleDragEnd}
+          />
         )}
       </Paper>
 
@@ -500,5 +477,75 @@ export function Rules() {
         format={format}
       />
     </Stack>
+  );
+}
+
+interface RulesHeaderProps {
+  onAddRule: () => void;
+}
+
+function RulesHeader({ onAddRule }: RulesHeaderProps) {
+  return (
+    <Group justify="space-between">
+      <Title order={3}>Rules</Title>
+      <Button leftSection={<IconPlus size={16} />} onClick={onAddRule}>
+        Add Rule
+      </Button>
+    </Group>
+  );
+}
+
+function EmptyRulesState() {
+  return (
+    <Stack align="center" gap="sm" py="xl">
+      <IconRobotOff size={48} stroke={1} color="var(--mantine-color-dimmed)" />
+      <Text c="dimmed" ta="center">
+        No rules defined. Create rules to automatically categorize transactions.
+      </Text>
+    </Stack>
+  );
+}
+
+interface RulesTableProps {
+  rules: CategorizationRule[];
+  onEdit: (rule: CategorizationRule, index: number) => void;
+  onDelete: (id: string) => void;
+  categories: { id: string; name: string }[];
+  accounts: { id: string; name: string }[];
+  format: (cents: number) => string;
+  sensors: ReturnType<typeof useSensors>;
+  handleDragEnd: (event: DragEndEvent) => void;
+}
+
+function RulesTable({ rules, onEdit, onDelete, categories, accounts, format, sensors, handleDragEnd }: RulesTableProps) {
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={rules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+        <Table highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>Conditions</Table.Th>
+              <Table.Th>Action</Table.Th>
+              <Table.Th w={100}>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {rules.map((rule, index) => (
+              <SortableRuleRow
+                key={rule.id}
+                rule={rule}
+                index={index}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                categories={categories}
+                accounts={accounts}
+                format={format}
+              />
+            ))}
+          </Table.Tbody>
+        </Table>
+      </SortableContext>
+    </DndContext>
   );
 }

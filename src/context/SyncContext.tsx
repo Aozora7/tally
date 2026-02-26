@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useFinance } from './FinanceContext';
 import { useSecurities } from './SecuritiesContext';
 import { onDataMutated } from '@/sync/syncTrigger';

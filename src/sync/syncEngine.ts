@@ -38,12 +38,7 @@ export async function performSync(
   }
 
   // Upload current state
-  const result = await uploadAppDataFile(
-    accessToken,
-    'current.json',
-    stateJson,
-    cachedCurrentFileId ?? undefined
-  );
+  const result = await uploadAppDataFile(accessToken, 'current.json', stateJson, cachedCurrentFileId ?? undefined);
   cachedCurrentFileId = result.id;
 
   // Manage rotating backups

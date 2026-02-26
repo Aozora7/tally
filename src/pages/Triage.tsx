@@ -70,35 +70,22 @@ export function Triage() {
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Group justify="space-between">
         <Title order={3}>Triage</Title>
-        <Button
-          variant="light"
-          leftSection={<IconPlaylistAdd size={16} />}
-          onClick={() => rulesModalHandlers.open()}
-        >
+        <Button variant="light" leftSection={<IconPlaylistAdd size={16} />} onClick={() => rulesModalHandlers.open()}>
           Apply Rules
         </Button>
       </Group>
 
-      <TriageDetailPanel
-        selectedTransaction={selectedTransaction}
-        onSaved={handleSaved}
-        onDeleted={handleDeleted}
-      />
+      <TriageDetailPanel selectedTransaction={selectedTransaction} onSaved={handleSaved} onDeleted={handleDeleted} />
 
       <Text size="sm" c="dimmed">
-        {triageTransactions.length} transaction{triageTransactions.length !== 1 ? 's' : ''}{' '}
-        remaining
+        {triageTransactions.length} transaction{triageTransactions.length !== 1 ? 's' : ''} remaining
       </Text>
 
       <Box flex={1} style={{ minHeight: 0 }}>
         <TriageGrid selectedId={selectedId} onSelect={handleSelect} />
       </Box>
 
-      <RulePreviewModal
-        opened={rulesModalOpened}
-        onClose={() => rulesModalHandlers.close()}
-        source="triage"
-      />
+      <RulePreviewModal opened={rulesModalOpened} onClose={() => rulesModalHandlers.close()} source="triage" />
     </Stack>
   );
 }

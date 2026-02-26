@@ -160,11 +160,7 @@ function MonthlyTable({ data, fontSize, format }: MonthlyTableProps) {
       <Table striped highlightOnHover fz={fontSize}>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th
-              style={{ position: 'sticky', left: 0, background: 'var(--mantine-color-body)' }}
-            >
-              Month
-            </Table.Th>
+            <Table.Th style={{ position: 'sticky', left: 0, background: 'var(--mantine-color-body)' }}>Month</Table.Th>
             {CATEGORY_TYPES.map((type) => (
               <Table.Th key={type}>{type}</Table.Th>
             ))}

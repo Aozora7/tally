@@ -1,23 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import {
-  AllCommunityModule,
-  ModuleRegistry,
-  type ColDef,
-  type CellValueChangedEvent,
-} from 'ag-grid-community';
-import {
-  ActionIcon,
-  Button,
-  Group,
-  Modal,
-  Stack,
-  TextInput,
-  Title,
-  Table,
-  ScrollArea,
-  Text,
-} from '@mantine/core';
+import { AllCommunityModule, ModuleRegistry, type ColDef, type CellValueChangedEvent } from 'ag-grid-community';
+import { ActionIcon, Button, Group, Modal, Stack, TextInput, Title, Table, ScrollArea, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconDownload, IconDatabase } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
@@ -74,11 +58,7 @@ function AddSecurityForm({ opened, onClose, onAdd }: AddSecurityFormProps) {
         <Stack gap="md">
           <TextInput label="Ticker" placeholder="IWDA.AS" {...form.getInputProps('ticker')} />
           <TextInput label="ISIN" placeholder="IE00B4L5Y983" {...form.getInputProps('isin')} />
-          <TextInput
-            label="Label"
-            placeholder="iShares Core MSCI World"
-            {...form.getInputProps('label')}
-          />
+          <TextInput label="Label" placeholder="iShares Core MSCI World" {...form.getInputProps('label')} />
 
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={onClose}>
@@ -101,19 +81,10 @@ interface PriceCacheModalProps {
   currencySymbol: string;
 }
 
-function PriceCacheModal({
-  opened,
-  onClose,
-  securityId,
-  ticker,
-  priceCache,
-  currencySymbol,
-}: PriceCacheModalProps) {
+function PriceCacheModal({ opened, onClose, securityId, ticker, priceCache, currencySymbol }: PriceCacheModalProps) {
   const cachedPrices = useMemo(() => {
     if (!securityId) return [];
-    return priceCache
-      .filter((c) => c.securityId === securityId)
-      .sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
+    return priceCache.filter((c) => c.securityId === securityId).sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
   }, [securityId, priceCache]);
 
   return (
@@ -194,18 +165,10 @@ function useColumnDefs(
                 <IconDownload size={16} stroke={1.5} />
               </ActionIcon>
             )}
-            <ActionIcon
-              color="accent"
-              onClick={() => onViewCache(params.data)}
-              aria-label="View cache"
-            >
+            <ActionIcon color="accent" onClick={() => onViewCache(params.data)} aria-label="View cache">
               <IconDatabase size={16} stroke={1.5} />
             </ActionIcon>
-            <ActionIcon
-              color="danger"
-              onClick={() => deleteSecurity(params.data.id)}
-              aria-label="Delete"
-            >
+            <ActionIcon color="danger" onClick={() => deleteSecurity(params.data.id)} aria-label="Delete">
               <IconTrash size={16} stroke={1.5} />
             </ActionIcon>
           </Group>
@@ -283,13 +246,7 @@ export function Securities() {
     setCacheModal({ opened: true, securityId: security.id, ticker: security.ticker });
   }, []);
 
-  const columnDefs = useColumnDefs(
-    deleteSecurity,
-    handleFetchPrices,
-    handleViewCache,
-    fetchingIds,
-    isTauri()
-  );
+  const columnDefs = useColumnDefs(deleteSecurity, handleFetchPrices, handleViewCache, fetchingIds, isTauri());
 
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<Security>) => {
@@ -320,11 +277,7 @@ export function Securities() {
         />
       </div>
 
-      <AddSecurityForm
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        onAdd={addSecurity}
-      />
+      <AddSecurityForm opened={modalOpened} onClose={() => setModalOpened(false)} onAdd={addSecurity} />
 
       <PriceCacheModal
         opened={cacheModal.opened}

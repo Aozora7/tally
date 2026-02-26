@@ -53,8 +53,7 @@ export function usePortfolioPerformance(
 
     // Gain/loss vs net invested
     const totalGainLossCents = lastCheckpoint.totalValue - totalInvestedCents;
-    const totalGainLossPct =
-      totalInvestedCents !== 0 ? totalGainLossCents / totalInvestedCents : null;
+    const totalGainLossPct = totalInvestedCents !== 0 ? totalGainLossCents / totalInvestedCents : null;
 
     // Number of monthly sub-periods
     const numMonths = checkpoints.length - 1;

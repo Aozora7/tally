@@ -2,13 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { db } from '@/db/database';
 import { notifyDataMutated } from '@/sync/syncTrigger';
 import { fireAndForget } from '@/utils/dbHelpers';
-import type {
-  TransactionCategory,
-  Account,
-  TriageTransaction,
-  Transaction,
-  CategorizationRule,
-} from '@/types';
+import type { TransactionCategory, Account, TriageTransaction, Transaction, CategorizationRule } from '@/types';
 
 interface FinanceContextValue {
   isLoaded: boolean;
@@ -56,21 +50,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Map<string, string>>(new Map());
 
   const reloadFromDb = useCallback(async () => {
-    const [
-      loadedCategories,
-      loadedAccounts,
-      loadedTriage,
-      loadedTransactions,
-      loadedRules,
-      loadedSettings,
-    ] = await Promise.all([
-      db.categories.toArray(),
-      db.accounts.toArray(),
-      db.triageTransactions.toArray(),
-      db.transactions.toArray(),
-      db.rules.toArray(),
-      db.settings.toArray(),
-    ]);
+    const [loadedCategories, loadedAccounts, loadedTriage, loadedTransactions, loadedRules, loadedSettings] =
+      await Promise.all([
+        db.categories.toArray(),
+        db.accounts.toArray(),
+        db.triageTransactions.toArray(),
+        db.transactions.toArray(),
+        db.rules.toArray(),
+        db.settings.toArray(),
+      ]);
     setCategories(loadedCategories.sort((a, b) => a.sortOrder - b.sortOrder));
     setAccounts(loadedAccounts);
     setTriageTransactions(loadedTriage);
@@ -90,14 +78,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         fireAndForget(
           db.transaction(
             'rw',
-            [
-              db.categories,
-              db.accounts,
-              db.triageTransactions,
-              db.transactions,
-              db.rules,
-              db.settings,
-            ],
+            [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules, db.settings],
             async () => {
               await Promise.all([
                 db.categories.bulkPut(categories),
@@ -267,19 +248,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAllData = useCallback(async () => {
-    await db.transaction(
-      'rw',
-      [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules],
-      async () => {
-        await Promise.all([
-          db.categories.clear(),
-          db.accounts.clear(),
-          db.triageTransactions.clear(),
-          db.transactions.clear(),
-          db.rules.clear(),
-        ]);
-      }
-    );
+    await db.transaction('rw', [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules], async () => {
+      await Promise.all([
+        db.categories.clear(),
+        db.accounts.clear(),
+        db.triageTransactions.clear(),
+        db.transactions.clear(),
+        db.rules.clear(),
+      ]);
+    });
     setCategories([]);
     setAccounts([]);
     setTriageTransactions([]);

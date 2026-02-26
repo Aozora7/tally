@@ -71,11 +71,7 @@ async function exchangeCodeForTokens(
   return resp.json() as Promise<TokenResponse>;
 }
 
-async function refreshAccessToken(
-  refreshToken: string,
-  clientId: string,
-  clientSecret: string
-): Promise<TokenResponse> {
+async function refreshAccessToken(refreshToken: string, clientId: string, clientSecret: string): Promise<TokenResponse> {
   const resp = await fetch(GOOGLE_TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

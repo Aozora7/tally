@@ -17,10 +17,7 @@ import { agGridDarkTheme } from '@/utils/agGridTheme';
 import type { Account, Transaction } from '@/types';
 import { useDisclosure } from '@mantine/hooks';
 import { RulePreviewModal } from '../components/RulePreviewModal/RulePreviewModal';
-import {
-  TransactionFilterBar,
-  type TransactionFilterState,
-} from '../components/TransactionFilterBar/TransactionFilterBar';
+import { TransactionFilterBar, type TransactionFilterState } from '../components/TransactionFilterBar/TransactionFilterBar';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -58,22 +55,10 @@ interface AddTransactionFormProps {
   onAdd: (transaction: Transaction) => void;
 }
 
-function AddTransactionForm({
-  opened,
-  onClose,
-  accounts,
-  categories,
-  onAdd,
-}: AddTransactionFormProps) {
-  const accountOptions = useMemo(
-    () => accounts.map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
-  );
+function AddTransactionForm({ opened, onClose, accounts, categories, onAdd }: AddTransactionFormProps) {
+  const accountOptions = useMemo(() => accounts.map((a) => ({ value: a.id, label: a.name })), [accounts]);
 
-  const categoryOptions = useMemo(
-    () => categories.map((c) => ({ value: c.id, label: c.name })),
-    [categories]
-  );
+  const categoryOptions = useMemo(() => categories.map((c) => ({ value: c.id, label: c.name })), [categories]);
 
   const form = useForm<TransactionFormData>({
     initialValues: {
@@ -123,11 +108,7 @@ function AddTransactionForm({
         <Stack gap="md">
           <TextInput label="Date" placeholder="YYYY-MM-DD" {...form.getInputProps('date')} />
           <TextInput label="Amount" placeholder="$0.00" {...form.getInputProps('amount')} />
-          <TextInput
-            label="Description"
-            placeholder="Enter description"
-            {...form.getInputProps('description')}
-          />
+          <TextInput label="Description" placeholder="Enter description" {...form.getInputProps('description')} />
           <Select label="Account" data={accountOptions} {...form.getInputProps('accountId')} />
           <Select
             label="Category"
@@ -185,10 +166,7 @@ function useColumnDefs(
         cellStyle: (params) => {
           if (params.data?.amount === null || params.data?.amount === undefined) return {};
           return {
-            color:
-              params.data.amount >= 0
-                ? 'var(--mantine-color-income-6)'
-                : 'var(--mantine-color-expense-6)',
+            color: params.data.amount >= 0 ? 'var(--mantine-color-income-6)' : 'var(--mantine-color-expense-6)',
           };
         },
       },
@@ -276,11 +254,7 @@ function useColumnDefs(
         headerName: 'Actions',
         width: 80,
         cellRenderer: (params: { data: Transaction }) => (
-          <ActionIcon
-            color="danger"
-            onClick={() => deleteTransaction(params.data.id)}
-            aria-label="Delete"
-          >
+          <ActionIcon color="danger" onClick={() => deleteTransaction(params.data.id)} aria-label="Delete">
             <IconTrash size={16} stroke={1.5} />
           </ActionIcon>
         ),
@@ -293,15 +267,7 @@ function useColumnDefs(
 }
 
 export function Transactions() {
-  const {
-    transactions,
-    accounts,
-    categories,
-    addTransaction,
-    updateTransaction,
-    deleteTransaction,
-    rules,
-  } = useFinance();
+  const { transactions, accounts, categories, addTransaction, updateTransaction, deleteTransaction, rules } = useFinance();
   const [rulesModalOpened, rulesModalHandlers] = useDisclosure(false);
   const [modalOpened, setModalOpened] = useState(false);
   const [filter, setFilter] = useState<TransactionFilterState>({
@@ -313,23 +279,11 @@ export function Transactions() {
   });
   const gridRef = useRef<AgGridReact<Transaction>>(null);
 
-  const accountOptions = useMemo(
-    () => accounts.map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
-  );
+  const accountOptions = useMemo(() => accounts.map((a) => ({ value: a.id, label: a.name })), [accounts]);
 
-  const categoryOptions = useMemo(
-    () => categories.map((c) => ({ value: c.id, label: c.name })),
-    [categories]
-  );
+  const categoryOptions = useMemo(() => categories.map((c) => ({ value: c.id, label: c.name })), [categories]);
 
-  const columnDefs = useColumnDefs(
-    accounts,
-    categories,
-    accountOptions,
-    categoryOptions,
-    deleteTransaction
-  );
+  const columnDefs = useColumnDefs(accounts, categories, accountOptions, categoryOptions, deleteTransaction);
 
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<Transaction>) => {
@@ -367,12 +321,8 @@ export function Transactions() {
       if (filter.searchText) {
         const searchLower = filter.searchText.toLowerCase();
         const accountName = accounts.find((a) => a.id === t.accountId)?.name ?? '';
-        const categoryName = t.categoryId
-          ? (categories.find((c) => c.id === t.categoryId)?.name ?? '')
-          : '';
-        const transferName = t.transferAccountId
-          ? (accounts.find((a) => a.id === t.transferAccountId)?.name ?? '')
-          : '';
+        const categoryName = t.categoryId ? (categories.find((c) => c.id === t.categoryId)?.name ?? '') : '';
+        const transferName = t.transferAccountId ? (accounts.find((a) => a.id === t.transferAccountId)?.name ?? '') : '';
         const formattedAmount = formatCurrency(t.amount).toLowerCase();
 
         const matches =
@@ -386,14 +336,8 @@ export function Transactions() {
         if (!matches) return false;
       }
 
-      if (
-        filter.dateFrom &&
-        /^\d{4}-\d{2}-\d{2}$/.test(filter.dateFrom) &&
-        t.date < filter.dateFrom
-      )
-        return false;
-      if (filter.dateTo && /^\d{4}-\d{2}-\d{2}$/.test(filter.dateTo) && t.date > filter.dateTo)
-        return false;
+      if (filter.dateFrom && /^\d{4}-\d{2}-\d{2}$/.test(filter.dateFrom) && t.date < filter.dateFrom) return false;
+      if (filter.dateTo && /^\d{4}-\d{2}-\d{2}$/.test(filter.dateTo) && t.date > filter.dateTo) return false;
 
       if (filter.categoryType) {
         const cat = categories.find((c) => c.id === t.categoryId);
@@ -414,11 +358,7 @@ export function Transactions() {
 
   return (
     <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
-      <RulePreviewModal
-        opened={rulesModalOpened}
-        onClose={() => rulesModalHandlers.close()}
-        source="transaction"
-      />
+      <RulePreviewModal opened={rulesModalOpened} onClose={() => rulesModalHandlers.close()} source="transaction" />
       <Group justify="space-between">
         <Title order={3}>Transactions</Title>
         <Group>
@@ -426,22 +366,14 @@ export function Transactions() {
             Add Transaction
           </Button>
           {rules.length > 0 && (
-            <Button
-              variant="light"
-              leftSection={<IconPlaylistAdd size={16} />}
-              onClick={() => rulesModalHandlers.open()}
-            >
+            <Button variant="light" leftSection={<IconPlaylistAdd size={16} />} onClick={() => rulesModalHandlers.open()}>
               Apply Rules
             </Button>
           )}
         </Group>
       </Group>
 
-      <TransactionFilterBar
-        filter={filter}
-        onFilterChange={handleFilterChange}
-        categories={categories}
-      />
+      <TransactionFilterBar filter={filter} onFilterChange={handleFilterChange} categories={categories} />
 
       <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
         <AgGridReact<Transaction>

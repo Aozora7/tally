@@ -1,16 +1,5 @@
 import { useState } from 'react';
-import {
-  Button,
-  FileInput,
-  Group,
-  Modal,
-  Paper,
-  Stack,
-  Switch,
-  Text,
-  Title,
-  TextInput,
-} from '@mantine/core';
+import { Button, FileInput, Group, Modal, Paper, Stack, Switch, Text, Title, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconUpload, IconTrash, IconFolder } from '@tabler/icons-react';
 import { exportFullState, downloadJson } from '@/db/export';
@@ -108,12 +97,7 @@ function ImportModal({ opened, onClose, initialPreview }: ImportModalProps) {
           <Button variant="subtle" onClick={handleClose}>
             Cancel
           </Button>
-          <Button
-            color="brand"
-            onClick={handleConfirm}
-            disabled={!importPreview}
-            loading={isImporting}
-          >
+          <Button color="brand" onClick={handleConfirm} disabled={!importPreview} loading={isImporting}>
             Import & Replace
           </Button>
         </Group>
@@ -252,12 +236,7 @@ interface DataManagementPanelProps {
   onClearAll: () => void;
 }
 
-function DataManagementPanel({
-  onImport,
-  onClearTransactions,
-  onClearTriage,
-  onClearAll,
-}: DataManagementPanelProps) {
+function DataManagementPanel({ onImport, onClearTransactions, onClearTriage, onClearAll }: DataManagementPanelProps) {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -308,39 +287,19 @@ function DataManagementPanel({
       </Text>
 
       <Group gap="sm">
-        <Button
-          leftSection={<IconUpload size={16} />}
-          variant="filled"
-          onClick={handleExport}
-          loading={isExporting}
-        >
+        <Button leftSection={<IconUpload size={16} />} variant="filled" onClick={handleExport} loading={isExporting}>
           Export Full State
         </Button>
         <Button leftSection={<IconDownload size={16} />} variant="light" onClick={onImport}>
           Import Full State
         </Button>
-        <Button
-          leftSection={<IconTrash size={16} />}
-          variant="light"
-          color="danger"
-          onClick={onClearTransactions}
-        >
+        <Button leftSection={<IconTrash size={16} />} variant="light" color="danger" onClick={onClearTransactions}>
           Clear Transactions
         </Button>
-        <Button
-          leftSection={<IconTrash size={16} />}
-          variant="light"
-          color="warning"
-          onClick={onClearTriage}
-        >
+        <Button leftSection={<IconTrash size={16} />} variant="light" color="warning" onClick={onClearTriage}>
           Clear Triage
         </Button>
-        <Button
-          leftSection={<IconTrash size={16} />}
-          variant="light"
-          color="danger"
-          onClick={onClearAll}
-        >
+        <Button leftSection={<IconTrash size={16} />} variant="light" color="danger" onClick={onClearAll}>
           Clear All Data
         </Button>
       </Group>
@@ -357,11 +316,7 @@ function StoragePanel() {
       <Text size="sm" c="dimmed" mb="md">
         Open the folder where your data is stored.
       </Text>
-      <Button
-        leftSection={<IconFolder size={16} />}
-        variant="light"
-        onClick={() => openDataDirectory()}
-      >
+      <Button leftSection={<IconFolder size={16} />} variant="light" onClick={() => openDataDirectory()}>
         Open Data Directory
       </Button>
     </Paper>
@@ -520,19 +475,35 @@ export function Settings() {
         successMessage="All transactions have been deleted"
       />
 
-      <ClearConfirmModal
+      <ClearTriageModal
         opened={clearTriageModalOpen}
         onClose={() => setClearTriageModalOpen(false)}
         clearFn={clearTriageTransactions}
-        title="Clear Triage"
-        message="Are you sure you want to delete all triage transactions? This action cannot be undone."
-        warning="This will permanently delete all triage transactions. All other data will be preserved."
-        warningColor="warning"
-        confirmLabel="Delete Triage"
-        confirmColor="warning"
-        successTitle="Triage Cleared"
-        successMessage="All triage transactions have been deleted"
       />
     </Stack>
+  );
+}
+
+interface ClearTriageModalProps {
+  opened: boolean;
+  onClose: () => void;
+  clearFn: () => Promise<void>;
+}
+
+function ClearTriageModal({ opened, onClose, clearFn }: ClearTriageModalProps) {
+  return (
+    <ClearConfirmModal
+      opened={opened}
+      onClose={onClose}
+      clearFn={clearFn}
+      title="Clear Triage"
+      message="Are you sure you want to delete all triage transactions? This action cannot be undone."
+      warning="This will permanently delete all triage transactions. All other data will be preserved."
+      warningColor="warning"
+      confirmLabel="Delete Triage"
+      confirmColor="warning"
+      successTitle="Triage Cleared"
+      successMessage="All triage transactions have been deleted"
+    />
   );
 }

@@ -46,9 +46,7 @@ export function useMonthlyTrend(
       }
     }
 
-    let filtered = transactions.filter(
-      (t) => !t.categoryId || !excludedCategories.has(t.categoryId)
-    );
+    let filtered = transactions.filter((t) => !t.categoryId || !excludedCategories.has(t.categoryId));
     if (startDate) {
       filtered = filtered.filter((t) => t.date >= startDate);
     }
@@ -105,9 +103,7 @@ export function useCategorySummary(
       }
     }
 
-    let filtered = transactions.filter(
-      (t) => t.categoryId && !excludedCategories.has(t.categoryId)
-    );
+    let filtered = transactions.filter((t) => t.categoryId && !excludedCategories.has(t.categoryId));
     if (startDate) {
       filtered = filtered.filter((t) => t.date >= startDate);
     }
@@ -152,10 +148,7 @@ export function useCategorySummary(
   }, [transactions, categories, startDate, endDate, categoryType]);
 }
 
-export function useAccountBalances(
-  transactions: Transaction[],
-  accounts: Account[]
-): AccountBalance[] {
+export function useAccountBalances(transactions: Transaction[], accounts: Account[]): AccountBalance[] {
   return useMemo(() => {
     if (accounts.length === 0) return [];
 
@@ -194,9 +187,7 @@ export function useTransactionSummary(
       }
     }
 
-    let filtered = transactions.filter(
-      (t) => !t.categoryId || !excludedCategories.has(t.categoryId)
-    );
+    let filtered = transactions.filter((t) => !t.categoryId || !excludedCategories.has(t.categoryId));
     if (startDate) {
       filtered = filtered.filter((t) => t.date >= startDate);
     }
@@ -262,9 +253,7 @@ export function useYearlyCategorySpending(
       }
     }
 
-    let filtered = nonTransferTransactions.filter(
-      (t) => t.categoryId && !excludedCategories.has(t.categoryId)
-    );
+    let filtered = nonTransferTransactions.filter((t) => t.categoryId && !excludedCategories.has(t.categoryId));
     if (startDate) {
       filtered = filtered.filter((t) => t.date >= startDate);
     }

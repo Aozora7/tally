@@ -149,9 +149,7 @@ function PreviewTableRow({
       <Table.Td>{changeIndex === 0 ? preview.transaction.description : ''}</Table.Td>
       <Table.Td>
         {changeIndex === 0 ? (
-          <Text c={preview.transaction.amount >= 0 ? 'income.6' : 'expense.6'}>
-            {format(preview.transaction.amount)}
-          </Text>
+          <Text c={preview.transaction.amount >= 0 ? 'income.6' : 'expense.6'}>{format(preview.transaction.amount)}</Text>
         ) : (
           ''
         )}
@@ -198,10 +196,7 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
     }
   }, [opened, defaultAccount, defaultAccountId]);
 
-  const accountOptions = useMemo(
-    () => accounts.map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
-  );
+  const accountOptions = useMemo(() => accounts.map((a) => ({ value: a.id, label: a.name })), [accounts]);
 
   const handleToggleRule = useCallback((ruleId: string) => {
     setSelectedRuleIds((prev) => {
@@ -237,15 +232,9 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
     return previews.filter((p) => p.source === source);
   }, [previews, source]);
 
-  const deleteCount = useMemo(
-    () => relevantPreviews.filter((p) => p.willDelete).length,
-    [relevantPreviews]
-  );
+  const deleteCount = useMemo(() => relevantPreviews.filter((p) => p.willDelete).length, [relevantPreviews]);
 
-  const updateCount = useMemo(
-    () => relevantPreviews.filter((p) => !p.willDelete).length,
-    [relevantPreviews]
-  );
+  const updateCount = useMemo(() => relevantPreviews.filter((p) => !p.willDelete).length, [relevantPreviews]);
 
   const accountId = defaultAccountId || defaultAccount?.id || '';
 
@@ -332,9 +321,7 @@ export function RulePreviewModal({ opened, onClose, source }: RulePreviewModalPr
     return accounts.find((a) => a.id === id)?.name ?? 'Unknown';
   };
 
-  const renderChangeValue = (
-    change: RulePreview['changes'][number]
-  ): { oldDisplay: string; newDisplay: string } => {
+  const renderChangeValue = (change: RulePreview['changes'][number]): { oldDisplay: string; newDisplay: string } => {
     if (change.field === 'categoryId') {
       return {
         oldDisplay: getCategoryName(change.oldValue),

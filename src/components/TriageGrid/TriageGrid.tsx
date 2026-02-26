@@ -1,11 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import {
-  AllCommunityModule,
-  ModuleRegistry,
-  type ColDef,
-  type RowClickedEvent,
-} from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry, type ColDef, type RowClickedEvent } from 'ag-grid-community';
 import { useFinance } from '@/context/FinanceContext';
 import { agGridDarkTheme } from '@/utils/agGridTheme';
 import { useCurrency } from '@/utils/currency';
@@ -52,10 +47,7 @@ export function TriageGrid({ selectedId, onSelect }: TriageGridProps) {
         cellStyle: (params) => {
           if (params.value === null || params.value === undefined) return {};
           return {
-            color:
-              params.value >= 0
-                ? 'var(--mantine-color-income-6)'
-                : 'var(--mantine-color-expense-6)',
+            color: params.value >= 0 ? 'var(--mantine-color-income-6)' : 'var(--mantine-color-expense-6)',
           };
         },
       },

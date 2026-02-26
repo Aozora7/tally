@@ -175,13 +175,8 @@ function SplitEditor({
   );
 }
 
-export function TriageDetailPanel({
-  selectedTransaction,
-  onSaved,
-  onDeleted,
-}: TriageDetailPanelProps) {
-  const { accounts, categories, transactions, addTransactions, deleteTriageTransaction } =
-    useFinance();
+export function TriageDetailPanel({ selectedTransaction, onSaved, onDeleted }: TriageDetailPanelProps) {
+  const { accounts, categories, transactions, addTransactions, deleteTriageTransaction } = useFinance();
   const { format } = useCurrency();
 
   const [accountId, setAccountId] = useState<string>('');
@@ -190,20 +185,11 @@ export function TriageDetailPanel({
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<SplitPart[]>([]);
 
-  const accountOptions = useMemo(
-    () => accounts.map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
-  );
+  const accountOptions = useMemo(() => accounts.map((a) => ({ value: a.id, label: a.name })), [accounts]);
 
-  const categoryOptions = useMemo(
-    () => categories.map((c) => ({ value: c.id, label: c.name })),
-    [categories]
-  );
+  const categoryOptions = useMemo(() => categories.map((c) => ({ value: c.id, label: c.name })), [categories]);
 
-  const transferOptions = useMemo(
-    () => accounts.map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
-  );
+  const transferOptions = useMemo(() => accounts.map((a) => ({ value: a.id, label: a.name })), [accounts]);
 
   useEffect(() => {
     if (selectedTransaction) {
@@ -324,9 +310,7 @@ export function TriageDetailPanel({
         ...(split.transferAccountId && { transferAccountId: split.transferAccountId }),
       }));
 
-      const nonDuplicates = newTransactions.filter(
-        (tx) => !isDuplicateTransaction(tx, transactions)
-      );
+      const nonDuplicates = newTransactions.filter((tx) => !isDuplicateTransaction(tx, transactions));
       if (nonDuplicates.length > 0) {
         addTransactions(nonDuplicates);
       }
@@ -381,54 +365,27 @@ export function TriageDetailPanel({
   return (
     <Paper p="md" withBorder>
       <Stack gap="md">
-        <Group justify="space-between">
-          <Text fw={600} size="lg">
-            Edit Transaction
-          </Text>
-          <Text c={selectedTransaction.amount >= 0 ? 'income.6' : 'expense.6'} fw={600}>
-            {format(selectedTransaction.amount)}
-          </Text>
-        </Group>
-
-        <Text size="sm" c="dimmed">
-          {selectedTransaction.date} • {selectedTransaction.description}
-        </Text>
+        <TransactionHeader transaction={selectedTransaction} format={format} />
 
         <Divider />
 
-        <ButtonSelect
-          label="Account"
-          options={accountOptions}
-          value={accountId}
-          onChange={setAccountId}
-        />
+        <ButtonSelect label="Account" options={accountOptions} value={accountId} onChange={setAccountId} />
 
         {!isSplit && (
-          <>
-            <ButtonSelect
-              label="Category"
-              options={categoryOptions}
-              value={categoryId}
-              onChange={(value) => {
-                setCategoryId(value);
-                if (value) setTransferAccountId('');
-              }}
-              allowNone
-            />
-
-            {transferOptions.length > 0 && (
-              <ButtonSelect
-                label="Transfer To"
-                options={transferOptions}
-                value={transferAccountId}
-                onChange={(value) => {
-                  setTransferAccountId(value);
-                  if (value) setCategoryId('');
-                }}
-                allowNone
-              />
-            )}
-          </>
+          <CategoryAndTransferSelectors
+            categoryOptions={categoryOptions}
+            transferOptions={transferOptions}
+            categoryId={categoryId}
+            transferAccountId={transferAccountId}
+            onCategoryChange={(value) => {
+              setCategoryId(value);
+              if (value) setTransferAccountId('');
+            }}
+            onTransferChange={(value) => {
+              setTransferAccountId(value);
+              if (value) setCategoryId('');
+            }}
+          />
         )}
 
         <Divider label="Split" labelPosition="center" />
@@ -452,22 +409,98 @@ export function TriageDetailPanel({
 
         <Divider />
 
-        <Group justify="space-between" align="center">
-          <Button variant="subtle" color="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-          <Group gap="xs" align="center">
-            {validationError && (
-              <Text c="danger" size="sm">
-                {validationError}
-              </Text>
-            )}
-            <Button disabled={!canSave} onClick={handleSave}>
-              Save to Transactions
-            </Button>
-          </Group>
-        </Group>
+        <TransactionActions
+          validationError={validationError}
+          canSave={!!canSave}
+          onDelete={handleDelete}
+          onSave={handleSave}
+        />
       </Stack>
     </Paper>
+  );
+}
+
+interface TransactionHeaderProps {
+  transaction: TriageTransaction;
+  format: (cents: number) => string;
+}
+
+function TransactionHeader({ transaction, format }: TransactionHeaderProps) {
+  return (
+    <>
+      <Group justify="space-between">
+        <Text fw={600} size="lg">
+          Edit Transaction
+        </Text>
+        <Text c={transaction.amount >= 0 ? 'income.6' : 'expense.6'} fw={600}>
+          {format(transaction.amount)}
+        </Text>
+      </Group>
+
+      <Text size="sm" c="dimmed">
+        {transaction.date} • {transaction.description}
+      </Text>
+    </>
+  );
+}
+
+interface CategoryAndTransferSelectorsProps {
+  categoryOptions: { value: string; label: string }[];
+  transferOptions: { value: string; label: string }[];
+  categoryId: string;
+  transferAccountId: string;
+  onCategoryChange: (value: string) => void;
+  onTransferChange: (value: string) => void;
+}
+
+function CategoryAndTransferSelectors({
+  categoryOptions,
+  transferOptions,
+  categoryId,
+  transferAccountId,
+  onCategoryChange,
+  onTransferChange,
+}: CategoryAndTransferSelectorsProps) {
+  return (
+    <>
+      <ButtonSelect label="Category" options={categoryOptions} value={categoryId} onChange={onCategoryChange} allowNone />
+
+      {transferOptions.length > 0 && (
+        <ButtonSelect
+          label="Transfer To"
+          options={transferOptions}
+          value={transferAccountId}
+          onChange={onTransferChange}
+          allowNone
+        />
+      )}
+    </>
+  );
+}
+
+interface TransactionActionsProps {
+  validationError: string | null;
+  canSave: boolean;
+  onDelete: () => void;
+  onSave: () => void;
+}
+
+function TransactionActions({ validationError, canSave, onDelete, onSave }: TransactionActionsProps) {
+  return (
+    <Group justify="space-between" align="center">
+      <Button variant="subtle" color="danger" onClick={onDelete}>
+        Delete
+      </Button>
+      <Group gap="xs" align="center">
+        {validationError && (
+          <Text c="danger" size="sm">
+            {validationError}
+          </Text>
+        )}
+        <Button disabled={!canSave} onClick={onSave}>
+          Save to Transactions
+        </Button>
+      </Group>
+    </Group>
   );
 }

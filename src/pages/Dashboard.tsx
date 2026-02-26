@@ -15,10 +15,7 @@ import {
 import { IconArrowUpRight, IconArrowDownRight, IconChartBarOff } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useCurrency } from '@/utils/currency';
-import {
-  useTransactionSummary,
-  useYearlyCategorySpending,
-} from '@/utils/analytics/transactionAnalytics';
+import { useTransactionSummary, useYearlyCategorySpending } from '@/utils/analytics/transactionAnalytics';
 import { useMonthlyPivotTable } from '@/utils/analytics/yearlyPivotTable';
 import { useChartTicks } from '@/utils/useChartTicks';
 import type { ComponentType } from 'react';
@@ -84,11 +81,7 @@ function ChartTooltipContent({
       {items.map((item) => (
         <Group key={item.name} gap="xs" justify="space-between" wrap="nowrap">
           <Group gap={6} wrap="nowrap">
-            <Box
-              w={10}
-              h={10}
-              style={{ borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }}
-            />
+            <Box w={10} h={10} style={{ borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }} />
             <Text size="xs" c="dimmed">
               {item.name}
             </Text>
@@ -101,11 +94,7 @@ function ChartTooltipContent({
       {items.length > 1 && (
         <Group key="total" gap="xs" justify="space-between" wrap="nowrap">
           <Group gap={6} wrap="nowrap">
-            <Box
-              w={10}
-              h={10}
-              style={{ borderRadius: '50%', backgroundColor: '#9c9c9c', flexShrink: 0 }}
-            />
+            <Box w={10} h={10} style={{ borderRadius: '50%', backgroundColor: '#9c9c9c', flexShrink: 0 }} />
             <Text size="xs" c="dimmed">
               Total
             </Text>
@@ -119,10 +108,7 @@ function ChartTooltipContent({
   );
 }
 
-function barTooltipContent(
-  series: { name: string; color: string }[],
-  valueFormatter: (value: number) => string
-) {
+function barTooltipContent(series: { name: string; color: string }[], valueFormatter: (value: number) => string) {
   const seriesNames = new Set(series.map((s) => s.name));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function BarTooltip(props: any) {
@@ -192,20 +178,10 @@ function SummaryCards({
   return (
     <Grid>
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-        <SummaryCard
-          label="Total Income"
-          value={format(totalIncome)}
-          color="income.6"
-          icon={IconArrowUpRight}
-        />
+        <SummaryCard label="Total Income" value={format(totalIncome)} color="income.6" icon={IconArrowUpRight} />
       </Grid.Col>
       <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-        <SummaryCard
-          label="Total Expenses"
-          value={format(totalExpenses)}
-          color="expense.6"
-          icon={IconArrowDownRight}
-        />
+        <SummaryCard label="Total Expenses" value={format(totalExpenses)} color="expense.6" icon={IconArrowDownRight} />
       </Grid.Col>
     </Grid>
   );
@@ -217,20 +193,7 @@ interface MonthlyExpensesChartProps {
   privacyMode: boolean;
 }
 
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-] as const;
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
 const monthlyExpensesSeries = [
   { name: 'Fixed', color: 'danger.6' },
@@ -265,72 +228,97 @@ function MonthlyExpensesChart({ data, currencySymbol, privacyMode }: MonthlyExpe
             <RechartsBarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
 
-              {/* Alternating year background bands */}
-              {yearGroups.map((group, idx) =>
-                idx % 2 === 1 ? (
-                  <ReferenceArea
-                    key={group.year}
-                    xAxisId={0}
-                    x1={data[group.startIndex]!.month}
-                    x2={data[group.endIndex]!.month}
-                    fill="rgba(128,128,128,0.08)"
-                    stroke="none"
-                  />
-                ) : null
-              )}
+              <YearBackgroundBands yearGroups={yearGroups} data={data} />
 
-              {/* Month axis */}
-              <XAxis
-                xAxisId={0}
-                dataKey="month"
-                ticks={monthTicks}
-                tickFormatter={(v: string) =>
-                  MONTH_NAMES[parseInt(v.substring(5, 7), 10) - 1] ?? ''
-                }
-                angle={-45}
-                textAnchor="end"
-                height={35}
-                interval={0}
-                tickLine={false}
-                dy={5}
-                dx={-10}
-                tick={{ fontSize: 12 }}
-              />
-
-              {/* Year axis — rendered below the month axis */}
-              <XAxis
-                xAxisId={1}
-                dataKey="month"
-                ticks={yearTicks}
-                tickFormatter={(v: string) => v.substring(0, 4)}
-                tickLine={false}
-                axisLine={false}
-                height={22}
-                tick={{ fontSize: 12, fontWeight: 600 }}
-                orientation="top"
-              />
+              <MonthXAxis monthTicks={monthTicks} />
+              <YearXAxis yearTicks={yearTicks} />
 
               <YAxis width={75} tickFormatter={valueFormatter} tick={{ fontSize: 11 }} />
 
               <Tooltip content={barTooltipContent(monthlyExpensesSeries, valueFormatter)} />
 
-              <Bar xAxisId={0} dataKey="Fixed" stackId="a" fill={MONTHLY_SERIES_FILLS.Fixed} />
-              <Bar
-                xAxisId={0}
-                dataKey="Cyclical"
-                stackId="a"
-                fill={MONTHLY_SERIES_FILLS.Cyclical}
-              />
-              <Bar
-                xAxisId={0}
-                dataKey="Irregular"
-                stackId="a"
-                fill={MONTHLY_SERIES_FILLS.Irregular}
-              />
+              <ExpenseBars />
             </RechartsBarChart>
           </ResponsiveContainer>
         </Box>
       </Paper>
+    </>
+  );
+}
+
+interface YearBackgroundBandsProps {
+  yearGroups: { year: string; startIndex: number; endIndex: number }[];
+  data: { month: string }[];
+}
+
+function YearBackgroundBands({ yearGroups, data }: YearBackgroundBandsProps) {
+  return (
+    <>
+      {yearGroups.map((group, idx) =>
+        idx % 2 === 1 ? (
+          <ReferenceArea
+            key={group.year}
+            xAxisId={0}
+            x1={data[group.startIndex]!.month}
+            x2={data[group.endIndex]!.month}
+            fill="rgba(128,128,128,0.08)"
+            stroke="none"
+          />
+        ) : null
+      )}
+    </>
+  );
+}
+
+interface MonthXAxisProps {
+  monthTicks: string[];
+}
+
+function MonthXAxis({ monthTicks }: MonthXAxisProps) {
+  return (
+    <XAxis
+      xAxisId={0}
+      dataKey="month"
+      ticks={monthTicks}
+      tickFormatter={(v: string) => MONTH_NAMES[parseInt(v.substring(5, 7), 10) - 1] ?? ''}
+      angle={-45}
+      textAnchor="end"
+      height={35}
+      interval={0}
+      tickLine={false}
+      dy={5}
+      dx={-10}
+      tick={{ fontSize: 12 }}
+    />
+  );
+}
+
+interface YearXAxisProps {
+  yearTicks: string[];
+}
+
+function YearXAxis({ yearTicks }: YearXAxisProps) {
+  return (
+    <XAxis
+      xAxisId={1}
+      dataKey="month"
+      ticks={yearTicks}
+      tickFormatter={(v: string) => v.substring(0, 4)}
+      tickLine={false}
+      axisLine={false}
+      height={22}
+      tick={{ fontSize: 12, fontWeight: 600 }}
+      orientation="top"
+    />
+  );
+}
+
+function ExpenseBars() {
+  return (
+    <>
+      <Bar xAxisId={0} dataKey="Fixed" stackId="a" fill={MONTHLY_SERIES_FILLS.Fixed} />
+      <Bar xAxisId={0} dataKey="Cyclical" stackId="a" fill={MONTHLY_SERIES_FILLS.Cyclical} />
+      <Bar xAxisId={0} dataKey="Irregular" stackId="a" fill={MONTHLY_SERIES_FILLS.Irregular} />
     </>
   );
 }
@@ -342,12 +330,7 @@ interface SpendingByCategoryChartProps {
   privacyMode: boolean;
 }
 
-function SpendingByCategoryChart({
-  data,
-  series,
-  currencySymbol,
-  privacyMode,
-}: SpendingByCategoryChartProps) {
+function SpendingByCategoryChart({ data, series, currencySymbol, privacyMode }: SpendingByCategoryChartProps) {
   if (data.length === 0 || series.length === 0) return null;
 
   const valueFormatter = privacyMode
@@ -385,11 +368,7 @@ interface CategoryBreakdownChartProps {
   privacyMode: boolean;
 }
 
-function CategoryBreakdownChart({
-  data,
-  currencySymbol,
-  privacyMode,
-}: CategoryBreakdownChartProps) {
+function CategoryBreakdownChart({ data, currencySymbol, privacyMode }: CategoryBreakdownChartProps) {
   if (data.length === 0) return null;
 
   const seriesNames = new Set(data.map((d) => d.name));
@@ -428,18 +407,14 @@ function CategoryBreakdownChart({
           withLabelsLine
           labelsType="percent"
           tooltipDataSource="segment"
-          valueFormatter={(value) =>
-            privacyMode ? `${currencySymbol}XXXX.XX` : `${currencySymbol}${value.toFixed(2)}`
-          }
+          valueFormatter={(value) => (privacyMode ? `${currencySymbol}XXXX.XX` : `${currencySymbol}${value.toFixed(2)}`)}
           tooltipProps={{ content: DonutTooltip }}
         >
           <Legend
             verticalAlign="bottom"
             height={70}
             formatter={(value: string) => (
-              <span style={{ color: 'var(--mantine-color-dimmed)', fontSize: '12px' }}>
-                {value}
-              </span>
+              <span style={{ color: 'var(--mantine-color-dimmed)', fontSize: '12px' }}>{value}</span>
             )}
           />
         </DonutChart>
@@ -507,10 +482,7 @@ export function Dashboard() {
     [monthlyPivot]
   );
 
-  const totalExpenses = useMemo(
-    () => topCategories.reduce((sum, cat) => sum + cat.total, 0),
-    [topCategories]
-  );
+  const totalExpenses = useMemo(() => topCategories.reduce((sum, cat) => sum + cat.total, 0), [topCategories]);
 
   const donutData = useMemo(
     () =>
@@ -533,11 +505,7 @@ export function Dashboard() {
         format={format}
       />
 
-      <MonthlyExpensesChart
-        data={chartMonthlyExpenses}
-        currencySymbol={currencySymbol}
-        privacyMode={privacyMode}
-      />
+      <MonthlyExpensesChart data={chartMonthlyExpenses} currencySymbol={currencySymbol} privacyMode={privacyMode} />
 
       <Grid mt="md">
         <Grid.Col span={{ base: 12, md: 8 }}>
@@ -549,11 +517,7 @@ export function Dashboard() {
           />
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 4 }}>
-          <CategoryBreakdownChart
-            data={donutData}
-            currencySymbol={currencySymbol}
-            privacyMode={privacyMode}
-          />
+          <CategoryBreakdownChart data={donutData} currencySymbol={currencySymbol} privacyMode={privacyMode} />
         </Grid.Col>
       </Grid>
 

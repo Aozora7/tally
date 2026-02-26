@@ -1,11 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import {
-  AllCommunityModule,
-  ModuleRegistry,
-  type ColDef,
-  type CellValueChangedEvent,
-} from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry, type ColDef, type CellValueChangedEvent } from 'ag-grid-community';
 import { ActionIcon, Button, Group, Modal, Stack, TextInput, Select, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconUpload } from '@tabler/icons-react';
@@ -40,10 +35,7 @@ interface AddTradeFormProps {
 }
 
 function AddTradeForm({ opened, onClose, securities, onAdd }: AddTradeFormProps) {
-  const securityOptions = useMemo(
-    () => securities.map((s) => ({ value: s.id, label: s.ticker })),
-    [securities]
-  );
+  const securityOptions = useMemo(() => securities.map((s) => ({ value: s.id, label: s.ticker })), [securities]);
 
   const form = useForm<TradeFormData>({
     initialValues: {
@@ -90,18 +82,9 @@ function AddTradeForm({ opened, onClose, securities, onAdd }: AddTradeFormProps)
             ]}
             {...form.getInputProps('type')}
           />
-          <Select
-            label="Security"
-            data={securityOptions}
-            searchable
-            {...form.getInputProps('securityId')}
-          />
+          <Select label="Security" data={securityOptions} searchable {...form.getInputProps('securityId')} />
           <TextInput label="Units" placeholder="121" {...form.getInputProps('units')} />
-          <TextInput
-            label="Price Per Unit"
-            placeholder="47.78"
-            {...form.getInputProps('pricePerUnit')}
-          />
+          <TextInput label="Price Per Unit" placeholder="47.78" {...form.getInputProps('pricePerUnit')} />
           <TextInput label="Fees" placeholder="10.00" {...form.getInputProps('fees')} />
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={onClose}>
@@ -177,8 +160,7 @@ function useColumnDefs(
         headerName: 'Price',
         width: 130,
         valueGetter: (params) => {
-          if (params.data?.pricePerUnit === null || params.data?.pricePerUnit === undefined)
-            return '';
+          if (params.data?.pricePerUnit === null || params.data?.pricePerUnit === undefined) return '';
           return priceToDisplay(params.data.pricePerUnit, currencySymbol);
         },
         valueParser: (params) => displayToPrice(params.newValue),
@@ -213,11 +195,7 @@ function useColumnDefs(
         headerName: 'Actions',
         width: 80,
         cellRenderer: (params: { data: SecurityTransaction }) => (
-          <ActionIcon
-            color="danger"
-            onClick={() => deleteSecurityTransaction(params.data.id)}
-            aria-label="Delete"
-          >
+          <ActionIcon color="danger" onClick={() => deleteSecurityTransaction(params.data.id)} aria-label="Delete">
             <IconTrash size={16} stroke={1.5} />
           </ActionIcon>
         ),
@@ -242,10 +220,7 @@ export function Trades() {
   const { currencySymbol, privacyMode } = useCurrency();
   const [modalOpened, setModalOpened] = useState(false);
 
-  const securityOptions = useMemo(
-    () => securities.map((s) => ({ value: s.id, label: s.ticker })),
-    [securities]
-  );
+  const securityOptions = useMemo(() => securities.map((s) => ({ value: s.id, label: s.ticker })), [securities]);
 
   const handleImport = useCallback(async () => {
     const result = await openFileDialog({
@@ -282,13 +257,7 @@ export function Trades() {
     }
   }, [securities, addSecurities, addSecurityTransactions]);
 
-  const columnDefs = useColumnDefs(
-    securities,
-    securityOptions,
-    currencySymbol,
-    privacyMode,
-    deleteSecurityTransaction
-  );
+  const columnDefs = useColumnDefs(securities, securityOptions, currencySymbol, privacyMode, deleteSecurityTransaction);
 
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent<SecurityTransaction>) => {

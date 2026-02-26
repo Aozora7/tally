@@ -1,9 +1,4 @@
-import {
-  open,
-  save,
-  type OpenDialogOptions,
-  type SaveDialogOptions,
-} from '@tauri-apps/plugin-dialog';
+import { open, save, type OpenDialogOptions, type SaveDialogOptions } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -62,8 +57,7 @@ function openFileDialogBrowser(options: FileDialogOptions): Promise<FileResult |
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept =
-      options.filters?.flatMap((f) => f.extensions.map((ext) => `.${ext}`)).join(',') || '';
+    input.accept = options.filters?.flatMap((f) => f.extensions.map((ext) => `.${ext}`)).join(',') || '';
 
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -79,10 +73,7 @@ function openFileDialogBrowser(options: FileDialogOptions): Promise<FileResult |
   });
 }
 
-export async function saveFileDialog(
-  content: string,
-  options: FileDialogOptions = {}
-): Promise<string | null> {
+export async function saveFileDialog(content: string, options: FileDialogOptions = {}): Promise<string | null> {
   if (isTauri()) {
     const selected = await save(buildSaveOptions(options));
 
@@ -96,10 +87,7 @@ export async function saveFileDialog(
   }
 }
 
-function saveFileDialogBrowser(
-  content: string,
-  options: FileDialogOptions
-): Promise<string | null> {
+function saveFileDialogBrowser(content: string, options: FileDialogOptions): Promise<string | null> {
   return new Promise((resolve) => {
     const blob = new Blob([content], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -118,9 +106,7 @@ function saveFileDialogBrowser(
   });
 }
 
-export async function readJsonFile<T>(
-  options: FileDialogOptions = {}
-): Promise<{ data: T; path: string } | null> {
+export async function readJsonFile<T>(options: FileDialogOptions = {}): Promise<{ data: T; path: string } | null> {
   const result = await openFileDialog(options);
   if (result) {
     try {
@@ -133,10 +119,7 @@ export async function readJsonFile<T>(
   return null;
 }
 
-export async function writeJsonFile<T>(
-  data: T,
-  options: FileDialogOptions = {}
-): Promise<string | null> {
+export async function writeJsonFile<T>(data: T, options: FileDialogOptions = {}): Promise<string | null> {
   const content = JSON.stringify(data, null, 2);
   return saveFileDialog(content, options);
 }

@@ -69,10 +69,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [opened, { toggle }] = useDisclosure();
 
   return (
-    <AppShell
-      navbar={{ width: 220, breakpoint: 'sm', collapsed: { mobile: !opened } }}
-      padding="md"
-    >
+    <AppShell navbar={{ width: 220, breakpoint: 'sm', collapsed: { mobile: !opened } }} padding="md">
       <AppShell.Navbar p="md">
         <AppShell.Section grow component={ScrollArea}>
           {navSections.map((section) => (
@@ -98,9 +95,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <SyncIndicator />
         </AppShell.Section>
       </AppShell.Navbar>
-      <AppShell.Main
-        style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100vh' }}
-      >
+      <AppShell.Main style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100vh' }}>
         {children}
         <div style={{ flexShrink: 0, height: '1rem' }} />
       </AppShell.Main>

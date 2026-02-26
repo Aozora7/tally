@@ -1,15 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Button,
-  Group,
-  NumberInput,
-  Paper,
-  PasswordInput,
-  Stack,
-  Text,
-  Title,
-  Badge,
-} from '@mantine/core';
+import { Button, Group, NumberInput, Paper, PasswordInput, Stack, Text, Title, Badge } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconBrandGoogleDrive, IconLink, IconLinkOff, IconRefresh } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
@@ -102,66 +92,22 @@ export function GoogleDriveSettings() {
 
   return (
     <>
-      <Paper p="md" withBorder>
-        <Group gap="xs" mb="xs">
-          <IconBrandGoogleDrive size={20} />
-          <Title order={4}>Google Drive Sync</Title>
-        </Group>
-        <Text size="sm" c="dimmed" mb="md">
-          Sync your data to Google Drive for automatic backup. You need to provide your own Google
-          OAuth credentials from the Google Cloud Console.
-        </Text>
-
-        <Stack gap="md">
-          <Group grow>
-            <PasswordInput
-              label="Client ID"
-              placeholder="Your Google OAuth Client ID"
-              value={clientId}
-              onChange={(e) => setClientId(e.currentTarget.value)}
-            />
-            <PasswordInput
-              label="Client Secret"
-              placeholder="Your Google OAuth Client Secret"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.currentTarget.value)}
-            />
-          </Group>
-
-          <ConnectionControls
-            configured={configured}
-            isConnecting={isConnecting}
-            syncStatus={syncStatus}
-            onConnect={() => void handleConnect()}
-            onSaveCredentials={handleSaveCredentials}
-            onDisconnect={handleDisconnect}
-            onSyncNow={() => void syncNow()}
-          />
-
-          {configured && (
-            <>
-              <NumberInput
-                label="Rotating Backup Count"
-                description="Number of daily backups to keep on Google Drive"
-                value={backupCount}
-                onChange={handleBackupCountChange}
-                min={1}
-                max={30}
-                w={250}
-              />
-
-              <div>
-                <Text size="sm" fw={500} mb="xs">
-                  Restore from Backup
-                </Text>
-                <Button variant="light" size="xs" onClick={() => setRestoreModalOpen(true)}>
-                  View Backups
-                </Button>
-              </div>
-            </>
-          )}
-        </Stack>
-      </Paper>
+      <GoogleDriveSettingsPanel
+        clientId={clientId}
+        clientSecret={clientSecret}
+        backupCount={backupCount}
+        configured={configured}
+        isConnecting={isConnecting}
+        syncStatus={syncStatus}
+        onClientIdChange={setClientId}
+        onClientSecretChange={setClientSecret}
+        onBackupCountChange={handleBackupCountChange}
+        onConnect={() => void handleConnect()}
+        onSaveCredentials={handleSaveCredentials}
+        onDisconnect={handleDisconnect}
+        onSyncNow={() => void syncNow()}
+        onOpenRestoreModal={() => setRestoreModalOpen(true)}
+      />
 
       <RestoreBackupModal
         opened={restoreModalOpen}
@@ -170,6 +116,119 @@ export function GoogleDriveSettings() {
         settings={settings}
         setSetting={setSetting}
       />
+    </>
+  );
+}
+
+interface GoogleDriveSettingsPanelProps {
+  clientId: string;
+  clientSecret: string;
+  backupCount: number;
+  configured: boolean;
+  isConnecting: boolean;
+  syncStatus: string;
+  onClientIdChange: (value: string) => void;
+  onClientSecretChange: (value: string) => void;
+  onBackupCountChange: (value: string | number) => void;
+  onConnect: () => void;
+  onSaveCredentials: () => void;
+  onDisconnect: () => void;
+  onSyncNow: () => void;
+  onOpenRestoreModal: () => void;
+}
+
+function GoogleDriveSettingsPanel({
+  clientId,
+  clientSecret,
+  backupCount,
+  configured,
+  isConnecting,
+  syncStatus,
+  onClientIdChange,
+  onClientSecretChange,
+  onBackupCountChange,
+  onConnect,
+  onSaveCredentials,
+  onDisconnect,
+  onSyncNow,
+  onOpenRestoreModal,
+}: GoogleDriveSettingsPanelProps) {
+  return (
+    <Paper p="md" withBorder>
+      <Group gap="xs" mb="xs">
+        <IconBrandGoogleDrive size={20} />
+        <Title order={4}>Google Drive Sync</Title>
+      </Group>
+      <Text size="sm" c="dimmed" mb="md">
+        Sync your data to Google Drive for automatic backup. You need to provide your own Google OAuth credentials from the
+        Google Cloud Console.
+      </Text>
+
+      <Stack gap="md">
+        <Group grow>
+          <PasswordInput
+            label="Client ID"
+            placeholder="Your Google OAuth Client ID"
+            value={clientId}
+            onChange={(e) => onClientIdChange(e.currentTarget.value)}
+          />
+          <PasswordInput
+            label="Client Secret"
+            placeholder="Your Google OAuth Client Secret"
+            value={clientSecret}
+            onChange={(e) => onClientSecretChange(e.currentTarget.value)}
+          />
+        </Group>
+
+        <ConnectionControls
+          configured={configured}
+          isConnecting={isConnecting}
+          syncStatus={syncStatus}
+          onConnect={onConnect}
+          onSaveCredentials={onSaveCredentials}
+          onDisconnect={onDisconnect}
+          onSyncNow={onSyncNow}
+        />
+
+        {configured && (
+          <ConfiguredSettings
+            backupCount={backupCount}
+            onBackupCountChange={onBackupCountChange}
+            onOpenRestoreModal={onOpenRestoreModal}
+          />
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+interface ConfiguredSettingsProps {
+  backupCount: number;
+  onBackupCountChange: (value: string | number) => void;
+  onOpenRestoreModal: () => void;
+}
+
+function ConfiguredSettings({ backupCount, onBackupCountChange, onOpenRestoreModal }: ConfiguredSettingsProps) {
+  return (
+    <>
+      <NumberInput
+        label="Rotating Backup Count"
+        description="Number of daily backups to keep on Google Drive"
+        value={backupCount}
+        onChange={onBackupCountChange}
+        min={1}
+        max={30}
+        w={250}
+      />
+
+      <div>
+        <Text size="sm" fw={500} mb="xs">
+          Restore from Backup
+        </Text>
+        <Button variant="light" size="xs" onClick={onOpenRestoreModal}>
+          View Backups
+        </Button>
+      </div>
     </>
   );
 }
@@ -211,20 +270,10 @@ function ConnectionControls({
       <Badge color="teal" variant="light" size="lg">
         Connected
       </Badge>
-      <Button
-        variant="light"
-        leftSection={<IconRefresh size={16} />}
-        onClick={onSyncNow}
-        loading={syncStatus === 'syncing'}
-      >
+      <Button variant="light" leftSection={<IconRefresh size={16} />} onClick={onSyncNow} loading={syncStatus === 'syncing'}>
         Sync Now
       </Button>
-      <Button
-        variant="light"
-        color="red"
-        leftSection={<IconLinkOff size={16} />}
-        onClick={onDisconnect}
-      >
+      <Button variant="light" color="red" leftSection={<IconLinkOff size={16} />} onClick={onDisconnect}>
         Disconnect
       </Button>
     </Group>
