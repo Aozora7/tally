@@ -102,6 +102,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100vh' }}
       >
         {children}
+        <div style={{ flexShrink: 0, height: '1rem' }} />
       </AppShell.Main>
     </AppShell>
   );
