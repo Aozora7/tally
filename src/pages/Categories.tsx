@@ -102,13 +102,7 @@ interface CategoryFormModalProps {
   onSubmit: (category: TransactionCategory) => void;
 }
 
-function CategoryFormModal({
-  opened,
-  onClose,
-  editingCategory,
-  categoryCount,
-  onSubmit,
-}: CategoryFormModalProps) {
+function CategoryFormModal({ opened, onClose, editingCategory, categoryCount, onSubmit }: CategoryFormModalProps) {
   const form = useForm<CategoryFormData>({
     initialValues: {
       name: '',
@@ -156,18 +150,10 @@ function CategoryFormModal({
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={editingCategory ? 'Edit Category' : 'Add Category'}
-    >
+    <Modal opened={opened} onClose={onClose} title={editingCategory ? 'Edit Category' : 'Add Category'}>
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
-          <TextInput
-            label="Name"
-            placeholder="Enter category name"
-            {...form.getInputProps('name')}
-          />
+          <TextInput label="Name" placeholder="Enter category name" {...form.getInputProps('name')} />
           <Select label="Type" data={CATEGORY_TYPES} {...form.getInputProps('type')} />
           <Checkbox
             label="Exclude from reports"
@@ -210,19 +196,11 @@ function DeleteConfirmModal({ opened, onClose, category, onConfirm }: DeleteConf
 }
 
 export function Categories() {
-  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } =
-    useFinance();
+  const { categories, addCategory, updateCategory, deleteCategory } = useFinance();
   const [modalOpened, setModalOpened] = useState(false);
   const [deleteOpened, setDeleteOpened] = useState(false);
   const [editingCategory, setEditingCategory] = useState<TransactionCategory | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<TransactionCategory | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const openCreateModal = () => {
     setEditingCategory(null);
@@ -256,17 +234,6 @@ export function Categories() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = categories.findIndex((c) => c.id === active.id);
-      const newIndex = categories.findIndex((c) => c.id === over.id);
-      const newCategories = arrayMove(categories, oldIndex, newIndex);
-      reorderCategories(newCategories);
-    }
-  };
-
   return (
     <Stack gap="md">
       <Group justify="space-between">
@@ -286,34 +253,7 @@ export function Categories() {
           </Stack>
         </Paper>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={categories.map((c) => c.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <Paper p="md" withBorder>
-              <Table highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Name</Table.Th>
-                    <Table.Th>Type</Table.Th>
-                    <Table.Th w={80}>Actions</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {categories.map((category) => (
-                    <SortableCategoryRow
-                      key={category.id}
-                      category={category}
-                      onEdit={openEditModal}
-                      onDelete={openDeleteModal}
-                    />
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Paper>
-          </SortableContext>
-        </DndContext>
+        <CategoriesTable openEditModal={openEditModal} openDeleteModal={openDeleteModal} />
       )}
 
       <CategoryFormModal
@@ -333,3 +273,60 @@ export function Categories() {
     </Stack>
   );
 }
+
+/* eslint-disable react/jsx-max-depth */
+const CategoriesTable = ({
+  openEditModal,
+  openDeleteModal,
+}: {
+  openEditModal: (category: TransactionCategory) => void;
+  openDeleteModal: (category: TransactionCategory) => void;
+}) => {
+  const { categories, reorderCategories } = useFinance();
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex((c) => c.id === active.id);
+      const newIndex = categories.findIndex((c) => c.id === over.id);
+      const newCategories = arrayMove(categories, oldIndex, newIndex);
+      reorderCategories(newCategories);
+    }
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+        <Paper p="md" withBorder>
+          <Table highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Name</Table.Th>
+                <Table.Th>Type</Table.Th>
+                <Table.Th w={80}>Actions</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {categories.map((category) => (
+                <SortableCategoryRow
+                  key={category.id}
+                  category={category}
+                  onEdit={openEditModal}
+                  onDelete={openDeleteModal}
+                />
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Paper>
+      </SortableContext>
+    </DndContext>
+  );
+};
+/* eslint-enable react/jsx-max-depth */
