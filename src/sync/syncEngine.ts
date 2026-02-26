@@ -79,18 +79,25 @@ export interface BackupInfo {
   name: string;
   date: string;
   modifiedTime: string;
+  size?: number;
 }
 
 export async function listBackups(accessToken: string): Promise<BackupInfo[]> {
   const files = await listAppDataFiles(accessToken);
   return files
     .filter((f) => f.name.startsWith('backup-') && f.name.endsWith('.json'))
-    .map((f) => ({
-      id: f.id,
-      name: f.name,
-      date: f.name.replace('backup-', '').replace('.json', ''),
-      modifiedTime: f.modifiedTime,
-    }))
+    .map((f) => {
+      const info: BackupInfo = {
+        id: f.id,
+        name: f.name,
+        date: f.name.replace('backup-', '').replace('.json', ''),
+        modifiedTime: f.modifiedTime,
+      };
+      if (f.size) {
+        info.size = parseInt(f.size, 10);
+      }
+      return info;
+    })
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 

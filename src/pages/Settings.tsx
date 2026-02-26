@@ -18,7 +18,7 @@ import { importFullState, parseImportFile } from '@/db/import';
 import { useFinance } from '@/context/FinanceContext';
 import type { ExportedState } from '@/db/export';
 import { isTauri, readJsonFile, writeJsonFile, openDataDirectory } from '@/utils/tauri';
-import { GoogleDriveSettings } from '@/components/GoogleDriveSettings';
+import { GoogleDriveSettings } from '@/components/GoogleDriveSettings/GoogleDriveSettings';
 
 const APP_VERSION = '1.0.0';
 

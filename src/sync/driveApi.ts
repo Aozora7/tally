@@ -5,12 +5,13 @@ export interface DriveFile {
   id: string;
   name: string;
   modifiedTime: string;
+  size?: string;
 }
 
 export async function listAppDataFiles(accessToken: string): Promise<DriveFile[]> {
   const params = new URLSearchParams({
     spaces: 'appDataFolder',
-    fields: 'files(id,name,modifiedTime)',
+    fields: 'files(id,name,modifiedTime,size)',
     pageSize: '100',
     orderBy: 'name',
   });
