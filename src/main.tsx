@@ -107,7 +107,7 @@ const theme = createTheme({
   defaultRadius: 'md',
   cursorType: 'pointer',
   focusRing: 'auto',
-  respectReducedMotion: true,
+  respectReducedMotion: false,
   headings: {
     fontFamily:
       "'Inter Variable', Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
