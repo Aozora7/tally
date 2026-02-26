@@ -163,7 +163,7 @@ function PreviewStep({
       </Group>
 
       {validRows.length > 0 && (
-        <PreviewTable title="Valid Rows" rows={validRows} fillSpace={!hasInvalid} format={format} />
+        <PreviewTable title="Valid Rows" rows={validRows} fillSpace format={format} />
       )}
       {hasInvalid && (
         <PreviewTable
@@ -205,9 +205,9 @@ function PreviewTable({
       <Paper
         withBorder
         flex={fillSpace ? 1 : undefined}
-        style={fillSpace ? { minHeight: 0, display: 'flex' } : undefined}
+        style={fillSpace ? { minHeight: 0 } : undefined}
       >
-        <ScrollArea style={fillSpace ? { flex: 1 } : undefined} offsetScrollbars={!fillSpace}>
+        <ScrollArea h={fillSpace ? '100%' : undefined} offsetScrollbars={!fillSpace}>
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
@@ -369,7 +369,7 @@ export function ImportWizard() {
     activeStep === 'upload' ? 0 : activeStep === 'mapping' ? 1 : activeStep === 'preview' ? 2 : 3;
 
   return (
-    <Stack gap="md" flex={1} style={{ minHeight: 0, maxHeight: 'calc(100vh - 180px)' }}>
+    <Stack gap="md" flex={1} style={{ minHeight: 0 }}>
       <Stepper active={stepIndex}>
         <Stepper.Step label="Upload" description="Select CSV file" />
         <Stepper.Step label="Map Columns" description="Match columns to fields" />
