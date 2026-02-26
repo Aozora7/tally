@@ -20,6 +20,7 @@ import {
   useYearlyCategorySpending,
 } from '@/utils/analytics/transactionAnalytics';
 import { useMonthlyPivotTable } from '@/utils/analytics/yearlyPivotTable';
+import { useChartTicks } from '@/utils/useChartTicks';
 import type { ComponentType } from 'react';
 
 const CATEGORY_COLORS = [
@@ -249,40 +250,7 @@ function MonthlyExpensesChart({ data, currencySymbol, privacyMode }: MonthlyExpe
     ? () => `${currencySymbol}XXXX.XX`
     : (value: number) => `${currencySymbol}${value.toFixed(2)}`;
 
-  const yearGroups = useMemo(() => {
-    if (data.length === 0) return [] as { year: string; startIndex: number; endIndex: number }[];
-    const groups: { year: string; startIndex: number; endIndex: number }[] = [];
-    let currentYear = '';
-    data.forEach((item, idx) => {
-      const year = item.month.substring(0, 4);
-      if (year !== currentYear) {
-        groups.push({ year, startIndex: idx, endIndex: idx });
-        currentYear = year;
-      } else if (groups.length > 0) {
-        groups[groups.length - 1]!.endIndex = idx;
-      }
-    });
-    return groups;
-  }, [data]);
-
-  // Pick a step that divides into 12 so months always align to calendar boundaries
-  // (Jan always visible). Target ≤ ~24 visible labels.
-  const monthTicks = useMemo(() => {
-    const n = data.length;
-    const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
-    return data
-      .filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0)
-      .map((d) => d.month);
-  }, [data]);
-
-  // One tick per year, positioned at the midpoint month of each year's range
-  const yearTicks = useMemo(
-    () =>
-      yearGroups
-        .map((g) => data[Math.floor((g.startIndex + g.endIndex) / 2)]?.month)
-        .filter((m): m is string => !!m),
-    [yearGroups, data]
-  );
+  const { yearGroups, monthTicks, yearTicks } = useChartTicks(data);
 
   if (data.length === 0) return null;
 

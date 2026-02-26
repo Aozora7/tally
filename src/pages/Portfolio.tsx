@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { Stack, Title, Paper, Table, Text, Box, Button, Group, SimpleGrid } from '@mantine/core';
+import { useChartTicks } from '@/utils/useChartTicks';
 import {
   BarChart as RechartsBarChart,
   LineChart as RechartsLineChart,
@@ -115,38 +116,7 @@ function TWRChart({ performance }: TWRChartProps) {
     [performance.twrOverTime]
   );
 
-  const yearGroups = useMemo(() => {
-    if (chartData.length === 0)
-      return [] as { year: string; startIndex: number; endIndex: number }[];
-    const groups: { year: string; startIndex: number; endIndex: number }[] = [];
-    let currentYear = '';
-    chartData.forEach((item, idx) => {
-      const year = item.month.substring(0, 4);
-      if (year !== currentYear) {
-        groups.push({ year, startIndex: idx, endIndex: idx });
-        currentYear = year;
-      } else if (groups.length > 0) {
-        groups[groups.length - 1]!.endIndex = idx;
-      }
-    });
-    return groups;
-  }, [chartData]);
-
-  const monthTicks = useMemo(() => {
-    const n = chartData.length;
-    const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
-    return chartData
-      .filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0)
-      .map((d) => d.month);
-  }, [chartData]);
-
-  const yearTicks = useMemo(
-    () =>
-      yearGroups
-        .map((g) => chartData[Math.floor((g.startIndex + g.endIndex) / 2)]?.month)
-        .filter((m): m is string => !!m),
-    [yearGroups, chartData]
-  );
+  const { yearGroups, monthTicks, yearTicks } = useChartTicks(chartData);
 
   if (chartData.length < 2) return null;
 
@@ -269,38 +239,7 @@ function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) 
     [checkpoints]
   );
 
-  const yearGroups = useMemo(() => {
-    if (chartData.length === 0)
-      return [] as { year: string; startIndex: number; endIndex: number }[];
-    const groups: { year: string; startIndex: number; endIndex: number }[] = [];
-    let currentYear = '';
-    chartData.forEach((item, idx) => {
-      const year = item.month.substring(0, 4);
-      if (year !== currentYear) {
-        groups.push({ year, startIndex: idx, endIndex: idx });
-        currentYear = year;
-      } else if (groups.length > 0) {
-        groups[groups.length - 1]!.endIndex = idx;
-      }
-    });
-    return groups;
-  }, [chartData]);
-
-  const monthTicks = useMemo(() => {
-    const n = chartData.length;
-    const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
-    return chartData
-      .filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0)
-      .map((d) => d.month);
-  }, [chartData]);
-
-  const yearTicks = useMemo(
-    () =>
-      yearGroups
-        .map((g) => chartData[Math.floor((g.startIndex + g.endIndex) / 2)]?.month)
-        .filter((m): m is string => !!m),
-    [yearGroups, chartData]
-  );
+  const { yearGroups, monthTicks, yearTicks } = useChartTicks(chartData);
 
   if (checkpoints.length === 0) return null;
 

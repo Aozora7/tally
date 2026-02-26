@@ -94,7 +94,6 @@ export async function fetchCurrentPrice(ticker: string): Promise<{ price: number
   if (data.chart.error) {
     throw new Error(`Yahoo Finance error: ${data.chart.error.description}`);
   }
-  console.log('Yahoo Finance response:', data, ticker); // --- IGNORE ---
   const meta = data.chart.result?.[0]?.meta;
   const price = meta?.regularMarketPrice ?? meta?.chartPreviousClose;
   if (price != null) {

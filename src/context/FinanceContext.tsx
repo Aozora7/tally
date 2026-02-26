@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { db } from '@/db/database';
 import { notifyDataMutated } from '@/sync/syncTrigger';
+import { fireAndForget } from '@/utils/dbHelpers';
 import type {
   TransactionCategory,
   Account,
@@ -86,25 +87,28 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        void db.transaction(
-          'rw',
-          [
-            db.categories,
-            db.accounts,
-            db.triageTransactions,
-            db.transactions,
-            db.rules,
-            db.settings,
-          ],
-          async () => {
-            await Promise.all([
-              db.categories.bulkPut(categories),
-              db.accounts.bulkPut(accounts),
-              db.triageTransactions.bulkPut(triageTransactions),
-              db.transactions.bulkPut(transactions),
-              db.rules.bulkPut(rules),
-            ]);
-          }
+        fireAndForget(
+          db.transaction(
+            'rw',
+            [
+              db.categories,
+              db.accounts,
+              db.triageTransactions,
+              db.transactions,
+              db.rules,
+              db.settings,
+            ],
+            async () => {
+              await Promise.all([
+                db.categories.bulkPut(categories),
+                db.accounts.bulkPut(accounts),
+                db.triageTransactions.bulkPut(triageTransactions),
+                db.transactions.bulkPut(transactions),
+                db.rules.bulkPut(rules),
+              ]);
+            }
+          ),
+          'visibility-change bulk persist'
         );
       }
     };
@@ -120,7 +124,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         excludeFromReports: category.excludeFromReports ?? false,
       };
       setCategories((prev) => [...prev, categoryWithDefaults]);
-      void db.categories.add(categoryWithDefaults);
+      fireAndForget(db.categories.add(categoryWithDefaults), 'add category');
       notifyDataMutated();
     },
     [categories.length]
@@ -128,13 +132,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const updateCategory = useCallback((category: TransactionCategory) => {
     setCategories((prev) => prev.map((c) => (c.id === category.id ? category : c)));
-    void db.categories.put(category);
+    fireAndForget(db.categories.put(category), 'update category');
     notifyDataMutated();
   }, []);
 
   const deleteCategory = useCallback((id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
-    void db.categories.delete(id);
+    fireAndForget(db.categories.delete(id), 'delete category');
     notifyDataMutated();
   }, []);
 
@@ -144,73 +148,79 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       sortOrder: index,
     }));
     setCategories(categoriesWithSortOrder);
-    void db.categories.clear().then(() => db.categories.bulkAdd(categoriesWithSortOrder));
+    fireAndForget(
+      db.transaction('rw', db.categories, async () => {
+        await db.categories.clear();
+        await db.categories.bulkAdd(categoriesWithSortOrder);
+      }),
+      'reorder categories'
+    );
     notifyDataMutated();
   }, []);
 
   const addAccount = useCallback((account: Account) => {
     setAccounts((prev) => [...prev, account]);
-    void db.accounts.add(account);
+    fireAndForget(db.accounts.add(account), 'add account');
     notifyDataMutated();
   }, []);
 
   const updateAccount = useCallback((account: Account) => {
     setAccounts((prev) => prev.map((a) => (a.id === account.id ? account : a)));
-    void db.accounts.put(account);
+    fireAndForget(db.accounts.put(account), 'update account');
     notifyDataMutated();
   }, []);
 
   const deleteAccount = useCallback((id: string) => {
     setAccounts((prev) => prev.filter((a) => a.id !== id));
-    void db.accounts.delete(id);
+    fireAndForget(db.accounts.delete(id), 'delete account');
     notifyDataMutated();
   }, []);
 
   const addTriageTransaction = useCallback((transaction: TriageTransaction) => {
     setTriageTransactions((prev) => [...prev, transaction]);
-    void db.triageTransactions.add(transaction);
+    fireAndForget(db.triageTransactions.add(transaction), 'add triage transaction');
     notifyDataMutated();
   }, []);
 
   const addTriageTransactions = useCallback((newTransactions: TriageTransaction[]) => {
     setTriageTransactions((prev) => [...prev, ...newTransactions]);
-    void db.triageTransactions.bulkAdd(newTransactions);
+    fireAndForget(db.triageTransactions.bulkAdd(newTransactions), 'bulk add triage transactions');
     notifyDataMutated();
   }, []);
 
   const updateTriageTransaction = useCallback((transaction: TriageTransaction) => {
     setTriageTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
-    void db.triageTransactions.put(transaction);
+    fireAndForget(db.triageTransactions.put(transaction), 'update triage transaction');
     notifyDataMutated();
   }, []);
 
   const deleteTriageTransaction = useCallback((id: string) => {
     setTriageTransactions((prev) => prev.filter((t) => t.id !== id));
-    void db.triageTransactions.delete(id);
+    fireAndForget(db.triageTransactions.delete(id), 'delete triage transaction');
     notifyDataMutated();
   }, []);
 
   const addTransaction = useCallback((transaction: Transaction) => {
     setTransactions((prev) => [...prev, transaction]);
-    void db.transactions.add(transaction);
+    fireAndForget(db.transactions.add(transaction), 'add transaction');
     notifyDataMutated();
   }, []);
 
   const addTransactions = useCallback((newTransactions: Transaction[]) => {
     setTransactions((prev) => [...prev, ...newTransactions]);
-    void db.transactions.bulkAdd(newTransactions);
+    fireAndForget(db.transactions.bulkAdd(newTransactions), 'bulk add transactions');
     notifyDataMutated();
   }, []);
 
   const updateTransaction = useCallback((transaction: Transaction) => {
     setTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
-    void db.transactions.put(transaction);
+    fireAndForget(db.transactions.put(transaction), 'update transaction');
     notifyDataMutated();
   }, []);
 
   const deleteTransaction = useCallback((id: string) => {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
-    void db.transactions.delete(id);
+    fireAndForget(db.transactions.delete(id), 'delete transaction');
     notifyDataMutated();
   }, []);
 
@@ -218,7 +228,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     (rule: CategorizationRule) => {
       const ruleWithSortOrder = { ...rule, sortOrder: rules.length };
       setRules((prev) => [...prev, ruleWithSortOrder]);
-      void db.rules.add(ruleWithSortOrder);
+      fireAndForget(db.rules.add(ruleWithSortOrder), 'add rule');
       notifyDataMutated();
     },
     [rules.length]
@@ -230,13 +240,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       updated[index] = rule;
       return updated;
     });
-    void db.rules.put(rule);
+    fireAndForget(db.rules.put(rule), 'update rule');
     notifyDataMutated();
   }, []);
 
   const deleteRule = useCallback((id: string) => {
     setRules((prev) => prev.filter((r) => r.id !== id));
-    void db.rules.delete(id);
+    fireAndForget(db.rules.delete(id), 'delete rule');
     notifyDataMutated();
   }, []);
 
@@ -246,7 +256,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       sortOrder: index,
     }));
     setRules(rulesWithSortOrder);
-    void db.rules.clear().then(() => db.rules.bulkAdd(rulesWithSortOrder));
+    fireAndForget(
+      db.transaction('rw', db.rules, async () => {
+        await db.rules.clear();
+        await db.rules.bulkAdd(rulesWithSortOrder);
+      }),
+      'reorder rules'
+    );
     notifyDataMutated();
   }, []);
 
@@ -290,7 +306,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       next.set(key, value);
       return next;
     });
-    void db.settings.put({ key, value });
+    fireAndForget(db.settings.put({ key, value }), 'set setting');
   }, []);
 
   return (

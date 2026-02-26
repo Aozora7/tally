@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { db } from '@/db/database';
 import { notifyDataMutated } from '@/sync/syncTrigger';
+import { fireAndForget } from '@/utils/dbHelpers';
 import type { Security, SecurityTransaction, SecurityPriceCache } from '@/types';
 import { fetchMonthlyPrices, fetchCurrentPrice } from '@/utils/yahooFinance';
 
@@ -55,16 +56,19 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        void db.transaction(
-          'rw',
-          [db.securities, db.securityTransactions, db.securityPriceCache],
-          async () => {
-            await Promise.all([
-              db.securities.bulkPut(securities),
-              db.securityTransactions.bulkPut(securityTransactions),
-              db.securityPriceCache.bulkPut(securityPriceCache),
-            ]);
-          }
+        fireAndForget(
+          db.transaction(
+            'rw',
+            [db.securities, db.securityTransactions, db.securityPriceCache],
+            async () => {
+              await Promise.all([
+                db.securities.bulkPut(securities),
+                db.securityTransactions.bulkPut(securityTransactions),
+                db.securityPriceCache.bulkPut(securityPriceCache),
+              ]);
+            }
+          ),
+          'visibility-change securities bulk persist'
         );
       }
     };
@@ -74,49 +78,52 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
 
   const addSecurity = useCallback((security: Security) => {
     setSecurities((prev) => [...prev, security]);
-    void db.securities.add(security);
+    fireAndForget(db.securities.add(security), 'add security');
     notifyDataMutated();
   }, []);
 
   const addSecurities = useCallback((newSecurities: Security[]) => {
     setSecurities((prev) => [...prev, ...newSecurities]);
-    void db.securities.bulkAdd(newSecurities);
+    fireAndForget(db.securities.bulkAdd(newSecurities), 'bulk add securities');
     notifyDataMutated();
   }, []);
 
   const updateSecurity = useCallback((security: Security) => {
     setSecurities((prev) => prev.map((s) => (s.id === security.id ? security : s)));
-    void db.securities.put(security);
+    fireAndForget(db.securities.put(security), 'update security');
     notifyDataMutated();
   }, []);
 
   const deleteSecurity = useCallback((id: string) => {
     setSecurities((prev) => prev.filter((s) => s.id !== id));
-    void db.securities.delete(id);
+    fireAndForget(db.securities.delete(id), 'delete security');
     notifyDataMutated();
   }, []);
 
   const addSecurityTransaction = useCallback((transaction: SecurityTransaction) => {
     setSecurityTransactions((prev) => [...prev, transaction]);
-    void db.securityTransactions.add(transaction);
+    fireAndForget(db.securityTransactions.add(transaction), 'add security transaction');
     notifyDataMutated();
   }, []);
 
   const addSecurityTransactions = useCallback((newTransactions: SecurityTransaction[]) => {
     setSecurityTransactions((prev) => [...prev, ...newTransactions]);
-    void db.securityTransactions.bulkAdd(newTransactions);
+    fireAndForget(
+      db.securityTransactions.bulkAdd(newTransactions),
+      'bulk add security transactions'
+    );
     notifyDataMutated();
   }, []);
 
   const updateSecurityTransaction = useCallback((transaction: SecurityTransaction) => {
     setSecurityTransactions((prev) => prev.map((t) => (t.id === transaction.id ? transaction : t)));
-    void db.securityTransactions.put(transaction);
+    fireAndForget(db.securityTransactions.put(transaction), 'update security transaction');
     notifyDataMutated();
   }, []);
 
   const deleteSecurityTransaction = useCallback((id: string) => {
     setSecurityTransactions((prev) => prev.filter((t) => t.id !== id));
-    void db.securityTransactions.delete(id);
+    fireAndForget(db.securityTransactions.delete(id), 'delete security transaction');
     notifyDataMutated();
   }, []);
 
@@ -135,7 +142,7 @@ export function SecuritiesProvider({ children }: { children: ReactNode }) {
       }
       return Array.from(map.values());
     });
-    void db.securityPriceCache.bulkPut(entries);
+    fireAndForget(db.securityPriceCache.bulkPut(entries), 'bulk put security price cache');
     notifyDataMutated();
   }, []);
 
