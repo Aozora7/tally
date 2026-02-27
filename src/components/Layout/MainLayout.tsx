@@ -1,5 +1,5 @@
-import { AppShell, NavLink, ScrollArea, Text } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Burger, Group, NavLink, ScrollArea, Text } from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 import {
   IconDashboard,
@@ -67,9 +67,22 @@ const navSections: NavSection[] = [
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [opened, { toggle }] = useDisclosure();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   return (
-    <AppShell navbar={{ width: 220, breakpoint: 'sm', collapsed: { mobile: !opened } }} padding="md">
+    <AppShell
+      header={{ height: 48, collapsed: !isMobile }}
+      navbar={{ width: 220, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      padding="md"
+    >
+      <AppShell.Header>
+        <Group h="100%" px="md" gap="sm">
+          <Burger opened={opened} onClick={toggle} size="sm" aria-label="Toggle navigation" />
+          <Text fw={700} size="sm">
+            Tally
+          </Text>
+        </Group>
+      </AppShell.Header>
       <AppShell.Navbar p="md">
         <AppShell.Section grow component={ScrollArea}>
           {navSections.map((section) => (

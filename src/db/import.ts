@@ -39,25 +39,3 @@ export async function importFullState(data: ExportedState): Promise<void> {
     }
   );
 }
-
-export function parseImportFile(file: File): Promise<ExportedState> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const content = event.target?.result as string;
-        const data = JSON.parse(content) as ExportedState;
-
-        if (!data.version || !data.exportedAt) {
-          throw new Error('Invalid backup file format');
-        }
-
-        resolve(data);
-      } catch (error) {
-        reject(error);
-      }
-    };
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsText(file);
-  });
-}

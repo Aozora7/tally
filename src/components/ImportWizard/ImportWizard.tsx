@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Button, Group, Stack, Text, FileInput, Select, Table, Alert, Stepper, Paper, ScrollArea } from '@mantine/core';
-import { IconUpload, IconDownload } from '@tabler/icons-react';
+import { IconDownload } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { parseCsvFile, applyMapping, type ParseResult } from '@/utils/csvParser';
 import { useCurrency } from '@/utils/currency';
@@ -239,7 +239,7 @@ function CompleteStep({ importedCount, duplicateCount, onReset }: CompleteStepPr
         </Alert>
       )}
       <Group>
-        <Button leftSection={<IconUpload size={16} />} onClick={onReset}>
+        <Button leftSection={<IconDownload size={16} />} onClick={onReset}>
           Import Another File
         </Button>
       </Group>

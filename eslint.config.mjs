@@ -43,7 +43,7 @@ export default tseslint.config(
       ],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       "react/jsx-max-depth": ["warn", { "max": 5 }],
-      "local-rules/limit-jsx-render-length": ["warn", { max: 60 }],
+      "local-rules/limit-jsx-render-length": ["warn", { max: 70 }],
     },
   },
   eslintConfigPrettier

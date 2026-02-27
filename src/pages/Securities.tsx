@@ -150,7 +150,7 @@ function useColumnDefs(
       },
       {
         headerName: 'Actions',
-        width: showPriceFetch ? 120 : 80,
+        maxWidth: showPriceFetch ? 120 : 90,
         cellStyle: { display: 'flex', alignItems: 'center' },
         cellRenderer: (params: { data: Security }) => (
           <Group gap={4} wrap="nowrap">
@@ -274,6 +274,7 @@ export function Securities() {
           animateRows={false}
           domLayout="normal"
           theme={agGridDarkTheme}
+          autoSizeStrategy={{ type: 'fitCellContents', colIds: ['ticker', 'isin', 'actions'] }}
         />
       </div>
 

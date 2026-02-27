@@ -2,7 +2,7 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{webview::WebviewWindowBuilder, Manager, WebviewUrl};
+use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
 struct OAuthState {
@@ -162,15 +162,6 @@ pub fn run() {
             app.manage(DataDirState {
                 path: Mutex::new(data_dir),
             });
-
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-                .title("Tally")
-                .inner_size(1280.0, 1024.0)
-                .min_inner_size(800.0, 600.0)
-                .resizable(true)
-                .center()
-                .data_directory(webview_data_dir)
-                .build()?;
 
             app.handle().plugin(
                 tauri_plugin_log::Builder::default()

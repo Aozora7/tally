@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Button, FileInput, Group, Modal, Paper, Stack, Switch, Text, Title, TextInput } from '@mantine/core';
+import { Button, Group, Modal, Paper, Stack, Switch, Text, Title, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconUpload, IconTrash, IconFolder } from '@tabler/icons-react';
 import { exportFullState, downloadJson } from '@/db/export';
-import { importFullState, parseImportFile } from '@/db/import';
+import { importFullState } from '@/db/import';
 import { useFinance } from '@/context/FinanceContext';
 import type { ExportedState } from '@/db/export';
 import { isTauri, readJsonFile, writeJsonFile, openDataDirectory } from '@/utils/tauri';
@@ -14,47 +14,25 @@ const APP_VERSION = '1.0.0';
 interface ImportModalProps {
   opened: boolean;
   onClose: () => void;
-  initialPreview?: ExportedState | null;
+  preview: ExportedState | null;
 }
 
-function ImportModal({ opened, onClose, initialPreview }: ImportModalProps) {
+function ImportModal({ opened, onClose, preview }: ImportModalProps) {
   const { reloadFromDb } = useFinance();
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [importPreview, setImportPreview] = useState<ExportedState | null>(initialPreview ?? null);
   const [isImporting, setIsImporting] = useState(false);
 
-  const handleFileSelect = async (file: File | null) => {
-    if (!file) {
-      setImportFile(null);
-      setImportPreview(null);
-      return;
-    }
-    setImportFile(file);
-    try {
-      const data = await parseImportFile(file);
-      setImportPreview(data);
-    } catch (error) {
-      notifications.show({
-        title: 'Invalid Backup File',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        color: 'danger',
-      });
-      setImportFile(null);
-    }
-  };
-
   const handleConfirm = async () => {
-    if (!importPreview) return;
+    if (!preview) return;
     setIsImporting(true);
     try {
-      await importFullState(importPreview);
+      await importFullState(preview);
       await reloadFromDb();
       notifications.show({
         title: 'Import Successful',
-        message: `Imported ${importPreview.transactions.length} transactions`,
+        message: `Imported ${preview.transactions.length} transactions`,
         color: 'brand',
       });
-      handleClose();
+      onClose();
     } catch (error) {
       notifications.show({
         title: 'Import Failed',
@@ -66,38 +44,20 @@ function ImportModal({ opened, onClose, initialPreview }: ImportModalProps) {
     }
   };
 
-  const handleClose = () => {
-    setImportFile(null);
-    setImportPreview(null);
-    onClose();
-  };
-
   return (
-    <Modal opened={opened} onClose={handleClose} title="Import Full State" size="lg">
+    <Modal opened={opened} onClose={onClose} title="Import Full State" size="lg">
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          {isTauri()
-            ? 'Review the backup data below. This will replace ALL existing data.'
-            : 'Select a backup JSON file to restore your data. This will replace ALL existing data.'}
+          Review the backup data below. This will replace ALL existing data.
         </Text>
 
-        {!isTauri() && (
-          <FileInput
-            label="Backup File"
-            placeholder="Select JSON file"
-            accept=".json"
-            value={importFile}
-            onChange={handleFileSelect}
-          />
-        )}
-
-        {importPreview && <ImportPreview preview={importPreview} />}
+        {preview && <ImportPreview preview={preview} />}
 
         <Group justify="flex-end" mt="md">
-          <Button variant="subtle" onClick={handleClose}>
+          <Button variant="subtle" onClick={onClose}>
             Cancel
           </Button>
-          <Button color="brand" onClick={handleConfirm} disabled={!importPreview} loading={isImporting}>
+          <Button color="brand" onClick={handleConfirm} disabled={!preview} loading={isImporting}>
             Import & Replace
           </Button>
         </Group>
@@ -401,25 +361,22 @@ export function Settings() {
   const [importPreview, setImportPreview] = useState<ExportedState | null>(null);
 
   const handleOpenImport = async () => {
-    if (isTauri()) {
-      try {
-        const result = await readJsonFile<ExportedState>({
-          title: 'Import Backup',
-          filters: [{ name: 'JSON', extensions: ['json'] }],
-        });
-        if (result) {
-          setImportPreview(result.data);
-          setImportModalOpen(true);
-        }
-      } catch (error) {
-        notifications.show({
-          title: 'Invalid Backup File',
-          message: error instanceof Error ? error.message : 'Unknown error',
-          color: 'danger',
-        });
-      }
-    } else {
+    try {
+      const result = await readJsonFile<ExportedState>({
+        title: 'Import Backup',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      });
+      if (!result) return;
+      const { data } = result;
+      if (!data.version || !data.exportedAt) throw new Error('Invalid backup file format');
+      setImportPreview(data);
       setImportModalOpen(true);
+    } catch (error) {
+      notifications.show({
+        title: 'Invalid Backup File',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        color: 'danger',
+      });
     }
   };
 
@@ -448,7 +405,7 @@ export function Settings() {
           setImportModalOpen(false);
           setImportPreview(null);
         }}
-        initialPreview={importPreview}
+        preview={importPreview}
       />
 
       <ClearConfirmModal

@@ -2,6 +2,15 @@ import { useMemo, useState, useCallback } from 'react';
 import { Stack, Title, Paper, Table, Text, Box, Button, Group, SimpleGrid } from '@mantine/core';
 import { useChartTicks } from '@/utils/useChartTicks';
 import {
+  MONTHS,
+  YAXIS_WIDTH,
+  XAXIS_MONTH_HEIGHT,
+  XAXIS_YEAR_HEIGHT,
+  YAXIS_TICK,
+  MONTH_TICK,
+  YEAR_TICK,
+} from '@/utils/chartConstants';
+import {
   BarChart as RechartsBarChart,
   LineChart as RechartsLineChart,
   Bar,
@@ -112,19 +121,67 @@ function TWRChart({ performance }: TWRChartProps) {
 
   return (
     <Stack gap="xs">
-      <Title order={4}>Time-Weighted Return (TWR) Over Time</Title>
+      <Title order={4}>TWR Over Time</Title>
       <Paper p="md" withBorder>
         <Box h={250}>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsLineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-
-              <TWRYearBands yearGroups={yearGroups} chartData={chartData} />
-              <TWRMonthAxis monthTicks={monthTicks} />
-              <TWRYearAxis yearTicks={yearTicks} />
-              <TWRYAxis />
-              <TWRTooltip />
-              <TWRLine />
+              <XAxis
+                xAxisId={0}
+                dataKey="month"
+                ticks={monthTicks}
+                tickFormatter={(v: string) => MONTHS[parseInt(v.substring(5, 7), 10) - 1] ?? ''}
+                angle={-45}
+                textAnchor="end"
+                height={XAXIS_MONTH_HEIGHT}
+                interval={0}
+                tickLine={false}
+                dy={5}
+                dx={-10}
+                tick={MONTH_TICK}
+              />
+              <XAxis
+                xAxisId={1}
+                dataKey="month"
+                ticks={yearTicks}
+                tickFormatter={(v: string) => v.substring(0, 4)}
+                tickLine={false}
+                axisLine={false}
+                height={XAXIS_YEAR_HEIGHT}
+                tick={YEAR_TICK}
+                orientation="top"
+              />
+              <YAxis width={YAXIS_WIDTH} tickFormatter={(v: number) => `${v}%`} tick={YAXIS_TICK} />
+              <Line xAxisId={0} type="monotone" dataKey="twr" stroke="#2D8E50" strokeWidth={2} dot={false} />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const value = payload[0]?.value as number;
+                  return (
+                    <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
+                      <Text size="sm" fw={500}>
+                        {label}
+                      </Text>
+                      <Text size="xs" c={value >= 0 ? 'income.6' : 'expense.6'} fw={600}>
+                        {`${value.toFixed(2)}%`}
+                      </Text>
+                    </Paper>
+                  );
+                }}
+              />
+              {yearGroups.map((group, idx) =>
+                idx % 2 === 1 ? (
+                  <ReferenceArea
+                    key={group.year}
+                    xAxisId={0}
+                    x1={chartData[group.startIndex]!.month}
+                    x2={chartData[group.endIndex]!.month}
+                    fill="rgba(128,128,128,0.08)"
+                    stroke="none"
+                  />
+                ) : null
+              )}
             </RechartsLineChart>
           </ResponsiveContainer>
         </Box>
@@ -133,114 +190,15 @@ function TWRChart({ performance }: TWRChartProps) {
   );
 }
 
-interface TWRYearBandsProps {
-  yearGroups: { year: string; startIndex: number; endIndex: number }[];
-  chartData: { month: string; twr: number }[];
-}
-
-function TWRYearBands({ yearGroups, chartData }: TWRYearBandsProps) {
-  return (
-    <>
-      {yearGroups.map((group, idx) =>
-        idx % 2 === 1 ? (
-          <ReferenceArea
-            key={group.year}
-            xAxisId={0}
-            x1={chartData[group.startIndex]!.month}
-            x2={chartData[group.endIndex]!.month}
-            fill="rgba(128,128,128,0.08)"
-            stroke="none"
-          />
-        ) : null
-      )}
-    </>
-  );
-}
-
-interface TWRMonthAxisProps {
-  monthTicks: string[];
-}
-
-function TWRMonthAxis({ monthTicks }: TWRMonthAxisProps) {
-  return (
-    <XAxis
-      xAxisId={0}
-      dataKey="month"
-      ticks={monthTicks}
-      tickFormatter={(v: string) => MONTH_NAMES[parseInt(v.substring(5, 7), 10) - 1] ?? ''}
-      angle={-45}
-      textAnchor="end"
-      height={35}
-      interval={0}
-      tickLine={false}
-      dy={5}
-      dx={-10}
-      tick={{ fontSize: 12 }}
-    />
-  );
-}
-
-interface TWRYearAxisProps {
-  yearTicks: string[];
-}
-
-function TWRYearAxis({ yearTicks }: TWRYearAxisProps) {
-  return (
-    <XAxis
-      xAxisId={1}
-      dataKey="month"
-      ticks={yearTicks}
-      tickFormatter={(v: string) => v.substring(0, 4)}
-      tickLine={false}
-      axisLine={false}
-      height={22}
-      tick={{ fontSize: 12, fontWeight: 600 }}
-      orientation="top"
-    />
-  );
-}
-
-function TWRYAxis() {
-  return <YAxis width={60} tickFormatter={(v: number) => `${v.toFixed(1)}%`} tick={{ fontSize: 11 }} />;
-}
-
-function TWRTooltip() {
-  return (
-    <Tooltip
-      content={({ active, payload, label }) => {
-        if (!active || !payload?.length) return null;
-        const value = payload[0]?.value as number;
-        return (
-          <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
-            <Text size="sm" fw={500}>
-              {label}
-            </Text>
-            <Text size="xs" c={value >= 0 ? 'income.6' : 'expense.6'} fw={600}>
-              {`${value.toFixed(2)}%`}
-            </Text>
-          </Paper>
-        );
-      }}
-    />
-  );
-}
-
-function TWRLine() {
-  return (
-    <Line xAxisId={0} type="monotone" dataKey="twr" stroke="#2D8E50" strokeWidth={2} dot={false} connectNulls={false} />
-  );
-}
-
 // ── Portfolio value bar chart ─────────────────────────────────────────────────
 
 interface PortfolioValueChartProps {
   checkpoints: PortfolioCheckpoint[];
-  format: (cents: number) => string;
+  axisFormatter: (dollars: number) => string;
+  tooltipFormatter: (dollars: number) => string;
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
-
-function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) {
+function PortfolioValueChart({ checkpoints, axisFormatter, tooltipFormatter }: PortfolioValueChartProps) {
   const chartData = useMemo(
     () => checkpoints.map((cp) => ({ month: cp.yearMonth, value: cp.totalValue / 100 })),
     [checkpoints]
@@ -256,125 +214,69 @@ function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) 
       <Paper p="md" withBorder>
         <Box h={300}>
           <ResponsiveContainer width="100%" height="100%">
-            <RechartsBarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+            <RechartsBarChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-
-              <PortfolioYearBands yearGroups={yearGroups} chartData={chartData} />
-              <PortfolioMonthAxis monthTicks={monthTicks} />
-              <PortfolioYearAxis yearTicks={yearTicks} />
-              <PortfolioYAxis format={format} />
-              <PortfolioTooltip format={format} />
-              <PortfolioBar />
+              {yearGroups.map((group, idx) =>
+                idx % 2 === 1 ? (
+                  <ReferenceArea
+                    key={group.year}
+                    xAxisId={0}
+                    x1={chartData[group.startIndex]!.month}
+                    x2={chartData[group.endIndex]!.month}
+                    fill="rgba(128,128,128,0.08)"
+                    stroke="none"
+                  />
+                ) : null
+              )}
+              <XAxis
+                xAxisId={0}
+                dataKey="month"
+                ticks={monthTicks}
+                tickFormatter={(v: string) => MONTHS[parseInt(v.substring(5, 7), 10) - 1] ?? ''}
+                angle={-45}
+                textAnchor="end"
+                height={XAXIS_MONTH_HEIGHT}
+                interval={0}
+                tickLine={false}
+                dy={5}
+                dx={-10}
+                tick={MONTH_TICK}
+              />
+              <XAxis
+                xAxisId={1}
+                dataKey="month"
+                ticks={yearTicks}
+                tickFormatter={(v: string) => v.substring(0, 4)}
+                tickLine={false}
+                axisLine={false}
+                height={XAXIS_YEAR_HEIGHT}
+                tick={YEAR_TICK}
+                orientation="top"
+              />
+              <YAxis width={YAXIS_WIDTH} tickFormatter={axisFormatter} tick={YAXIS_TICK} />;
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const value = (payload[0]?.value ?? 0) as number;
+                  return (
+                    <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
+                      <Text size="sm" fw={500}>
+                        {label}
+                      </Text>
+                      <Text size="xs" c="brand.6" fw={600}>
+                        {tooltipFormatter(value)}
+                      </Text>
+                    </Paper>
+                  );
+                }}
+              />
+              <Bar xAxisId={0} dataKey="value" fill="#1791E8" />;
             </RechartsBarChart>
           </ResponsiveContainer>
         </Box>
       </Paper>
     </Stack>
   );
-}
-
-interface PortfolioYearBandsProps {
-  yearGroups: { year: string; startIndex: number; endIndex: number }[];
-  chartData: { month: string; value: number }[];
-}
-
-function PortfolioYearBands({ yearGroups, chartData }: PortfolioYearBandsProps) {
-  return (
-    <>
-      {yearGroups.map((group, idx) =>
-        idx % 2 === 1 ? (
-          <ReferenceArea
-            key={group.year}
-            xAxisId={0}
-            x1={chartData[group.startIndex]!.month}
-            x2={chartData[group.endIndex]!.month}
-            fill="rgba(128,128,128,0.08)"
-            stroke="none"
-          />
-        ) : null
-      )}
-    </>
-  );
-}
-
-interface PortfolioMonthAxisProps {
-  monthTicks: string[];
-}
-
-function PortfolioMonthAxis({ monthTicks }: PortfolioMonthAxisProps) {
-  return (
-    <XAxis
-      xAxisId={0}
-      dataKey="month"
-      ticks={monthTicks}
-      tickFormatter={(v: string) => MONTH_NAMES[parseInt(v.substring(5, 7), 10) - 1] ?? ''}
-      angle={-45}
-      textAnchor="end"
-      height={35}
-      interval={0}
-      tickLine={false}
-      dy={5}
-      dx={-10}
-      tick={{ fontSize: 12 }}
-    />
-  );
-}
-
-interface PortfolioYearAxisProps {
-  yearTicks: string[];
-}
-
-function PortfolioYearAxis({ yearTicks }: PortfolioYearAxisProps) {
-  return (
-    <XAxis
-      xAxisId={1}
-      dataKey="month"
-      ticks={yearTicks}
-      tickFormatter={(v: string) => v.substring(0, 4)}
-      tickLine={false}
-      axisLine={false}
-      height={22}
-      tick={{ fontSize: 12, fontWeight: 600 }}
-      orientation="top"
-    />
-  );
-}
-
-interface PortfolioYAxisProps {
-  format: (cents: number) => string;
-}
-
-function PortfolioYAxis({ format }: PortfolioYAxisProps) {
-  return <YAxis width={75} tickFormatter={(v: number) => format(v * 100)} tick={{ fontSize: 11 }} />;
-}
-
-interface PortfolioTooltipProps {
-  format: (cents: number) => string;
-}
-
-function PortfolioTooltip({ format }: PortfolioTooltipProps) {
-  return (
-    <Tooltip
-      content={({ active, payload, label }) => {
-        if (!active || !payload?.length) return null;
-        const value = (payload[0]?.value ?? 0) as number;
-        return (
-          <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
-            <Text size="sm" fw={500}>
-              {label}
-            </Text>
-            <Text size="xs" c="brand.6" fw={600}>
-              {format(value * 100)}
-            </Text>
-          </Paper>
-        );
-      }}
-    />
-  );
-}
-
-function PortfolioBar() {
-  return <Bar xAxisId={0} dataKey="value" fill="#1791E8" />;
 }
 
 interface CurrentHoldingsTableProps {
@@ -484,7 +386,7 @@ function getMonthsForPositions(
 export function Portfolio() {
   const { securities, securityTransactions, securityPriceCache, fetchAndCachePrices, fetchAndCacheCurrentPrice } =
     useSecurities();
-  const { format, currencySymbol, privacyMode } = useCurrency();
+  const { format, currencySymbol, privacyMode, axisFormatter, tooltipFormatter } = useCurrency();
   const [isFetching, setIsFetching] = useState(false);
 
   const checkpoints = usePortfolioCheckpoints(securities, securityTransactions, securityPriceCache);
@@ -597,7 +499,7 @@ export function Portfolio() {
 
       <TWRChart performance={performance} />
 
-      <PortfolioValueChart checkpoints={checkpoints} format={format} />
+      <PortfolioValueChart checkpoints={checkpoints} axisFormatter={axisFormatter} tooltipFormatter={tooltipFormatter} />
 
       {latestCheckpoint && (
         <CurrentHoldingsTable

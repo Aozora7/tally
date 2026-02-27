@@ -2,7 +2,6 @@ import Papa from 'papaparse';
 import type { Security, SecurityTransaction, SecurityTransactionType } from '@/types';
 import { generateId } from '@/utils/uuid';
 import { displayToUnits, displayToPrice } from '@/utils/securities';
-import { displayToCents } from '@/utils/currency';
 
 interface RawSecuritiesRow {
   Date: string;
@@ -77,7 +76,7 @@ export function parseSecuritiesCsv(content: string, existingSecurities: Security
     const ticker = row.Stock.trim();
     const units = displayToUnits(row.Units);
     const price = displayToPrice(row.Price);
-    const fees = displayToCents(row.Fees || '0');
+    const fees = displayToPrice(row.Fees || '0');
 
     let security = securityMap.get(ticker);
     if (!security) {

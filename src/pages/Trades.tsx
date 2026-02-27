@@ -3,7 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry, type ColDef, type CellValueChangedEvent } from 'ag-grid-community';
 import { ActionIcon, Button, Group, Modal, Stack, TextInput, Select, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconTrash, IconUpload } from '@tabler/icons-react';
+import { IconDownload, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
 import { useCurrency } from '@/utils/currency';
@@ -273,7 +273,7 @@ export function Trades() {
       <Group justify="space-between">
         <Title order={3}>Trades</Title>
         <Group gap="xs">
-          <Button variant="light" leftSection={<IconUpload size={16} />} onClick={handleImport}>
+          <Button variant="light" leftSection={<IconDownload size={16} />} onClick={handleImport}>
             Import
           </Button>
           <Button leftSection={<IconPlus size={16} />} onClick={() => setModalOpened(true)}>
