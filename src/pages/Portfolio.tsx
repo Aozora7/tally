@@ -111,9 +111,9 @@ function TWRChart({ performance }: TWRChartProps) {
   if (chartData.length < 2) return null;
 
   return (
-    <>
+    <Stack gap="xs">
       <Title order={4}>Time-Weighted Return (TWR) Over Time</Title>
-      <Paper p="md" withBorder mt="xs">
+      <Paper p="md" withBorder>
         <Box h={250}>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsLineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -129,7 +129,7 @@ function TWRChart({ performance }: TWRChartProps) {
           </ResponsiveContainer>
         </Box>
       </Paper>
-    </>
+    </Stack>
   );
 }
 
@@ -251,9 +251,9 @@ function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) 
   if (checkpoints.length === 0) return null;
 
   return (
-    <>
+    <Stack gap="xs">
       <Title order={4}>Portfolio Value Over Time</Title>
-      <Paper p="md" withBorder mt="xs">
+      <Paper p="md" withBorder>
         <Box h={300}>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -269,7 +269,7 @@ function PortfolioValueChart({ checkpoints, format }: PortfolioValueChartProps) 
           </ResponsiveContainer>
         </Box>
       </Paper>
-    </>
+    </Stack>
   );
 }
 
@@ -411,9 +411,9 @@ function CurrentHoldingsTable({ checkpoint, format, currencySymbol, privacyMode 
   ));
 
   return (
-    <>
+    <Stack gap="xs">
       <Title order={4}>Current Holdings ({checkpoint.yearMonth})</Title>
-      <Paper p="md" withBorder mt="xs">
+      <Paper p="md" withBorder>
         <Table highlightOnHover>
           <Table.Thead>
             <Table.Tr>
@@ -436,7 +436,7 @@ function CurrentHoldingsTable({ checkpoint, format, currencySymbol, privacyMode 
           </Table.Tbody>
         </Table>
       </Paper>
-    </>
+    </Stack>
   );
 }
 

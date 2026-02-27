@@ -218,10 +218,8 @@ function MonthlyExpensesChart({ data, currencySymbol, privacyMode }: MonthlyExpe
   if (data.length === 0) return null;
 
   return (
-    <>
-      <Title order={4} mt="md">
-        Monthly Expenses by Type
-      </Title>
+    <Stack gap="xs">
+      <Title order={4}>Monthly Expenses by Type</Title>
       <Paper p="md" withBorder>
         <Box h={300}>
           <ResponsiveContainer width="100%" height="100%">
@@ -242,7 +240,7 @@ function MonthlyExpensesChart({ data, currencySymbol, privacyMode }: MonthlyExpe
           </ResponsiveContainer>
         </Box>
       </Paper>
-    </>
+    </Stack>
   );
 }
 
@@ -497,6 +495,7 @@ export function Dashboard() {
 
   return (
     <Stack gap="md">
+      <Title order={3}>Dashboard</Title>
       <SummaryCards
         totalIncome={summary.totalIncome}
         totalExpenses={summary.totalExpenses}
@@ -507,7 +506,7 @@ export function Dashboard() {
 
       <MonthlyExpensesChart data={chartMonthlyExpenses} currencySymbol={currencySymbol} privacyMode={privacyMode} />
 
-      <Grid mt="md">
+      <Grid>
         <Grid.Col span={{ base: 12, md: 8 }}>
           <SpendingByCategoryChart
             data={yearlyCategoryChartData}

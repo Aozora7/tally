@@ -198,7 +198,7 @@ export function PivotTable() {
   const [fontSize, setFontSize] = useState<MantineSize>('sm');
 
   return (
-    <Stack gap="xl">
+    <Stack gap="md">
       <Group justify="space-between">
         <Title order={3}>Pivot Tables</Title>
         <SegmentedControl
