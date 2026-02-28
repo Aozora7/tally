@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
+import { useMediaQuery } from '@mantine/hooks';
 import { Stack, Group, Paper, Text, Title, Grid, Box } from '@mantine/core';
 import {
   Legend,
-  BarChart as RechartsBarChart,
+  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -232,7 +233,7 @@ function MonthlyExpensesChart({ data, axisFormatter, tooltipFormatter }: Monthly
       <Paper p="md" withBorder>
         <Box h={300}>
           <ResponsiveContainer width="100%" height="100%">
-            <RechartsBarChart data={data} margin={{ top: 5, right: 10, left: -5, bottom: -5 }}>
+            <BarChart data={data} margin={{ top: 5, right: 10, left: -5, bottom: -5 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
 
               {yearGroups.map((group, idx) =>
@@ -280,7 +281,7 @@ function MonthlyExpensesChart({ data, axisFormatter, tooltipFormatter }: Monthly
               <Bar xAxisId={0} dataKey="Fixed" stackId="a" fill={MONTHLY_SERIES_FILLS.Fixed} />
               <Bar xAxisId={0} dataKey="Cyclical" stackId="a" fill={MONTHLY_SERIES_FILLS.Cyclical} />
               <Bar xAxisId={0} dataKey="Irregular" stackId="a" fill={MONTHLY_SERIES_FILLS.Irregular} />
-            </RechartsBarChart>
+            </BarChart>
           </ResponsiveContainer>
         </Box>
       </Paper>
@@ -296,6 +297,8 @@ interface SpendingByCategoryChartProps {
 }
 
 function SpendingByCategoryChart({ data, series, axisFormatter, tooltipFormatter }: SpendingByCategoryChartProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)') ?? false;
+
   if (data.length === 0 || series.length === 0) return null;
 
   return (
@@ -304,15 +307,21 @@ function SpendingByCategoryChart({ data, series, axisFormatter, tooltipFormatter
       <Paper p="md" withBorder mt="xs">
         <Box h={300}>
           <ResponsiveContainer width="100%" height="100%">
-            <RechartsBarChart data={data} margin={{ top: 5, right: 10, left: -5, bottom: -5 }}>
+            <BarChart data={data} margin={{ top: 5, right: 10, left: -5, bottom: isMobile ? 10 : -5 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
-              <XAxis dataKey="year" tick={MONTH_TICK} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="year"
+                tick={MONTH_TICK}
+                tickLine={false}
+                axisLine={false}
+                {...(isMobile ? { angle: -45, textAnchor: 'end', height: 45, dx: -5, dy: 10 } : {})}
+              />
               <YAxis width={YAXIS_WIDTH} tickFormatter={axisFormatter} tick={YAXIS_TICK} />
               <Tooltip content={barTooltipContent(series, tooltipFormatter)} />
               {series.map((s) => (
                 <Bar key={s.name} dataKey={s.name} stackId="a" fill={mantineColorToFill(s.color)} />
               ))}
-            </RechartsBarChart>
+            </BarChart>
           </ResponsiveContainer>
         </Box>
       </Paper>

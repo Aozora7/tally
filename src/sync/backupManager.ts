@@ -1,6 +1,6 @@
 import { listAppDataFiles, uploadAppDataFile, deleteAppDataFile } from './driveApi';
 
-const DEFAULT_BACKUP_COUNT = 7;
+const DEFAULT_BACKUP_COUNT = 30;
 
 export async function manageBackups(
   accessToken: string,

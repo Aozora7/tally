@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useMediaQuery } from '@mantine/hooks';
 
 export interface YearGroup {
   year: string;
@@ -7,6 +8,8 @@ export interface YearGroup {
 }
 
 export function useChartTicks(data: { month: string }[]) {
+  const isMobile = useMediaQuery('(max-width: 768px)') ?? false;
+
   const yearGroups = useMemo(() => {
     if (data.length === 0) return [] as YearGroup[];
     const groups: YearGroup[] = [];
@@ -25,14 +28,26 @@ export function useChartTicks(data: { month: string }[]) {
 
   const monthTicks = useMemo(() => {
     const n = data.length;
-    const step = n <= 24 ? 1 : n <= 48 ? 2 : n <= 120 ? 3 : n <= 180 ? 6 : 12;
+    const thresholds = isMobile
+      ? ([
+          [12, 1],
+          [24, 2],
+          [48, 6],
+        ] as const)
+      : ([
+          [24, 1],
+          [48, 2],
+          [120, 3],
+          [180, 6],
+        ] as const);
+    const step = thresholds.find(([limit]) => n <= limit)?.[1] ?? 12;
     return data.filter((d) => (parseInt(d.month.substring(5, 7), 10) - 1) % step === 0).map((d) => d.month);
-  }, [data]);
+  }, [data, isMobile]);
 
   const yearTicks = useMemo(
     () => yearGroups.map((g) => data[Math.floor((g.startIndex + g.endIndex) / 2)]?.month).filter((m): m is string => !!m),
     [yearGroups, data]
   );
 
-  return { yearGroups, monthTicks, yearTicks };
+  return { yearGroups, monthTicks, yearTicks, isMobile };
 }
