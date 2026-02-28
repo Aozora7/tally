@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Group, Modal, Paper, Stack, Switch, Text, Title, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconUpload, IconTrash, IconFolder } from '@tabler/icons-react';
@@ -8,6 +8,7 @@ import { useFinance } from '@/context/FinanceContext';
 import type { ExportedState } from '@/db/export';
 import { isTauri, readJsonFile, writeJsonFile, openDataDirectory } from '@/utils/tauri';
 import { GoogleDriveSettings } from '@/components/GoogleDriveSettings/GoogleDriveSettings';
+import { useSecurities } from '@/context/SecuritiesContext';
 
 const APP_VERSION = '1.0.0';
 
@@ -18,7 +19,9 @@ interface ImportModalProps {
 }
 
 function ImportModal({ opened, onClose, preview }: ImportModalProps) {
-  const { reloadFromDb } = useFinance();
+  const { reloadFromDb: reloadBank } = useFinance();
+  const { reloadFromDb: reloadSecurities } = useSecurities();
+
   const [isImporting, setIsImporting] = useState(false);
 
   const handleConfirm = async () => {
@@ -26,7 +29,8 @@ function ImportModal({ opened, onClose, preview }: ImportModalProps) {
     setIsImporting(true);
     try {
       await importFullState(preview);
-      await reloadFromDb();
+      await reloadBank();
+      await reloadSecurities();
       notifications.show({
         title: 'Import Successful',
         message: `Imported ${preview.transactions.length} transactions`,
@@ -111,6 +115,12 @@ function ImportPreview({ preview }: ImportPreviewProps) {
           <Text size="sm">Rules:</Text>
           <Text size="sm" fw={500}>
             {preview.rules.length}
+          </Text>
+        </Group>
+        <Group justify="space-between">
+          <Text size="sm">Settings:</Text>
+          <Text size="sm" fw={500}>
+            {preview.settings?.length ?? 0}
           </Text>
         </Group>
       </Stack>
@@ -287,6 +297,11 @@ function DisplaySettingsPanel() {
   const { settings, setSetting } = useFinance();
   const [currencySymbol, setCurrencySymbol] = useState(settings.get('currency') || '$');
   const [privacyMode, setPrivacyMode] = useState(settings.get('privacyMode') === 'true');
+
+  useEffect(() => {
+    setCurrencySymbol(settings.get('currency') || '$');
+    setPrivacyMode(settings.get('privacyMode') === 'true');
+  }, [settings]);
 
   const handleCurrencyChange = (value: string) => {
     setSetting('currency', value);

@@ -5,10 +5,25 @@ import type {
   TriageTransaction,
   Transaction,
   CategorizationRule,
+  Setting,
   Security,
   SecurityTransaction,
   SecurityPriceCache,
 } from '@/types';
+
+export const SENSITIVE_SETTING_KEYS = [
+  'google_client_id',
+  'google_client_secret',
+  'google_refresh_token',
+  'google_access_token',
+  'google_token_expires_at',
+] as const;
+
+const SENSITIVE_SETTING_KEY_SET = new Set<string>(SENSITIVE_SETTING_KEYS);
+
+export function filterBackupSettings(settings: Setting[]): Setting[] {
+  return settings.filter((setting) => !SENSITIVE_SETTING_KEY_SET.has(setting.key));
+}
 
 export interface ExportedState {
   version: number;
@@ -18,6 +33,7 @@ export interface ExportedState {
   triageTransactions: TriageTransaction[];
   transactions: Transaction[];
   rules: CategorizationRule[];
+  settings?: Setting[];
   securities?: Security[];
   securityTransactions?: SecurityTransaction[];
   securityPriceCache?: SecurityPriceCache[];
@@ -30,6 +46,7 @@ export async function exportFullState(): Promise<ExportedState> {
     triageTransactions,
     transactions,
     rules,
+    settings,
     securities,
     securityTransactions,
     securityPriceCache,
@@ -39,6 +56,7 @@ export async function exportFullState(): Promise<ExportedState> {
     db.triageTransactions.toArray(),
     db.transactions.toArray(),
     db.rules.toArray(),
+    db.settings.toArray(),
     db.securities.toArray(),
     db.securityTransactions.toArray(),
     db.securityPriceCache.toArray(),
@@ -52,6 +70,7 @@ export async function exportFullState(): Promise<ExportedState> {
     triageTransactions,
     transactions,
     rules,
+    settings: filterBackupSettings(settings),
     securities,
     securityTransactions,
     securityPriceCache,
