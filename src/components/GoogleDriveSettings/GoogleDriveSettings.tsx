@@ -8,13 +8,19 @@ import { startOAuthFlow, isOAuthConfigured, clearOAuthTokens } from '@/sync/oaut
 import { useSecurities } from '@/context/SecuritiesContext';
 import { RestoreBackupModal } from './RestoreBackupModal';
 
+const ENV_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
+const ENV_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET ?? '';
+const CREDENTIALS_FROM_ENV = !!(ENV_CLIENT_ID && ENV_CLIENT_SECRET);
+
 export function GoogleDriveSettings() {
   const { settings, setSetting, reloadFromDb: reloadFinance } = useFinance();
   const { reloadFromDb: reloadSecurities } = useSecurities();
   const { syncStatus, syncNow } = useSync();
 
-  const [clientId, setClientId] = useState(settings.get('google_client_id') || '');
-  const [clientSecret, setClientSecret] = useState(settings.get('google_client_secret') || '');
+  const [clientId, setClientId] = useState(CREDENTIALS_FROM_ENV ? ENV_CLIENT_ID : settings.get('google_client_id') || '');
+  const [clientSecret, setClientSecret] = useState(
+    CREDENTIALS_FROM_ENV ? ENV_CLIENT_SECRET : settings.get('google_client_secret') || ''
+  );
   const [backupCount, setBackupCount] = useState(parseInt(settings.get('backupCount') || '7'));
   const [isConnecting, setIsConnecting] = useState(false);
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
@@ -22,8 +28,10 @@ export function GoogleDriveSettings() {
   const configured = isOAuthConfigured(settings);
 
   useEffect(() => {
-    setClientId(settings.get('google_client_id') || '');
-    setClientSecret(settings.get('google_client_secret') || '');
+    if (!CREDENTIALS_FROM_ENV) {
+      setClientId(settings.get('google_client_id') || '');
+      setClientSecret(settings.get('google_client_secret') || '');
+    }
     setBackupCount(parseInt(settings.get('backupCount') || '7'));
   }, [settings]);
 
@@ -38,7 +46,7 @@ export function GoogleDriveSettings() {
   };
 
   const handleConnect = async () => {
-    if (!clientId.trim() || !clientSecret.trim()) {
+    if (!CREDENTIALS_FROM_ENV && (!clientId.trim() || !clientSecret.trim())) {
       notifications.show({
         title: 'Missing Credentials',
         message: 'Please enter and save your Client ID and Client Secret first.',
@@ -49,8 +57,10 @@ export function GoogleDriveSettings() {
 
     setIsConnecting(true);
     try {
-      setSetting('google_client_id', clientId.trim());
-      setSetting('google_client_secret', clientSecret.trim());
+      if (!CREDENTIALS_FROM_ENV) {
+        setSetting('google_client_id', clientId.trim());
+        setSetting('google_client_secret', clientSecret.trim());
+      }
       await startOAuthFlow(clientId.trim(), clientSecret.trim(), setSetting);
       notifications.show({
         title: 'Connected',
@@ -99,6 +109,7 @@ export function GoogleDriveSettings() {
         configured={configured}
         isConnecting={isConnecting}
         syncStatus={syncStatus}
+        credentialsFromEnv={CREDENTIALS_FROM_ENV}
         onClientIdChange={setClientId}
         onClientSecretChange={setClientSecret}
         onBackupCountChange={handleBackupCountChange}
@@ -127,6 +138,7 @@ interface GoogleDriveSettingsPanelProps {
   configured: boolean;
   isConnecting: boolean;
   syncStatus: string;
+  credentialsFromEnv: boolean;
   onClientIdChange: (value: string) => void;
   onClientSecretChange: (value: string) => void;
   onBackupCountChange: (value: string | number) => void;
@@ -144,6 +156,7 @@ function GoogleDriveSettingsPanel({
   configured,
   isConnecting,
   syncStatus,
+  credentialsFromEnv,
   onClientIdChange,
   onClientSecretChange,
   onBackupCountChange,
@@ -160,30 +173,34 @@ function GoogleDriveSettingsPanel({
         <Title order={4}>Google Drive Sync</Title>
       </Group>
       <Text size="sm" c="dimmed" mb="md">
-        Sync your data to Google Drive for automatic backup. You need to provide your own Google OAuth credentials from the
-        Google Cloud Console.
+        {credentialsFromEnv
+          ? 'Sync your data to Google Drive for automatic backup.'
+          : 'Sync your data to Google Drive for automatic backup. You need to provide your own Google OAuth credentials from the Google Cloud Console.'}
       </Text>
 
       <Stack gap="md">
-        <Group grow>
-          <PasswordInput
-            label="Client ID"
-            placeholder="Your Google OAuth Client ID"
-            value={clientId}
-            onChange={(e) => onClientIdChange(e.currentTarget.value)}
-          />
-          <PasswordInput
-            label="Client Secret"
-            placeholder="Your Google OAuth Client Secret"
-            value={clientSecret}
-            onChange={(e) => onClientSecretChange(e.currentTarget.value)}
-          />
-        </Group>
+        {!credentialsFromEnv && (
+          <Group grow>
+            <PasswordInput
+              label="Client ID"
+              placeholder="Your Google OAuth Client ID"
+              value={clientId}
+              onChange={(e) => onClientIdChange(e.currentTarget.value)}
+            />
+            <PasswordInput
+              label="Client Secret"
+              placeholder="Your Google OAuth Client Secret"
+              value={clientSecret}
+              onChange={(e) => onClientSecretChange(e.currentTarget.value)}
+            />
+          </Group>
+        )}
 
         <ConnectionControls
           configured={configured}
           isConnecting={isConnecting}
           syncStatus={syncStatus}
+          credentialsFromEnv={credentialsFromEnv}
           onConnect={onConnect}
           onSaveCredentials={onSaveCredentials}
           onDisconnect={onDisconnect}
@@ -237,6 +254,7 @@ interface ConnectionControlsProps {
   configured: boolean;
   isConnecting: boolean;
   syncStatus: string;
+  credentialsFromEnv: boolean;
   onConnect: () => void;
   onSaveCredentials: () => void;
   onDisconnect: () => void;
@@ -247,6 +265,7 @@ function ConnectionControls({
   configured,
   isConnecting,
   syncStatus,
+  credentialsFromEnv,
   onConnect,
   onSaveCredentials,
   onDisconnect,
@@ -258,9 +277,11 @@ function ConnectionControls({
         <Button leftSection={<IconLink size={16} />} onClick={onConnect} loading={isConnecting}>
           Connect Google Drive
         </Button>
-        <Button variant="light" onClick={onSaveCredentials}>
-          Save Credentials
-        </Button>
+        {!credentialsFromEnv && (
+          <Button variant="light" onClick={onSaveCredentials}>
+            Save Credentials
+          </Button>
+        )}
       </Group>
     );
   }

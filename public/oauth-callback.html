@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connecting to Google Drive...</title>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: #1a1b1e;
+        color: #c1c2c5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 14px;
+      }
+      p {
+        text-align: center;
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Connecting to Google Drive&hellip;</p>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var payload = {
+          type: 'oauth-callback',
+          code: params.get('code'),
+          state: params.get('state'),
+          error: params.get('error'),
+        };
+        if (window.opener) {
+          window.opener.postMessage(payload, window.location.origin);
+          window.close();
+        } else {
+          document.querySelector('p').textContent =
+            'Authorization complete. You can close this window and return to Tally.';
+        }
+      })();
+    </script>
+  </body>
+</html>

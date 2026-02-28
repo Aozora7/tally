@@ -4,10 +4,11 @@ import { resolve } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 
 const host = process.env.TAURI_DEV_HOST;
+const isTauriBuild = !!process.env.TAURI_PLATFORM;
 
 export default defineConfig({
   plugins: [react(), visualizer()],
-  base: './',
+  base: isTauriBuild ? './' : '/',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
