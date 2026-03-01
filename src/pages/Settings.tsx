@@ -10,8 +10,6 @@ import { isTauri, readJsonFile, writeJsonFile, openDataDirectory } from '@/utils
 import { GoogleDriveSettings } from '@/components/GoogleDriveSettings/GoogleDriveSettings';
 import { useSecurities } from '@/context/SecuritiesContext';
 
-const APP_VERSION = '1.0.0';
-
 interface ImportModalProps {
   opened: boolean;
   onClose: () => void;
@@ -348,24 +346,6 @@ function DisplaySettingsPanel() {
   );
 }
 
-function AboutPanel() {
-  return (
-    <Paper p="md" withBorder>
-      <Title order={4} mb="xs">
-        About
-      </Title>
-      <Group justify="space-between">
-        <Text size="sm" c="dimmed">
-          Version
-        </Text>
-        <Text size="sm" fw={500}>
-          {APP_VERSION}
-        </Text>
-      </Group>
-    </Paper>
-  );
-}
-
 export function Settings() {
   const { clearAllData, clearTransactions, clearTriageTransactions } = useFinance();
 
@@ -411,8 +391,6 @@ export function Settings() {
       <GoogleDriveSettings />
 
       <DisplaySettingsPanel />
-
-      <AboutPanel />
 
       <ImportModal
         opened={importModalOpen}

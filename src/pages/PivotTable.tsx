@@ -196,21 +196,38 @@ export function PivotTable() {
   const yearlyData = useYearlyPivotTable(transactions, categories);
   const monthlyData = useMonthlyPivotTable(transactions, categories);
   const [fontSize, setFontSize] = useState<MantineSize>('sm');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const formatNoCents = (cents: number) => format(cents, true);
+
+  const sortedYearlyData = sortOrder === 'desc' ? [...yearlyData].reverse() : yearlyData;
+  const sortedMonthlyData = sortOrder === 'desc' ? [...monthlyData].reverse() : monthlyData;
 
   return (
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={3}>Pivot Tables</Title>
-        <SegmentedControl
-          size="xs"
-          value={fontSize}
-          onChange={(v) => setFontSize(v as MantineSize)}
-          data={[
-            { label: 'XS', value: 'xs' },
-            { label: 'SM', value: 'sm' },
-            { label: 'MD', value: 'md' },
-          ]}
-        />
+        <Group gap="xs">
+          <SegmentedControl
+            size="xs"
+            value={sortOrder}
+            onChange={(v) => setSortOrder(v as 'asc' | 'desc')}
+            data={[
+              { label: 'Asc', value: 'asc' },
+              { label: 'Desc', value: 'desc' },
+            ]}
+          />
+          <SegmentedControl
+            size="xs"
+            value={fontSize}
+            onChange={(v) => setFontSize(v as MantineSize)}
+            data={[
+              { label: 'XS', value: 'xs' },
+              { label: 'SM', value: 'sm' },
+              { label: 'MD', value: 'md' },
+            ]}
+          />
+        </Group>
       </Group>
 
       <Stack gap="md">
@@ -218,7 +235,7 @@ export function PivotTable() {
         {yearlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the yearly summary." />
         ) : (
-          <YearlyTable data={yearlyData} fontSize={fontSize} format={format} />
+          <YearlyTable data={sortedYearlyData} fontSize={fontSize} format={formatNoCents} />
         )}
       </Stack>
 
@@ -227,7 +244,7 @@ export function PivotTable() {
         {monthlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the monthly summary." />
         ) : (
-          <MonthlyTable data={monthlyData} fontSize={fontSize} format={format} />
+          <MonthlyTable data={sortedMonthlyData} fontSize={fontSize} format={formatNoCents} />
         )}
       </Stack>
     </Stack>

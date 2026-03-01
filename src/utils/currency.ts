@@ -3,11 +3,12 @@ import { useFinance } from '@/context/FinanceContext';
 
 const DEFAULT_CURRENCY = '$';
 
-export function centsToDisplay(cents: number, currencySymbol: string = DEFAULT_CURRENCY): string {
+export function centsToDisplay(cents: number, currencySymbol: string = DEFAULT_CURRENCY, noCents = false): string {
   const absCents = Math.abs(cents);
   const dollars = Math.floor(absCents / 100);
   const remainingCents = absCents % 100;
   const sign = cents < 0 ? '-' : '';
+  if (noCents) return `${sign}${currencySymbol}${dollars}`;
   return `${sign}${currencySymbol}${dollars}.${remainingCents.toString().padStart(2, '0')}`;
 }
 
@@ -50,7 +51,8 @@ export function useCurrency() {
     () => ({
       currencySymbol,
       privacyMode,
-      format: (cents: number) => (privacyMode ? `${currencySymbol}XXXX.XX` : centsToDisplay(cents, currencySymbol)),
+      format: (cents: number, noCents = false) =>
+        privacyMode ? `${currencySymbol}${noCents ? 'XXXX' : 'XXXX.XX'}` : centsToDisplay(cents, currencySymbol, noCents),
       /** For chart Y-axis ticks: compact k/M notation, input in dollars */
       axisFormatter: (dollars: number) => formatChartAxisTick(dollars, currencySymbol, privacyMode),
       /** For chart tooltips: full precision, input in dollars */
