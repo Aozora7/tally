@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Button, Group, Modal, Paper, Stack, Switch, Text, Title, TextInput } from '@mantine/core';
+import { Button, Group, Modal, Paper, Stack, Switch, Text, Title, TextInput, SegmentedControl, Box } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconUpload, IconTrash, IconFolder } from '@tabler/icons-react';
 import { exportFullState, downloadJson } from '@/db/export';
 import { importFullState } from '@/db/import';
 import { useFinance } from '@/context/FinanceContext';
+import { useApp, SCALE_OPTIONS, type ScaleValue } from '@/context/AppContext';
 import type { ExportedState } from '@/db/export';
 import { isTauri, readJsonFile, writeJsonFile, openDataDirectory } from '@/utils/tauri';
 import { GoogleDriveSettings } from '@/components/GoogleDriveSettings/GoogleDriveSettings';
@@ -292,7 +293,7 @@ function StoragePanel() {
 }
 
 function DisplaySettingsPanel() {
-  const { settings, setSetting } = useFinance();
+  const { settings, setSetting, scale, setScale } = useApp();
   const [currencySymbol, setCurrencySymbol] = useState(settings.get('currency') || '$');
   const [privacyMode, setPrivacyMode] = useState(settings.get('privacyMode') === 'true');
 
@@ -316,24 +317,42 @@ function DisplaySettingsPanel() {
     setPrivacyMode(checked);
   };
 
+  const handleScaleChange = (value: string) => {
+    setScale(value as ScaleValue);
+  };
+
   return (
     <Paper p="md" withBorder>
       <Title order={4} mb="xs">
         Display Settings
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Configure how currency values are displayed.
+        Configure display preferences.
       </Text>
-      <Group>
+
+      <Stack gap="md">
+        <Box>
+          <Text size="sm" fw={500} mb={4}>
+            Font Size
+          </Text>
+          <Text size="xs" c="dimmed" mb="xs">
+            Adjust the global font size
+          </Text>
+          <SegmentedControl
+            size="xs"
+            value={scale}
+            onChange={handleScaleChange}
+            data={SCALE_OPTIONS.map((opt) => ({ label: opt.label, value: opt.value }))}
+          />
+        </Box>
+
         <Switch
           label="Privacy Mode"
           description="Hide currency amounts and securities units"
           checked={privacyMode}
           onChange={(e) => handlePrivacyModeChange(e.currentTarget.checked)}
-          mt="sm"
         />
-      </Group>
-      <Group>
+
         <TextInput
           label="Currency"
           placeholder="$"
@@ -341,7 +360,7 @@ function DisplaySettingsPanel() {
           onChange={(e) => handleCurrencyChange(e.currentTarget.value)}
           w={100}
         />
-      </Group>
+      </Stack>
     </Paper>
   );
 }

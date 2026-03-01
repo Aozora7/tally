@@ -8,7 +8,7 @@ import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
 import { useCurrency } from '@/utils/currency';
 import { unitsToDisplay, displayToUnits, priceToDisplay, displayToPrice } from '@/utils/securities';
-import { agGridDarkTheme } from '@/utils/agGridTheme';
+import { useAgGridTheme } from '@/utils/agGridTheme';
 import { openFileDialog } from '@/utils/tauri';
 import { parseSecuritiesCsv } from '@/utils/securitiesImport';
 import { notifications } from '@mantine/notifications';
@@ -218,6 +218,7 @@ export function Trades() {
     deleteSecurityTransaction,
   } = useSecurities();
   const { currencySymbol, privacyMode } = useCurrency();
+  const agGridTheme = useAgGridTheme();
   const [modalOpened, setModalOpened] = useState(false);
 
   const securityOptions = useMemo(() => securities.map((s) => ({ value: s.id, label: s.ticker })), [securities]);
@@ -290,7 +291,7 @@ export function Trades() {
           onCellValueChanged={onCellValueChanged}
           animateRows={false}
           domLayout="normal"
-          theme={agGridDarkTheme}
+          theme={agGridTheme}
         />
       </div>
 

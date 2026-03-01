@@ -2,16 +2,15 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { db } from '@/db/database';
 import { notifyDataMutated } from '@/sync/syncTrigger';
 import { fireAndForget } from '@/utils/dbHelpers';
+import { useApp } from './AppContext';
 import type { TransactionCategory, Account, TriageTransaction, Transaction, CategorizationRule } from '@/types';
 
 interface FinanceContextValue {
-  isLoaded: boolean;
   categories: TransactionCategory[];
   accounts: Account[];
   triageTransactions: TriageTransaction[];
   transactions: Transaction[];
   rules: CategorizationRule[];
-  settings: Map<string, string>;
   addCategory: (category: TransactionCategory) => void;
   updateCategory: (category: TransactionCategory) => void;
   deleteCategory: (id: string) => void;
@@ -31,7 +30,6 @@ interface FinanceContextValue {
   updateRule: (rule: CategorizationRule, index: number) => void;
   deleteRule: (id: string) => void;
   reorderRules: (rules: CategorizationRule[]) => void;
-  setSetting: (key: string, value: string) => void;
   reloadFromDb: () => Promise<void>;
   clearAllData: () => Promise<void>;
   clearTransactions: () => Promise<void>;
@@ -41,31 +39,26 @@ interface FinanceContextValue {
 const FinanceContext = createContext<FinanceContextValue | null>(null);
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { clearSettings } = useApp();
   const [categories, setCategories] = useState<TransactionCategory[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [triageTransactions, setTriageTransactions] = useState<TriageTransaction[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [rules, setRules] = useState<CategorizationRule[]>([]);
-  const [settings, setSettings] = useState<Map<string, string>>(new Map());
 
   const reloadFromDb = useCallback(async () => {
-    const [loadedCategories, loadedAccounts, loadedTriage, loadedTransactions, loadedRules, loadedSettings] =
-      await Promise.all([
-        db.categories.toArray(),
-        db.accounts.toArray(),
-        db.triageTransactions.toArray(),
-        db.transactions.toArray(),
-        db.rules.toArray(),
-        db.settings.toArray(),
-      ]);
+    const [loadedCategories, loadedAccounts, loadedTriage, loadedTransactions, loadedRules] = await Promise.all([
+      db.categories.toArray(),
+      db.accounts.toArray(),
+      db.triageTransactions.toArray(),
+      db.transactions.toArray(),
+      db.rules.toArray(),
+    ]);
     setCategories(loadedCategories.sort((a, b) => a.sortOrder - b.sortOrder));
     setAccounts(loadedAccounts);
     setTriageTransactions(loadedTriage);
     setTransactions(loadedTransactions);
     setRules(loadedRules.sort((a, b) => a.sortOrder - b.sortOrder));
-    setSettings(new Map(loadedSettings.map((s) => [s.key, s.value])));
-    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -76,19 +69,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         fireAndForget(
-          db.transaction(
-            'rw',
-            [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules, db.settings],
-            async () => {
-              await Promise.all([
-                db.categories.bulkPut(categories),
-                db.accounts.bulkPut(accounts),
-                db.triageTransactions.bulkPut(triageTransactions),
-                db.transactions.bulkPut(transactions),
-                db.rules.bulkPut(rules),
-              ]);
-            }
-          ),
+          db.transaction('rw', [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules], async () => {
+            await Promise.all([
+              db.categories.bulkPut(categories),
+              db.accounts.bulkPut(accounts),
+              db.triageTransactions.bulkPut(triageTransactions),
+              db.transactions.bulkPut(transactions),
+              db.rules.bulkPut(rules),
+            ]);
+          }),
           'visibility-change bulk persist'
         );
       }
@@ -248,22 +237,28 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAllData = useCallback(async () => {
-    await db.transaction('rw', [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules], async () => {
-      await Promise.all([
-        db.categories.clear(),
-        db.accounts.clear(),
-        db.triageTransactions.clear(),
-        db.transactions.clear(),
-        db.rules.clear(),
-      ]);
-    });
+    await db.transaction(
+      'rw',
+      [db.categories, db.accounts, db.triageTransactions, db.transactions, db.rules, db.settings],
+      async () => {
+        await Promise.all([
+          db.categories.clear(),
+          db.accounts.clear(),
+          db.triageTransactions.clear(),
+          db.transactions.clear(),
+          db.rules.clear(),
+          db.settings.clear(),
+        ]);
+      }
+    );
     setCategories([]);
     setAccounts([]);
     setTriageTransactions([]);
     setTransactions([]);
     setRules([]);
+    clearSettings();
     notifyDataMutated();
-  }, []);
+  }, [clearSettings]);
 
   const clearTransactions = useCallback(async () => {
     await db.transactions.clear();
@@ -277,19 +272,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     notifyDataMutated();
   }, []);
 
-  const setSetting = useCallback((key: string, value: string) => {
-    setSettings((prev) => {
-      const next = new Map(prev);
-      next.set(key, value);
-      return next;
-    });
-    fireAndForget(db.settings.put({ key, value }), 'set setting');
-  }, []);
-
   return (
     <FinanceContext.Provider
       value={{
-        isLoaded,
         categories,
         accounts,
         triageTransactions,
@@ -318,8 +303,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         clearAllData,
         clearTransactions,
         clearTriageTransactions,
-        settings,
-        setSetting,
       }}
     >
       {children}

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useApp } from './AppContext';
 import { useFinance } from './FinanceContext';
 import { useSecurities } from './SecuritiesContext';
 import { onDataMutated } from '@/sync/syncTrigger';
@@ -26,7 +27,8 @@ const SyncContext = createContext<SyncContextValue | null>(null);
 const DEBOUNCE_MS = 5_000;
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const { settings, setSetting, reloadFromDb: reloadFinance } = useFinance();
+  const { settings, setSetting } = useApp();
+  const { reloadFromDb: reloadFinance } = useFinance();
   const { reloadFromDb: reloadSecurities } = useSecurities();
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('not-configured');

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Stack, Title, Table, Text, Paper, Group, SegmentedControl } from '@mantine/core';
-import { IconTableOff } from '@tabler/icons-react';
+import { Stack, Title, Table, Text, Paper, UnstyledButton, Group } from '@mantine/core';
+import { IconTableOff, IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import {
   useYearlyPivotTable,
@@ -10,25 +10,32 @@ import {
 } from '@/utils/analytics/yearlyPivotTable';
 import { useCurrency } from '@/utils/currency';
 import type { CategoryType } from '@/types';
-import type { MantineSize } from '@mantine/core';
 
 const CATEGORY_TYPES: CategoryType[] = ['Income', 'Fixed', 'Cyclical', 'Irregular'];
 
+interface SortControlProps {
+  order: 'asc' | 'desc';
+  onChange: (order: 'asc' | 'desc') => void;
+  label: string;
+}
+
+function SortControl({ order, onChange, label }: SortControlProps) {
+  return (
+    <UnstyledButton onClick={() => onChange(order === 'asc' ? 'desc' : 'asc')}>
+      <Group gap={4} wrap="nowrap">
+        <Text fw={600}>{label}</Text>
+        {order === 'asc' ? <IconArrowUp size={14} stroke={1.5} /> : <IconArrowDown size={14} stroke={1.5} />}
+      </Group>
+    </UnstyledButton>
+  );
+}
+
 interface YearlyTableProps {
   data: YearlyPivotRow[];
-  fontSize: MantineSize;
   format: (cents: number) => string;
 }
 
-function YearlyTableRow({
-  row,
-  fontSize,
-  format,
-}: {
-  row: YearlyPivotRow;
-  fontSize: MantineSize;
-  format: (cents: number) => string;
-}) {
+function YearlyTableRow({ row, format }: { row: YearlyPivotRow; format: (cents: number) => string }) {
   return (
     <Table.Tr key={row.year}>
       <Table.Td
@@ -39,88 +46,71 @@ function YearlyTableRow({
           fontWeight: 600,
         }}
       >
-        <Text size={fontSize} fw={600}>
-          {row.year}
-        </Text>
+        <Text fw={600}>{row.year}</Text>
       </Table.Td>
       {row.typeTotals.map(({ type, total }) => {
         const color = total === 0 ? 'dimmed' : total > 0 ? 'income.6' : 'expense.6';
         return (
           <Table.Td key={type}>
-            <Text size={fontSize} c={color}>
-              {format(total)}
-            </Text>
+            <Text c={color}>{format(total)}</Text>
           </Table.Td>
         );
       })}
       <Table.Td>
-        <Text size={fontSize} c="expense.6">
-          {format(row.totalExpenses)}
-        </Text>
+        <Text c="expense.6">{format(row.totalExpenses)}</Text>
       </Table.Td>
 
       <Table.Td>
-        <Text size={fontSize} c="expense.6">
-          {format(Math.round(row.monthlyAvgExpenses))}
-        </Text>
+        <Text c="expense.6">{format(Math.round(row.monthlyAvgExpenses))}</Text>
       </Table.Td>
       <Table.Td>
-        <Text size={fontSize}>{row.savingsRate.toFixed(1)}%</Text>
+        <Text>{row.savingsRate.toFixed(1)}%</Text>
       </Table.Td>
     </Table.Tr>
   );
 }
 
-function YearlyTable({ data, fontSize, format }: YearlyTableProps) {
+function YearlyTable({ data, format }: YearlyTableProps) {
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const sortedYearlyData = sortOrder === 'desc' ? [...data].reverse() : data;
   return (
-    <>
-      <Paper withBorder style={{ overflowX: 'auto' }}>
-        <Table striped highlightOnHover fz={fontSize}>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th
-                style={{
-                  position: 'sticky',
-                  left: 0,
-                  background: 'var(--mantine-color-body)',
-                }}
-              >
-                Year
-              </Table.Th>
-              {CATEGORY_TYPES.map((type) => (
-                <Table.Th key={type}>{type}</Table.Th>
-              ))}
-              <Table.Th>Total</Table.Th>
-              <Table.Th>Expenses/m</Table.Th>
-              <Table.Th>SR</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {data.map((row) => (
-              <YearlyTableRow key={row.year} row={row} fontSize={fontSize} format={format} />
+    <Paper withBorder style={{ overflowX: 'auto' }}>
+      <Table striped highlightOnHover>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th
+              style={{
+                position: 'sticky',
+                left: 0,
+                background: 'var(--mantine-color-body)',
+              }}
+            >
+              <SortControl label="Year" order={sortOrder} onChange={setSortOrder} />
+            </Table.Th>
+            {CATEGORY_TYPES.map((type) => (
+              <Table.Th key={type}>{type}</Table.Th>
             ))}
-          </Table.Tbody>
-        </Table>
-      </Paper>
-    </>
+            <Table.Th>Total</Table.Th>
+            <Table.Th>Expenses/m</Table.Th>
+            <Table.Th>SR</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {sortedYearlyData.map((row) => (
+            <YearlyTableRow key={row.year} row={row} format={format} />
+          ))}
+        </Table.Tbody>
+      </Table>
+    </Paper>
   );
 }
 
 interface MonthlyTableProps {
   data: MonthlyPivotRow[];
-  fontSize: MantineSize;
   format: (cents: number) => string;
 }
 
-function MonthlyTableRow({
-  row,
-  fontSize,
-  format,
-}: {
-  row: MonthlyPivotRow;
-  fontSize: MantineSize;
-  format: (cents: number) => string;
-}) {
+function MonthlyTableRow({ row, format }: { row: MonthlyPivotRow; format: (cents: number) => string }) {
   return (
     <Table.Tr key={row.month}>
       <Table.Td
@@ -131,22 +121,18 @@ function MonthlyTableRow({
           fontWeight: 600,
         }}
       >
-        <Text size={fontSize} fw={600}>
-          {row.month}
-        </Text>
+        <Text fw={600}>{row.month}</Text>
       </Table.Td>
       {row.typeTotals.map(({ type, total }) => {
         const color = total === 0 ? 'dimmed' : total > 0 ? 'income.6' : 'expense.6';
         return (
           <Table.Td key={type}>
-            <Text size={fontSize} c={color}>
-              {format(total)}
-            </Text>
+            <Text c={color}>{format(total)}</Text>
           </Table.Td>
         );
       })}
       <Table.Td>
-        <Text size={fontSize} c="expense.6" fw={600}>
+        <Text c="expense.6" fw={600}>
           {format(row.totalExpenses)}
         </Text>
       </Table.Td>
@@ -154,13 +140,18 @@ function MonthlyTableRow({
   );
 }
 
-function MonthlyTable({ data, fontSize, format }: MonthlyTableProps) {
+function MonthlyTable({ data, format }: MonthlyTableProps) {
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const sortedMonthlyData = sortOrder === 'desc' ? [...data].reverse() : data;
+
   return (
     <Paper withBorder style={{ overflowX: 'auto' }}>
-      <Table striped highlightOnHover fz={fontSize}>
+      <Table striped highlightOnHover>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th style={{ position: 'sticky', left: 0, background: 'var(--mantine-color-body)' }}>Month</Table.Th>
+            <Table.Th style={{ position: 'sticky', left: 0, background: 'var(--mantine-color-body)' }}>
+              <SortControl label="Month" order={sortOrder} onChange={setSortOrder} />
+            </Table.Th>
             {CATEGORY_TYPES.map((type) => (
               <Table.Th key={type}>{type}</Table.Th>
             ))}
@@ -168,8 +159,8 @@ function MonthlyTable({ data, fontSize, format }: MonthlyTableProps) {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {data.map((row) => (
-            <MonthlyTableRow key={row.month} row={row} fontSize={fontSize} format={format} />
+          {sortedMonthlyData.map((row) => (
+            <MonthlyTableRow key={row.month} row={row} format={format} />
           ))}
         </Table.Tbody>
       </Table>
@@ -195,47 +186,19 @@ export function PivotTable() {
   const { format } = useCurrency();
   const yearlyData = useYearlyPivotTable(transactions, categories);
   const monthlyData = useMonthlyPivotTable(transactions, categories);
-  const [fontSize, setFontSize] = useState<MantineSize>('sm');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const formatNoCents = (cents: number) => format(cents, true);
 
-  const sortedYearlyData = sortOrder === 'desc' ? [...yearlyData].reverse() : yearlyData;
-  const sortedMonthlyData = sortOrder === 'desc' ? [...monthlyData].reverse() : monthlyData;
-
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={3}>Pivot Tables</Title>
-        <Group gap="xs">
-          <SegmentedControl
-            size="xs"
-            value={sortOrder}
-            onChange={(v) => setSortOrder(v as 'asc' | 'desc')}
-            data={[
-              { label: 'Asc', value: 'asc' },
-              { label: 'Desc', value: 'desc' },
-            ]}
-          />
-          <SegmentedControl
-            size="xs"
-            value={fontSize}
-            onChange={(v) => setFontSize(v as MantineSize)}
-            data={[
-              { label: 'XS', value: 'xs' },
-              { label: 'SM', value: 'sm' },
-              { label: 'MD', value: 'md' },
-            ]}
-          />
-        </Group>
-      </Group>
+      <Title order={3}>Pivot Tables</Title>
 
       <Stack gap="md">
         <Title order={4}>Yearly</Title>
         {yearlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the yearly summary." />
         ) : (
-          <YearlyTable data={sortedYearlyData} fontSize={fontSize} format={formatNoCents} />
+          <YearlyTable data={yearlyData} format={formatNoCents} />
         )}
       </Stack>
 
@@ -244,7 +207,7 @@ export function PivotTable() {
         {monthlyData.length === 0 ? (
           <EmptyState message="No data available. Add transactions to see the monthly summary." />
         ) : (
-          <MonthlyTable data={sortedMonthlyData} fontSize={fontSize} format={formatNoCents} />
+          <MonthlyTable data={monthlyData} format={formatNoCents} />
         )}
       </Stack>
     </Stack>

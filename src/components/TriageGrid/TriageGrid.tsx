@@ -2,7 +2,7 @@ import { useMemo, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry, type ColDef, type RowClickedEvent } from 'ag-grid-community';
 import { useFinance } from '@/context/FinanceContext';
-import { agGridDarkTheme } from '@/utils/agGridTheme';
+import { useAgGridTheme } from '@/utils/agGridTheme';
 import { useCurrency } from '@/utils/currency';
 import type { TriageTransaction } from '@/types';
 
@@ -22,6 +22,7 @@ function dateValueFormatter(params: { value: string | null | undefined }): strin
 export function TriageGrid({ selectedId, onSelect }: TriageGridProps) {
   const { triageTransactions } = useFinance();
   const { format } = useCurrency();
+  const agGridTheme = useAgGridTheme();
 
   const currencyValueFormatter = useCallback(
     (params: { value: number | null | undefined }) => {
@@ -86,7 +87,7 @@ export function TriageGrid({ selectedId, onSelect }: TriageGridProps) {
         <AgGridReact<TriageTransaction>
           rowData={triageTransactions}
           columnDefs={columnDefs}
-          theme={agGridDarkTheme}
+          theme={agGridTheme}
           onRowClicked={onRowClicked}
           getRowStyle={getRowStyle}
           animateRows={false}

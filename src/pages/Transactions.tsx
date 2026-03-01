@@ -13,7 +13,7 @@ import { IconPlus, IconTrash, IconPlaylistAdd } from '@tabler/icons-react';
 import { useFinance } from '@/context/FinanceContext';
 import { generateId } from '@/utils/uuid';
 import { useCurrency, displayToCents } from '@/utils/currency';
-import { agGridDarkTheme } from '@/utils/agGridTheme';
+import { useAgGridTheme } from '@/utils/agGridTheme';
 import type { Account, Transaction } from '@/types';
 import { useDisclosure } from '@mantine/hooks';
 import { RulePreviewModal } from '../components/RulePreviewModal/RulePreviewModal';
@@ -268,6 +268,7 @@ function useColumnDefs(
 
 export function Transactions() {
   const { transactions, accounts, categories, addTransaction, updateTransaction, deleteTransaction, rules } = useFinance();
+  const agGridTheme = useAgGridTheme();
   const [rulesModalOpened, rulesModalHandlers] = useDisclosure(false);
   const [modalOpened, setModalOpened] = useState(false);
   const [filter, setFilter] = useState<TransactionFilterState>({
@@ -386,7 +387,7 @@ export function Transactions() {
           doesExternalFilterPass={doesExternalFilterPass}
           animateRows={false}
           domLayout="normal"
-          theme={agGridDarkTheme}
+          theme={agGridTheme}
         />
       </div>
 

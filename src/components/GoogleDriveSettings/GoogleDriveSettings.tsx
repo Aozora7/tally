@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Group, NumberInput, Paper, PasswordInput, Stack, Text, Title, Badge } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconBrandGoogleDrive, IconLink, IconLinkOff, IconRefresh } from '@tabler/icons-react';
+import { useApp } from '@/context/AppContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useSync } from '@/context/SyncContext';
 import { startOAuthFlow, isOAuthConfigured, clearOAuthTokens } from '@/sync/oauthFlow';
@@ -13,7 +14,8 @@ const ENV_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET ?? '';
 const CREDENTIALS_FROM_ENV = !!(ENV_CLIENT_ID && ENV_CLIENT_SECRET);
 
 export function GoogleDriveSettings() {
-  const { settings, setSetting, reloadFromDb: reloadFinance } = useFinance();
+  const { settings, setSetting } = useApp();
+  const { reloadFromDb: reloadFinance } = useFinance();
   const { reloadFromDb: reloadSecurities } = useSecurities();
   const { syncStatus, syncNow } = useSync();
 

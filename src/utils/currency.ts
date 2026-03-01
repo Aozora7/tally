@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useFinance } from '@/context/FinanceContext';
+import { useApp } from '@/context/AppContext';
 
 const DEFAULT_CURRENCY = '$';
 
@@ -43,7 +43,7 @@ export function formatChartAxisTick(dollars: number, symbol: string, privacyMode
 }
 
 export function useCurrency() {
-  const { settings } = useFinance();
+  const { settings } = useApp();
   const currencySymbol = settings.get('currency') || DEFAULT_CURRENCY;
   const privacyMode = settings.get('privacyMode') === 'true';
 

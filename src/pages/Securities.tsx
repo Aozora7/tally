@@ -7,7 +7,7 @@ import { IconPlus, IconTrash, IconDownload, IconDatabase } from '@tabler/icons-r
 import { useSecurities } from '@/context/SecuritiesContext';
 import { generateId } from '@/utils/uuid';
 import { useCurrency } from '@/utils/currency';
-import { agGridDarkTheme } from '@/utils/agGridTheme';
+import { useAgGridTheme } from '@/utils/agGridTheme';
 import { isTauri } from '@/utils/tauri';
 import { priceToDisplay } from '@/utils/securities';
 import type { Security, SecurityPriceCache } from '@/types';
@@ -191,6 +191,7 @@ export function Securities() {
     fetchAndCachePrices,
   } = useSecurities();
   const { currencySymbol } = useCurrency();
+  const agGridTheme = useAgGridTheme();
   const [modalOpened, setModalOpened] = useState(false);
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [cacheModal, setCacheModal] = useState<{
@@ -273,7 +274,7 @@ export function Securities() {
           onCellValueChanged={onCellValueChanged}
           animateRows={false}
           domLayout="normal"
-          theme={agGridDarkTheme}
+          theme={agGridTheme}
           autoSizeStrategy={{ type: 'fitCellContents', colIds: ['ticker', 'isin', 'actions'] }}
         />
       </div>
