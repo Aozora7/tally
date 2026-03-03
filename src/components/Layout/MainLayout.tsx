@@ -14,6 +14,7 @@ import {
   IconArrowsExchange,
   IconDownload,
   IconBriefcase,
+  IconScale,
 } from '@tabler/icons-react';
 import type { ReactNode, ComponentType } from 'react';
 import { SyncIndicator } from '@/components/SyncIndicator';
@@ -49,6 +50,7 @@ const navSections: NavSection[] = [
       { label: 'Portfolio', path: '/portfolio', icon: IconBriefcase },
       { label: 'Securities', path: '/securities', icon: IconChartLine },
       { label: 'Trades', path: '/trades', icon: IconArrowsExchange },
+      { label: 'Allocation', path: '/allocation', icon: IconScale },
     ],
   },
   {

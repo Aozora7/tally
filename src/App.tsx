@@ -16,6 +16,7 @@ import { ImportWizard } from './components/ImportWizard/ImportWizard';
 import { Securities } from '@/pages/Securities';
 import { Trades } from '@/pages/Trades';
 import { Portfolio } from '@/pages/Portfolio';
+import { Allocation } from '@/pages/Allocation';
 
 /* eslint-disable react/jsx-max-depth */
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
                   <Route path="/securities" element={<Securities />} />
                   <Route path="/trades" element={<Trades />} />
                   <Route path="/portfolio" element={<Portfolio />} />
+                  <Route path="/allocation" element={<Allocation />} />
                 </Routes>
               </MainLayout>
             </HashRouter>
