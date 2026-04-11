@@ -29,3 +29,11 @@ export function displayToPrice(display: string): number {
   if (Number.isNaN(parsed)) return 0;
   return Math.round(parsed * PRICE_MULTIPLIER);
 }
+
+export function txnCostCents(txn: { units: number; pricePerUnit: number; fees: number }): number {
+  return Math.round((txn.units * txn.pricePerUnit + txn.fees) / 1_000_000);
+}
+
+export function txnProceedsCents(txn: { units: number; pricePerUnit: number; fees: number }): number {
+  return Math.round((txn.units * txn.pricePerUnit - txn.fees) / 1_000_000);
+}

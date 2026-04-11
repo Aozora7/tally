@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Security, SecurityTransaction, SecurityPriceCache } from '@/types';
+import { txnCostCents, txnProceedsCents } from '@/utils/securities';
 
 export interface PortfolioHolding {
   securityId: string;
@@ -13,6 +14,7 @@ export interface PortfolioCheckpoint {
   yearMonth: string;
   holdings: PortfolioHolding[];
   totalValue: number;
+  costBasis: number;
 }
 
 function getMonthEnd(dateStr: string): string {
@@ -86,6 +88,7 @@ export function usePortfolioCheckpoints(
       const monthEnd = getMonthEnd(yearMonth);
       const holdings: PortfolioHolding[] = [];
       let totalValue = 0;
+      let costBasis = 0;
 
       const unitsBySecurity = new Map<string, number>();
 
@@ -95,6 +98,12 @@ export function usePortfolioCheckpoints(
         const current = unitsBySecurity.get(txn.securityId) ?? 0;
         const delta = txn.type === 'Buy' ? txn.units : -txn.units;
         unitsBySecurity.set(txn.securityId, current + delta);
+
+        if (txn.type === 'Buy') {
+          costBasis += txnCostCents(txn);
+        } else {
+          costBasis -= txnProceedsCents(txn);
+        }
       }
 
       for (const [securityId, units] of unitsBySecurity) {
@@ -137,6 +146,7 @@ export function usePortfolioCheckpoints(
           yearMonth,
           holdings,
           totalValue,
+          costBasis,
         });
       }
     }

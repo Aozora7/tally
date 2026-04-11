@@ -14,6 +14,7 @@ import {
   BarChart as RechartsBarChart,
   LineChart as RechartsLineChart,
   Bar,
+  Cell,
   Line,
   XAxis,
   YAxis,
@@ -198,9 +199,53 @@ interface PortfolioValueChartProps {
   tooltipFormatter: (dollars: number) => string;
 }
 
+interface PortfolioBarPayload {
+  costBasis: number;
+  gainLoss: number;
+  totalValue: number;
+}
+
+function PortfolioValueTooltip({
+  active,
+  payload,
+  label,
+  tooltipFormatter,
+}: {
+  active?: boolean;
+  payload?: { payload?: PortfolioBarPayload }[] | undefined;
+  label?: string | number | undefined;
+  tooltipFormatter: (dollars: number) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0]?.payload;
+  if (!data) return null;
+  return (
+    <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
+      <Text size="sm" fw={500}>
+        {label}
+      </Text>
+      <Text size="xs" c="brand.6" fw={600}>
+        {`Cost Basis: ${tooltipFormatter(data.costBasis)}`}
+      </Text>
+      <Text size="xs" c={data.gainLoss >= 0 ? 'income.6' : 'expense.6'} fw={600}>
+        {`Gain/Loss: ${tooltipFormatter(data.gainLoss)}`}
+      </Text>
+      <Text size="xs" c="dimmed" fw={600}>
+        {`Total: ${tooltipFormatter(data.totalValue)}`}
+      </Text>
+    </Paper>
+  );
+}
+
 function PortfolioValueChart({ checkpoints, axisFormatter, tooltipFormatter }: PortfolioValueChartProps) {
   const chartData = useMemo(
-    () => checkpoints.map((cp) => ({ month: cp.yearMonth, value: cp.totalValue / 100 })),
+    () =>
+      checkpoints.map((cp) => ({
+        month: cp.yearMonth,
+        costBasis: cp.costBasis / 100,
+        gainLoss: (cp.totalValue - cp.costBasis) / 100,
+        totalValue: cp.totalValue / 100,
+      })),
     [checkpoints]
   );
 
@@ -253,24 +298,23 @@ function PortfolioValueChart({ checkpoints, axisFormatter, tooltipFormatter }: P
                 tick={YEAR_TICK}
                 orientation="top"
               />
-              <YAxis width={YAXIS_WIDTH} tickFormatter={axisFormatter} tick={YAXIS_TICK} />;
+              <YAxis width={YAXIS_WIDTH} tickFormatter={axisFormatter} tick={YAXIS_TICK} />
               <Tooltip
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null;
-                  const value = (payload[0]?.value ?? 0) as number;
-                  return (
-                    <Paper px="sm" py="xs" withBorder shadow="md" style={{ pointerEvents: 'none' }}>
-                      <Text size="sm" fw={500}>
-                        {label}
-                      </Text>
-                      <Text size="xs" c="brand.6" fw={600}>
-                        {tooltipFormatter(value)}
-                      </Text>
-                    </Paper>
-                  );
-                }}
+                content={({ active, payload, label }) => (
+                  <PortfolioValueTooltip
+                    active={active}
+                    payload={payload as { payload?: PortfolioBarPayload }[] | undefined}
+                    label={label}
+                    tooltipFormatter={tooltipFormatter}
+                  />
+                )}
               />
-              <Bar xAxisId={0} dataKey="value" fill="#1791E8" />;
+              <Bar xAxisId={0} dataKey="costBasis" stackId="a" fill="#1791E8" />
+              <Bar xAxisId={0} dataKey="gainLoss" stackId="a">
+                {chartData.map((entry) => (
+                  <Cell key={entry.month} fill={entry.gainLoss >= 0 ? '#2D8E50' : '#E03131'} />
+                ))}
+              </Bar>
             </RechartsBarChart>
           </ResponsiveContainer>
         </Box>
@@ -297,20 +341,26 @@ function CurrentHoldingsTable({ checkpoint, format, currencySymbol, privacyMode 
     );
   }
 
-  const rows = checkpoint.holdings.map((h) => (
-    <Table.Tr key={h.securityId}>
-      <Table.Td>{h.ticker}</Table.Td>
-      <Table.Td ta="right" ff="monospace">
-        {privacyMode ? 'XXXX' : unitsToDisplay(h.units)}
-      </Table.Td>
-      <Table.Td ta="right" ff="monospace">
-        {priceToDisplay(h.price, currencySymbol)}
-      </Table.Td>
-      <Table.Td ta="right" ff="monospace" fw={600}>
-        {format(h.value)}
-      </Table.Td>
-    </Table.Tr>
-  ));
+  const rows = checkpoint.holdings.map((h) => {
+    const pct = checkpoint.totalValue !== 0 ? (h.value / checkpoint.totalValue) * 100 : 0;
+    return (
+      <Table.Tr key={h.securityId}>
+        <Table.Td>{h.ticker}</Table.Td>
+        <Table.Td ta="right" ff="monospace">
+          {pct.toFixed(1)}%
+        </Table.Td>
+        <Table.Td ta="right" ff="monospace">
+          {privacyMode ? 'XXXX' : unitsToDisplay(h.units)}
+        </Table.Td>
+        <Table.Td ta="right" ff="monospace">
+          {priceToDisplay(h.price, currencySymbol)}
+        </Table.Td>
+        <Table.Td ta="right" ff="monospace" fw={600}>
+          {format(h.value)}
+        </Table.Td>
+      </Table.Tr>
+    );
+  });
 
   return (
     <Stack gap="xs">
@@ -320,6 +370,7 @@ function CurrentHoldingsTable({ checkpoint, format, currencySymbol, privacyMode 
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Security</Table.Th>
+              <Table.Th ta="right">% of Total</Table.Th>
               <Table.Th ta="right">Units</Table.Th>
               <Table.Th ta="right">Price</Table.Th>
               <Table.Th ta="right">Value</Table.Th>
@@ -328,7 +379,7 @@ function CurrentHoldingsTable({ checkpoint, format, currencySymbol, privacyMode 
           <Table.Tbody>
             {rows}
             <Table.Tr>
-              <Table.Td fw={700} colSpan={3}>
+              <Table.Td fw={700} colSpan={4}>
                 Total
               </Table.Td>
               <Table.Td ta="right" fw={700} c="income.6">

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { SecurityTransaction } from '@/types';
 import type { PortfolioCheckpoint } from '@/utils/usePortfolioCheckpoints';
+import { txnCostCents, txnProceedsCents } from '@/utils/securities';
 
 export interface PortfolioPerformance {
   totalInvestedCents: number;
@@ -9,14 +10,6 @@ export interface PortfolioPerformance {
   annualizedTWR: number | null;
   maxDrawdownPct: number | null;
   twrOverTime: { yearMonth: string; twr: number }[];
-}
-
-function txnCostCents(txn: SecurityTransaction): number {
-  return Math.round((txn.units * txn.pricePerUnit + txn.fees) / 1_000_000);
-}
-
-function txnProceedsCents(txn: SecurityTransaction): number {
-  return Math.round((txn.units * txn.pricePerUnit - txn.fees) / 1_000_000);
 }
 
 export function usePortfolioPerformance(
